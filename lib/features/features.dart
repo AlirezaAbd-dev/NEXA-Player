@@ -1,0 +1,9 @@
+export 'equalizer/equalizer.dart';
+export 'library/library.dart';
+export 'lyrics/lyrics.dart';
+export 'player/player.dart';
+export 'playlists/playlists.dart';
+export 'scanner/scanner.dart';
+export 'search/search.dart';
+export 'settings/settings.dart';
+export 'themes/themes.dart';
