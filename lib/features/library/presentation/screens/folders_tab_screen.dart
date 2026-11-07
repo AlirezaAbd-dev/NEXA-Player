@@ -5,6 +5,7 @@ import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
 import 'package:nexa_player/features/library/domain/repositories/folders_repository.dart';
 import 'package:nexa_player/features/library/presentation/providers/library_providers.dart';
+import 'package:nexa_player/shared/widgets/glass/app_ambient_background.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_card.dart';
 
@@ -17,14 +18,19 @@ class FoldersTabScreen extends ConsumerWidget {
     final foldersAsync = ref.watch(foldersTreeProvider(const []));
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
       appBar: const GlassAppBar(
         titleText: 'Folders',
         automaticallyImplyLeading: false,
       ),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(16.0, 100.0, 16.0, 130.0),
-        child: foldersAsync.when(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const AppAmbientBackground(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16.0, 100.0, 16.0, 130.0),
+            child: foldersAsync.when(
           data: (folders) {
             if (folders.isEmpty) {
               return const Center(
@@ -57,7 +63,9 @@ class FoldersTabScreen extends ConsumerWidget {
           ),
         ),
       ),
-    );
+    ],
+  ),
+);
   }
 }
 

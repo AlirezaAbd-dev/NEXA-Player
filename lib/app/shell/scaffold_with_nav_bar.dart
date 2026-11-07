@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../shared/widgets/glass/app_ambient_background.dart';
 import '../../shared/widgets/glass/glass_bottom_nav.dart';
 import 'mini_player_slot.dart';
 
@@ -67,57 +68,63 @@ class ScaffoldWithNavBar extends StatelessWidget {
     if (isDesktop) {
       return Scaffold(
         key: _ShellKeys.shellScaffold,
-        backgroundColor: theme.scaffoldBackgroundColor,
-        body: Row(
+        backgroundColor: Colors.transparent,
+        body: Stack(
+          fit: StackFit.expand,
           children: [
-            // 1. Navigation Rail for Desktop/Tablet
-            NavigationRail(
-              key: _ShellKeys.navigationRail,
-              selectedIndex: navigationShell.currentIndex,
-              onDestinationSelected: (idx) => _onTap(context, idx),
-              labelType: NavigationRailLabelType.all,
-              backgroundColor: theme.colorScheme.surface.withOpacity(0.5),
-              leading: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                child: Icon(
-                  Icons.graphic_eq_rounded,
-                  color: theme.colorScheme.primary,
-                  size: 32.0,
+            const AppAmbientBackground(),
+            Row(
+              children: [
+                // 1. Navigation Rail for Desktop/Tablet
+                NavigationRail(
+                  key: _ShellKeys.navigationRail,
+                  selectedIndex: navigationShell.currentIndex,
+                  onDestinationSelected: (idx) => _onTap(context, idx),
+                  labelType: NavigationRailLabelType.all,
+                  backgroundColor: theme.colorScheme.surface.withOpacity(0.35),
+                  leading: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16.0),
+                    child: Icon(
+                      Icons.graphic_eq_rounded,
+                      color: theme.colorScheme.primary,
+                      size: 32.0,
+                    ),
+                  ),
+                  destinations: const [
+                    NavigationRailDestination(
+                      icon: Icon(Icons.music_note_rounded, key: _ShellKeys.tabSongs),
+                      label: Text('Songs'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.album_rounded, key: _ShellKeys.tabAlbums),
+                      label: Text('Albums'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.person_rounded, key: _ShellKeys.tabArtists),
+                      label: Text('Artists'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.playlist_play_rounded, key: _ShellKeys.tabPlaylists),
+                      label: Text('Playlists'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.settings_rounded, key: _ShellKeys.tabSettings),
+                      label: Text('Settings'),
+                    ),
+                  ],
                 ),
-              ),
-              destinations: const [
-                NavigationRailDestination(
-                  icon: Icon(Icons.music_note_rounded, key: _ShellKeys.tabSongs),
-                  label: Text('Songs'),
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.album_rounded, key: _ShellKeys.tabAlbums),
-                  label: Text('Albums'),
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.person_rounded, key: _ShellKeys.tabArtists),
-                  label: Text('Artists'),
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.playlist_play_rounded, key: _ShellKeys.tabPlaylists),
-                  label: Text('Playlists'),
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.settings_rounded, key: _ShellKeys.tabSettings),
-                  label: Text('Settings'),
+                const VerticalDivider(thickness: 1, width: 1),
+
+                // 2. Main Content & Mini-Player Bottom Bar
+                Expanded(
+                  child: Column(
+                    children: [
+                      Expanded(child: navigationShell),
+                      const MiniPlayerSlot(),
+                    ],
+                  ),
                 ),
               ],
-            ),
-            const VerticalDivider(thickness: 1, width: 1),
-
-            // 2. Main Content & Mini-Player Bottom Bar
-            Expanded(
-              child: Column(
-                children: [
-                  Expanded(child: navigationShell),
-                  const MiniPlayerSlot(),
-                ],
-              ),
             ),
           ],
         ),
@@ -127,9 +134,15 @@ class ScaffoldWithNavBar extends StatelessWidget {
     // Mobile / Handheld View
     return Scaffold(
       key: _ShellKeys.shellScaffold,
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: Colors.transparent,
       extendBody: true,
-      body: navigationShell,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const AppAmbientBackground(),
+          navigationShell,
+        ],
+      ),
       bottomNavigationBar: SafeArea(
         top: false,
         child: Column(

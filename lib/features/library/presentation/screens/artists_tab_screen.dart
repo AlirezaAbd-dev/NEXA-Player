@@ -17,6 +17,7 @@ class ArtistsTabScreen extends ConsumerWidget {
     final artistsAsync = ref.watch(artistsListProvider(null));
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
       appBar: const GlassAppBar(
         titleText: 'Artists',

@@ -6,6 +6,7 @@ import 'package:nexa_player/core/design_system/app_typography.dart';
 import 'package:nexa_player/features/playlists/presentation/providers/playlists_providers.dart';
 import 'package:nexa_player/shared/models/playlist.dart';
 import 'package:nexa_player/shared/widgets/cards/track_tile.dart';
+import 'package:nexa_player/shared/widgets/glass/app_ambient_background.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
 
 /// Playlist detail screen displaying ordered tracks inside a playlist.
@@ -22,13 +23,18 @@ class PlaylistDetailScreen extends ConsumerWidget {
     final tracksAsync = ref.watch(playlistTracksProvider(playlist.id));
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
       appBar: GlassAppBar(
         titleText: playlist.name,
       ),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(16.0, 100.0, 16.0, 24.0),
-        child: Column(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const AppAmbientBackground(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16.0, 100.0, 16.0, 24.0),
+            child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -92,6 +98,8 @@ class PlaylistDetailScreen extends ConsumerWidget {
           ],
         ),
       ),
-    );
+    ],
+  ),
+);
   }
 }

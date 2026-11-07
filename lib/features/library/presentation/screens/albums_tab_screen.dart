@@ -17,6 +17,7 @@ class AlbumsTabScreen extends ConsumerWidget {
     final albumsAsync = ref.watch(albumsListProvider(null));
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
       appBar: const GlassAppBar(
         titleText: 'Albums',
@@ -35,27 +36,36 @@ class AlbumsTabScreen extends ConsumerWidget {
               );
             }
 
-            return GridView.builder(
-              key: Phase2Keys.albumsGrid,
-              padding: EdgeInsets.zero,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: AppSpacing.md,
-                mainAxisSpacing: AppSpacing.md,
-                childAspectRatio: 0.72,
-              ),
-              itemCount: albums.length,
-              itemBuilder: (context, index) {
-                final album = albums[index];
-                return AlbumCard.fromAlbum(
-                  key: Phase2Keys.albumCard(album.id),
-                  album: album,
-                  mode: AlbumCardMode.grid,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => AlbumDetailScreen(album: album),
-                      ),
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                final crossAxisCount = constraints.maxWidth >= 900
+                    ? 4
+                    : constraints.maxWidth >= 600
+                        ? 3
+                        : 2;
+                return GridView.builder(
+                  key: Phase2Keys.albumsGrid,
+                  padding: EdgeInsets.zero,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    crossAxisSpacing: AppSpacing.md,
+                    mainAxisSpacing: AppSpacing.md,
+                    childAspectRatio: 0.65,
+                  ),
+                  itemCount: albums.length,
+                  itemBuilder: (context, index) {
+                    final album = albums[index];
+                    return AlbumCard.fromAlbum(
+                      key: Phase2Keys.albumCard(album.id),
+                      album: album,
+                      mode: AlbumCardMode.grid,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => AlbumDetailScreen(album: album),
+                          ),
+                        );
+                      },
                     );
                   },
                 );

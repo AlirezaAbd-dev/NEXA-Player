@@ -94,6 +94,7 @@ class _ScannerSettingsScreenState extends ConsumerState<ScannerSettingsScreen> {
 
     return Scaffold(
       key: Phase2Keys.scannerSettingsScreen,
+      backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
       appBar: const GlassAppBar(
         titleText: 'Media Scanner',

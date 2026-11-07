@@ -6,6 +6,7 @@ import 'package:nexa_player/core/design_system/app_typography.dart';
 import 'package:nexa_player/features/library/presentation/providers/library_providers.dart';
 import 'package:nexa_player/shared/models/artist.dart';
 import 'package:nexa_player/shared/widgets/cards/track_tile.dart';
+import 'package:nexa_player/shared/widgets/glass/app_ambient_background.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
 
 /// Artist detail screen displaying artist tracks and albums.
@@ -23,6 +24,7 @@ class ArtistDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       key: Phase2Keys.artistDetailScreen,
+      backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
       appBar: GlassAppBar(
         titleText: artist.name,
@@ -32,9 +34,13 @@ class ArtistDetailScreen extends ConsumerWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(16.0, 100.0, 16.0, 24.0),
-        child: Column(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const AppAmbientBackground(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16.0, 100.0, 16.0, 24.0),
+            child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -90,6 +96,8 @@ class ArtistDetailScreen extends ConsumerWidget {
           ],
         ),
       ),
-    );
+    ],
+  ),
+);
   }
 }

@@ -15,9 +15,9 @@ enum ArtistCardMode {
   grid,
 }
 
-/// Reusable artist card with circular/rounded artwork avatar, artist name,
-/// track/album count subtitle, and hero tag support.
-class ArtistCard extends StatelessWidget {
+/// Reusable artist card with glowing circular avatar ring, artist name,
+/// discography metadata badges, and tactile spring interactions.
+class ArtistCard extends StatefulWidget {
   const ArtistCard({
     super.key,
     required this.name,
@@ -65,9 +65,16 @@ class ArtistCard extends StatelessWidget {
   final bool enableBlur;
   final double avatarRadius;
 
+  @override
+  State<ArtistCard> createState() => _ArtistCardState();
+}
+
+class _ArtistCardState extends State<ArtistCard> {
+  bool _isPressed = false;
+
   String get _subtitle {
-    final tLabel = trackCount == 1 ? '1 Track' : '$trackCount Tracks';
-    final aLabel = albumCount == 1 ? '1 Album' : '$albumCount Albums';
+    final tLabel = widget.trackCount == 1 ? '1 Track' : '${widget.trackCount} Tracks';
+    final aLabel = widget.albumCount == 1 ? '1 Album' : '${widget.albumCount} Albums';
     return '$tLabel • $aLabel';
   }
 
@@ -76,42 +83,78 @@ class ArtistCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final primary = theme.colorScheme.primary;
-    final surface = theme.colorScheme.surface;
+    final secondary = theme.colorScheme.secondary;
     final onSurface = theme.colorScheme.onSurface;
     final onSurfaceVariant = theme.colorScheme.onSurfaceVariant;
     final borderRadius = BorderRadius.circular(GlassTokens.radiusCard);
 
-    Widget avatar = CircleAvatar(
-      radius: avatarRadius,
-      backgroundColor: primary.withOpacity(0.20),
-      child: Icon(
-        Icons.person,
-        color: primary,
-        size: avatarRadius * 1.1,
+    final resolvedBorderColor = GlassTokens.resolveBorderColor(context);
+
+    // Glowing avatar with chromatic ring
+    Widget avatar = Container(
+      width: widget.avatarRadius * 2.2,
+      height: widget.avatarRadius * 2.2,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            primary,
+            secondary,
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: primary.withOpacity(0.35),
+            blurRadius: 14.0,
+            spreadRadius: 1.0,
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(2.0),
+      child: CircleAvatar(
+        radius: widget.avatarRadius,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        child: Icon(
+          Icons.person,
+          color: primary,
+          size: widget.avatarRadius * 1.1,
+        ),
       ),
     );
 
-    if (heroTag != null) {
+    if (widget.heroTag != null) {
       avatar = Hero(
-        tag: heroTag!,
+        tag: widget.heroTag!,
         child: avatar,
       );
     }
 
     Widget content;
 
-    if (mode == ArtistCardMode.list) {
+    if (widget.mode == ArtistCardMode.list) {
       content = Container(
         constraints: const BoxConstraints(minHeight: AppConstants.trackTileHeight),
         padding: const EdgeInsets.all(AppSpacing.sm),
         decoration: BoxDecoration(
-          color: surface.withOpacity(isDark ? 0.14 : 0.08),
+          gradient: GlassTokens.glassSurfaceGradient(
+            context,
+            opacity: isDark ? 0.16 : 0.45,
+          ),
           borderRadius: borderRadius,
           border: Border.all(
-            color: isDark ? GlassTokens.borderColorLight : GlassTokens.borderColorDark,
+            color: resolvedBorderColor,
             width: GlassTokens.borderWidth,
           ),
-          boxShadow: GlassTokens.elevationLow,
+          boxShadow: [
+            BoxShadow(
+              color: primary.withOpacity(0.08),
+              blurRadius: 12.0,
+              offset: const Offset(0, 3),
+            ),
+            ...GlassTokens.elevationLow,
+          ],
         ),
         child: Row(
           children: [
@@ -123,7 +166,7 @@ class ArtistCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    name,
+                    widget.name,
                     style: AppTypography.titleMedium.copyWith(
                       fontWeight: FontWeight.bold,
                       color: onSurface,
@@ -145,7 +188,7 @@ class ArtistCard extends StatelessWidget {
             ),
             Icon(
               Icons.chevron_right_rounded,
-              color: onSurfaceVariant.withOpacity(0.6),
+              color: onSurfaceVariant.withOpacity(0.7),
             ),
           ],
         ),
@@ -155,21 +198,24 @@ class ArtistCard extends StatelessWidget {
       content = Container(
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: surface.withOpacity(isDark ? 0.14 : 0.08),
+          gradient: GlassTokens.glassSurfaceGradient(
+            context,
+            opacity: isDark ? 0.16 : 0.45,
+          ),
           borderRadius: borderRadius,
           border: Border.all(
-            color: isDark ? GlassTokens.borderColorLight : GlassTokens.borderColorDark,
+            color: resolvedBorderColor,
             width: GlassTokens.borderWidth,
           ),
           boxShadow: GlassTokens.elevationLow,
         ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             avatar,
             const SizedBox(height: AppSpacing.sm),
             Text(
-              name,
+              widget.name,
               style: AppTypography.titleMedium.copyWith(
                 fontWeight: FontWeight.bold,
                 color: onSurface,
@@ -193,7 +239,7 @@ class ArtistCard extends StatelessWidget {
       );
     }
 
-    if (enableBlur) {
+    if (widget.enableBlur) {
       content = ClipRRect(
         borderRadius: borderRadius,
         child: BackdropFilter(
@@ -214,13 +260,23 @@ class ArtistCard extends StatelessWidget {
     return RepaintBoundary(
       child: Semantics(
         button: true,
-        label: 'Artist $name, $_subtitle',
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: borderRadius,
-            child: content,
+        label: 'Artist ${widget.name}, $_subtitle',
+        child: GestureDetector(
+          onTapDown: (_) => setState(() => _isPressed = true),
+          onTapUp: (_) => setState(() => _isPressed = false),
+          onTapCancel: () => setState(() => _isPressed = false),
+          child: AnimatedScale(
+            scale: _isPressed ? 0.98 : 1.0,
+            duration: const Duration(milliseconds: 140),
+            curve: Curves.easeOutCubic,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: widget.onTap,
+                borderRadius: borderRadius,
+                child: content,
+              ),
+            ),
           ),
         ),
       ),

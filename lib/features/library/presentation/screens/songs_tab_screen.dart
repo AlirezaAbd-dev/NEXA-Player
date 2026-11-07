@@ -62,6 +62,7 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
     final tracksAsync = ref.watch(tracksListProvider(queryParams));
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
       appBar: GlassAppBar(
         titleText: 'Songs',

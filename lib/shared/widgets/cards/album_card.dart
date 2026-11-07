@@ -7,16 +7,16 @@ import '../../models/album.dart';
 
 /// Layout orientation mode for [AlbumCard].
 enum AlbumCardMode {
-  /// Vertical layout tailored for grid collections (childAspectRatio: 0.8).
+  /// Vertical layout tailored for grid collections (childAspectRatio: 0.72).
   grid,
 
   /// Horizontal list layout for album lists.
   list,
 }
 
-/// Reusable album card supporting both grid and list view modes with glass details
-/// overlay, year and track count badges, and hero tag support.
-class AlbumCard extends StatelessWidget {
+/// Next-generation frosted glass album card supporting vinyl depth,
+/// diagonal specular sheen, tactile spring animations, and high contrast typography.
+class AlbumCard extends StatefulWidget {
   const AlbumCard({
     super.key,
     required this.title,
@@ -79,11 +79,18 @@ class AlbumCard extends StatelessWidget {
   final double? width;
   final double? height;
 
+  @override
+  State<AlbumCard> createState() => _AlbumCardState();
+}
+
+class _AlbumCardState extends State<AlbumCard> {
+  bool _isPressed = false;
+
   String get _resolvedSubtitle {
-    if (year != null) {
-      return '$artist • $year';
+    if (widget.year != null) {
+      return '${widget.artist} • ${widget.year}';
     }
-    return artist;
+    return widget.artist;
   }
 
   @override
@@ -91,101 +98,258 @@ class AlbumCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final primary = theme.colorScheme.primary;
+    final secondary = theme.colorScheme.secondary;
     final surface = theme.colorScheme.surface;
     final onSurface = theme.colorScheme.onSurface;
     final onSurfaceVariant = theme.colorScheme.onSurfaceVariant;
     final borderRadius = BorderRadius.circular(GlassTokens.radiusCard);
 
-    Widget artworkPlaceholder = Container(
-      decoration: BoxDecoration(
-        color: primary.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(16.0),
-      ),
-      child: Center(
-        child: Icon(
-          Icons.album,
-          size: mode == AlbumCardMode.grid ? 48.0 : 32.0,
-          color: primary,
-        ),
+    final resolvedBorderColor = GlassTokens.resolveBorderColor(context);
+
+    // High-fidelity Vinyl & Artwork Sleeve
+    Widget artworkPlaceholder = ClipRRect(
+      borderRadius: BorderRadius.circular(16.0),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // 1. Rich multi-stop cover gradient
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  primary.withOpacity(isDark ? 0.40 : 0.65),
+                  secondary.withOpacity(isDark ? 0.25 : 0.45),
+                  surface.withOpacity(isDark ? 0.35 : 0.80),
+                ],
+              ),
+            ),
+          ),
+
+          // 2. Vinyl disc peeking out from sleeve
+          Positioned(
+            right: -16.0,
+            top: 10.0,
+            bottom: 10.0,
+            width: 70.0,
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    isDark ? const Color(0xFF1E293B) : const Color(0xFF334155),
+                    isDark ? const Color(0xFF0F172A) : const Color(0xFF1E293B),
+                    isDark ? const Color(0xFF020617) : const Color(0xFF0F172A),
+                  ],
+                  stops: const [0.35, 0.70, 1.0],
+                ),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x40000000),
+                    blurRadius: 8.0,
+                    offset: Offset(-2, 0),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Container(
+                  width: 22.0,
+                  height: 22.0,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: primary,
+                  ),
+                  child: Center(
+                    child: Container(
+                      width: 6.0,
+                      height: 6.0,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // 3. Center musical icon badge
+          Center(
+            child: Container(
+              width: 52.0,
+              height: 52.0,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: surface.withOpacity(isDark ? 0.40 : 0.75),
+                border: Border.all(
+                  color: Colors.white.withOpacity(isDark ? 0.30 : 0.60),
+                  width: 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: primary.withOpacity(0.35),
+                    blurRadius: 14.0,
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.album,
+                size: widget.mode == AlbumCardMode.grid ? 32.0 : 24.0,
+                color: primary,
+              ),
+            ),
+          ),
+
+          // 4. Diagonal jewel-case gloss sheen
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white.withOpacity(isDark ? 0.22 : 0.50),
+                      Colors.transparent,
+                      Colors.transparent,
+                    ],
+                    stops: const [0.0, 0.45, 1.0],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
 
-    if (heroTag != null) {
+    if (widget.heroTag != null) {
       artworkPlaceholder = Hero(
-        tag: heroTag!,
+        tag: widget.heroTag!,
         child: artworkPlaceholder,
       );
     }
 
     Widget content;
 
-    if (mode == AlbumCardMode.grid) {
+    if (widget.mode == AlbumCardMode.grid) {
       content = Container(
-        width: width ?? 180.0,
-        height: height,
-          padding: const EdgeInsets.all(AppSpacing.xs),
-          decoration: BoxDecoration(
-            color: surface.withOpacity(isDark ? 0.14 : 0.08),
-            borderRadius: borderRadius,
-            border: Border.all(
-              color: isDark ? GlassTokens.borderColorLight : GlassTokens.borderColorDark,
-              width: GlassTokens.borderWidth,
-            ),
-            boxShadow: GlassTokens.elevationLow,
+        width: widget.width ?? 180.0,
+        height: widget.height,
+        padding: const EdgeInsets.all(AppSpacing.xs),
+        decoration: BoxDecoration(
+          gradient: GlassTokens.glassSurfaceGradient(
+            context,
+            opacity: isDark ? 0.16 : 0.45,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AspectRatio(
-                aspectRatio: 1.0,
-                child: artworkPlaceholder,
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                title,
-                style: AppTypography.titleMedium.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: onSurface,
+          borderRadius: borderRadius,
+          border: Border.all(
+            color: resolvedBorderColor,
+            width: GlassTokens.borderWidth,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: primary.withOpacity(0.12),
+              blurRadius: 16.0,
+              offset: const Offset(0, 4),
+            ),
+            ...GlassTokens.elevationLow,
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Inner specular top reflection
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 1.0,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: borderRadius,
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.white.withOpacity(isDark ? 0.30 : 0.60),
+                      Colors.transparent,
+                    ],
+                  ),
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 2.0),
-              Text(
-                _resolvedSubtitle,
-                style: AppTypography.bodySmall.copyWith(
-                  color: onSurfaceVariant,
+            ),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AspectRatio(
+                  aspectRatio: 1.0,
+                  child: artworkPlaceholder,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (trackCount != null && trackCount! > 0) ...[
-                const SizedBox(height: 4.0),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
-                  trackCount == 1 ? '1 Track' : '$trackCount Tracks',
-                  style: AppTypography.labelSmall.copyWith(
-                    color: primary,
+                  widget.title,
+                  style: AppTypography.titleMedium.copyWith(
                     fontWeight: FontWeight.bold,
+                    color: onSurface,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+                const SizedBox(height: 2.0),
+                Text(
+                  _resolvedSubtitle,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: onSurfaceVariant,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (widget.trackCount != null && widget.trackCount! > 0) ...[
+                  const SizedBox(height: 4.0),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6.0,
+                      vertical: 2.0,
+                    ),
+                    decoration: BoxDecoration(
+                      color: primary.withOpacity(isDark ? 0.18 : 0.12),
+                      borderRadius: BorderRadius.circular(6.0),
+                      border: Border.all(
+                        color: primary.withOpacity(0.30),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Text(
+                      widget.trackCount == 1 ? '1 Track' : '${widget.trackCount} Tracks',
+                      style: AppTypography.labelSmall.copyWith(
+                        color: primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ],
-            ],
-          ),
-        );
+            ),
+          ],
+        ),
+      );
     } else {
       // List Mode
       content = Container(
-        width: width,
-        height: height ?? 80.0,
+        width: widget.width,
+        height: widget.height ?? 80.0,
         padding: const EdgeInsets.all(AppSpacing.sm),
         decoration: BoxDecoration(
-          color: surface.withOpacity(isDark ? 0.14 : 0.08),
+          gradient: GlassTokens.glassSurfaceGradient(
+            context,
+            opacity: isDark ? 0.16 : 0.45,
+          ),
           borderRadius: borderRadius,
           border: Border.all(
-            color: isDark ? GlassTokens.borderColorLight : GlassTokens.borderColorDark,
+            color: resolvedBorderColor,
             width: GlassTokens.borderWidth,
           ),
           boxShadow: GlassTokens.elevationLow,
@@ -204,7 +368,7 @@ class AlbumCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    title,
+                    widget.title,
                     style: AppTypography.titleMedium.copyWith(
                       fontWeight: FontWeight.bold,
                       color: onSurface,
@@ -224,10 +388,14 @@ class AlbumCard extends StatelessWidget {
                 ],
               ),
             ),
-            if (onPlayTap != null) ...[
+            if (widget.onPlayTap != null) ...[
               IconButton(
-                icon: Icon(Icons.play_circle_filled_rounded, color: primary, size: 32.0),
-                onPressed: onPlayTap,
+                icon: Icon(
+                  Icons.play_circle_filled_rounded,
+                  color: primary,
+                  size: 32.0,
+                ),
+                onPressed: widget.onPlayTap,
               ),
             ],
           ],
@@ -235,7 +403,7 @@ class AlbumCard extends StatelessWidget {
       );
     }
 
-    if (enableBlur) {
+    if (widget.enableBlur) {
       content = ClipRRect(
         borderRadius: borderRadius,
         child: BackdropFilter(
@@ -256,14 +424,24 @@ class AlbumCard extends StatelessWidget {
     return RepaintBoundary(
       child: Semantics(
         button: true,
-        label: 'Album $title by $artist',
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            onLongPress: onLongPress,
-            borderRadius: borderRadius,
-            child: content,
+        label: 'Album ${widget.title} by ${widget.artist}',
+        child: GestureDetector(
+          onTapDown: (_) => setState(() => _isPressed = true),
+          onTapUp: (_) => setState(() => _isPressed = false),
+          onTapCancel: () => setState(() => _isPressed = false),
+          child: AnimatedScale(
+            scale: _isPressed ? 0.98 : 1.0,
+            duration: const Duration(milliseconds: 140),
+            curve: Curves.easeOutCubic,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: widget.onTap,
+                onLongPress: widget.onLongPress,
+                borderRadius: borderRadius,
+                child: content,
+              ),
+            ),
           ),
         ),
       ),

@@ -147,4 +147,75 @@ abstract final class GlassTokens {
       stops: const [0.0, 1.0],
     );
   }
+
+  /// Generates a realistic specular border gradient for physical glass bevels.
+  static LinearGradient specularBorderGradient(
+    BuildContext context, {
+    Color? accentColor,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = accentColor ?? Theme.of(context).colorScheme.primary;
+
+    return LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: isDark
+          ? [
+              Colors.white.withOpacity(0.38),
+              Colors.white.withOpacity(0.12),
+              accent.withOpacity(0.24),
+              Colors.white.withOpacity(0.05),
+            ]
+          : [
+              Colors.white.withOpacity(0.85),
+              Colors.white.withOpacity(0.45),
+              accent.withOpacity(0.25),
+              Colors.black.withOpacity(0.06),
+            ],
+      stops: const [0.0, 0.35, 0.70, 1.0],
+    );
+  }
+
+  /// High-fidelity dual-stop surface gradient for frosted glass slabs.
+  static LinearGradient glassSurfaceGradient(
+    BuildContext context, {
+    Color? surfaceColor,
+    double opacity = opacityStandard,
+  }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final base = surfaceColor ?? theme.colorScheme.surface;
+
+    final topAlpha =
+        (isDark ? opacity * 1.5 : opacity * 2.2).clamp(0.0, 0.85);
+    final bottomAlpha = (opacity * 0.65).clamp(0.0, 0.50);
+
+    return LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        base.withOpacity(topAlpha),
+        base.withOpacity(bottomAlpha),
+      ],
+    );
+  }
+
+  /// Inner top-rim specular sheen for realistic glossy glass reflection.
+  static BoxDecoration innerSpecularSheen({
+    double radius = radiusCard,
+  }) {
+    return BoxDecoration(
+      borderRadius: BorderRadius.circular(radius),
+      gradient: LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          Colors.white.withOpacity(0.16),
+          Colors.white.withOpacity(0.02),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.08, 0.30],
+      ),
+    );
+  }
 }

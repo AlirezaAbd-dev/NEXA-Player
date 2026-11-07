@@ -36,6 +36,7 @@ class ThemePickerScreen extends ConsumerWidget {
     final themeState = ref.watch(themeControllerProvider);
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Theme & Appearance'),
       ),

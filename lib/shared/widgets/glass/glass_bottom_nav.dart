@@ -23,10 +23,10 @@ class GlassNavItem {
 /// Frosted glass bottom navigation bar for the shell tabs.
 ///
 /// Features:
+/// - Floating capsule pill geometry with 360° specular glass border.
 /// - Active tab accent glow indicator and animated pill background.
 /// - Smooth animated transitions ([Curves.easeInOutCubic]).
 /// - Zero pixel overflow on all viewport widths (320dp+).
-/// - 1dp brightness-aware top border.
 /// - Pre-configured default destinations matching NEXA Player's 5 shell tabs.
 class GlassBottomNav extends StatelessWidget {
   const GlassBottomNav({
@@ -34,8 +34,8 @@ class GlassBottomNav extends StatelessWidget {
     required this.currentIndex,
     required this.onTap,
     this.items = GlassBottomNav.defaultTabs,
-    this.height = 72.0,
-    this.blur = GlassTokens.blurStandard,
+    this.height = 70.0,
+    this.blur = GlassTokens.blurExtreme,
     this.opacity = GlassTokens.opacityNav,
     this.backgroundColor,
     this.borderColor,
@@ -101,8 +101,10 @@ class GlassBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final activeAccent = selectedColor ?? theme.colorScheme.primary;
-    final inactiveColor = unselectedColor ?? theme.colorScheme.onSurface.withOpacity(0.60);
+    final inactiveColor =
+        unselectedColor ?? theme.colorScheme.onSurface.withOpacity(0.65);
 
     final resolvedBorderColor = GlassTokens.resolveBorderColor(
       context,
@@ -110,97 +112,133 @@ class GlassBottomNav extends StatelessWidget {
     );
 
     final effectiveBackgroundColor = backgroundColor ??
-        theme.colorScheme.surface.withOpacity(opacity);
+        theme.colorScheme.surface.withOpacity(isDark ? 0.25 : 0.60);
+
+    final navRadius = BorderRadius.circular(GlassTokens.radiusPill);
 
     Widget navContainer = Container(
       height: height,
       decoration: BoxDecoration(
         color: effectiveBackgroundColor,
+        borderRadius: navRadius,
         border: borderWidth > 0
-            ? Border(
-                top: BorderSide(
-                  color: resolvedBorderColor,
-                  width: borderWidth,
-                ),
+            ? Border.all(
+                color: resolvedBorderColor,
+                width: borderWidth,
               )
             : null,
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? const Color(0x60000000) : const Color(0x20000000),
+            blurRadius: 20.0,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: List.generate(items.length, (index) {
-            final item = items[index];
-            final isSelected = index == currentIndex;
-
-            return Expanded(
-              child: Tooltip(
-                message: item.tooltip ?? item.label,
-                child: InkWell(
-                  key: item.key,
-                  onTap: () => onTap(index),
-                  borderRadius: BorderRadius.circular(GlassTokens.radiusMedium),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6.0),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        AnimatedContainer(
-                          duration: animationDuration,
-                          curve: animationCurve,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14.0,
-                            vertical: 3.0,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? activeAccent.withOpacity(0.18)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(GlassTokens.radiusPill),
-                            boxShadow: (isSelected && showGlow)
-                                ? [
-                                    BoxShadow(
-                                      color: activeAccent.withOpacity(0.28),
-                                      blurRadius: 12.0,
-                                      spreadRadius: 1.0,
-                                    ),
-                                  ]
-                                : null,
-                          ),
-                          child: Icon(
-                            isSelected ? (item.selectedIcon ?? item.icon) : item.icon,
-                            color: isSelected ? activeAccent : inactiveColor,
-                            size: 24.0,
-                          ),
-                        ),
-                        const SizedBox(height: 3.0),
-                        AnimatedDefaultTextStyle(
-                          duration: animationDuration,
-                          curve: animationCurve,
-                          style: AppTypography.labelSmall.copyWith(
-                            color: isSelected ? activeAccent : inactiveColor,
-                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          ),
-                          child: Text(
-                            item.label,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+      child: Stack(
+        children: [
+          // Inner top specular reflection
+          Positioned(
+            top: 0,
+            left: 20,
+            right: 20,
+            height: 1.0,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white.withOpacity(isDark ? 0.35 : 0.70),
+                    Colors.transparent,
+                  ],
                 ),
               ),
-            );
-          }),
-        ),
+            ),
+          ),
+          SafeArea(
+            top: false,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: List.generate(items.length, (index) {
+                final item = items[index];
+                final isSelected = index == currentIndex;
+
+                return Expanded(
+                  child: Tooltip(
+                    message: item.tooltip ?? item.label,
+                    child: InkWell(
+                      key: item.key,
+                      onTap: () => onTap(index),
+                      borderRadius: navRadius,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            AnimatedContainer(
+                              duration: animationDuration,
+                              curve: animationCurve,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16.0,
+                                vertical: 4.0,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? activeAccent.withOpacity(isDark ? 0.24 : 0.18)
+                                    : Colors.transparent,
+                                borderRadius:
+                                    BorderRadius.circular(GlassTokens.radiusPill),
+                                boxShadow: (isSelected && showGlow)
+                                    ? [
+                                        BoxShadow(
+                                          color: activeAccent.withOpacity(0.38),
+                                          blurRadius: 14.0,
+                                          spreadRadius: 1.0,
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: Icon(
+                                isSelected
+                                    ? (item.selectedIcon ?? item.icon)
+                                    : item.icon,
+                                color: isSelected ? activeAccent : inactiveColor,
+                                size: 24.0,
+                              ),
+                            ),
+                            const SizedBox(height: 3.0),
+                            AnimatedDefaultTextStyle(
+                              duration: animationDuration,
+                              curve: animationCurve,
+                              style: AppTypography.labelSmall.copyWith(
+                                fontFamily: 'Roboto',
+                                color: isSelected ? activeAccent : inactiveColor,
+                                fontWeight: isSelected
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                              ),
+                              child: Text(
+                                item.label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
       ),
     );
 
     if (enableBlur && blur > 0) {
-      return ClipRect(
+      return ClipRRect(
+        borderRadius: navRadius,
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
           child: navContainer,
@@ -208,6 +246,9 @@ class GlassBottomNav extends StatelessWidget {
       );
     }
 
-    return ClipRect(child: navContainer);
+    return ClipRRect(
+      borderRadius: navRadius,
+      child: navContainer,
+    );
   }
 }

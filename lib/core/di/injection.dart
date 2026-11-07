@@ -170,9 +170,8 @@ Future<void> configureDependencies({
 
 void _seedDemoData(IAppDatabase db) {
   try {
-    final countResult = db.select('SELECT COUNT(*) as count FROM tracks');
-    final count = (countResult.first['count'] as int?) ?? 0;
-    if (count > 0) return;
+    final albumCount = (db.select('SELECT COUNT(*) as count FROM albums').first['count'] as int?) ?? 0;
+    if (albumCount > 0) return;
 
     db.transaction(() {
       db.execute('''
@@ -196,19 +195,42 @@ void _seedDemoData(IAppDatabase db) {
 
       db.execute('''
         INSERT INTO tracks (id, title, artist, album, duration_ms, file_path, track_number, year, is_favorite, date_added)
-        VALUES ('trk-1', 'Starboy', 'The Weeknd • Daft Punk', 'Starboy', 230000, '/demo/starboy.mp3', 1, 2016, 1, 1000),
-               ('trk-2', 'Get Lucky', 'Daft Punk • Pharrell Williams', 'Random Access Memories', 248000, '/demo/get_lucky.mp3', 2, 2013, 1, 2000),
-               ('trk-3', 'Midnight City', 'M83', 'Hurry Up, We''re Dreaming', 243000, '/demo/midnight_city.mp3', 3, 2011, 0, 3000),
-               ('trk-4', 'The Less I Know The Better', 'Tame Impala', 'Currents', 216000, '/demo/less_i_know.mp3', 4, 2015, 0, 4000),
-               ('trk-5', 'Blinding Lights', 'The Weeknd', 'After Hours', 200000, '/demo/blinding_lights.mp3', 5, 2020, 1, 5000)
+        VALUES ('trk-1', 'Starboy', 'The Weeknd • Daft Punk', 'Starboy', 230000, '/storage/emulated/0/Music/Pop/Starboy.mp3', 1, 2016, 1, 1000),
+               ('trk-2', 'Get Lucky', 'Daft Punk • Pharrell Williams', 'Random Access Memories', 248000, '/storage/emulated/0/Music/Electronic/Get Lucky.mp3', 2, 2013, 1, 2000),
+               ('trk-3', 'Midnight City', 'M83', 'Hurry Up, We''re Dreaming', 243000, '/storage/emulated/0/Music/Synthwave/Midnight City.mp3', 3, 2011, 0, 3000),
+               ('trk-4', 'The Less I Know The Better', 'Tame Impala', 'Currents', 216000, '/storage/emulated/0/Music/Indie/The Less I Know.mp3', 4, 2015, 0, 4000),
+               ('trk-5', 'Blinding Lights', 'The Weeknd', 'After Hours', 200000, '/storage/emulated/0/Music/Pop/Blinding Lights.mp3', 5, 2020, 1, 5000),
+               ('trk-6', 'Instant Crush', 'Daft Punk • Julian Casablancas', 'Random Access Memories', 337000, '/storage/emulated/0/Music/Electronic/Instant Crush.mp3', 5, 2013, 1, 6000),
+               ('trk-7', 'Lose Yourself to Dance', 'Daft Punk • Pharrell Williams', 'Random Access Memories', 353000, '/storage/emulated/0/Music/Electronic/Lose Yourself.mp3', 6, 2013, 0, 7000),
+               ('trk-8', 'Save Your Tears', 'The Weeknd', 'After Hours', 215000, '/storage/emulated/0/Music/Pop/Save Your Tears.mp3', 11, 2020, 1, 8000)
         ON CONFLICT(file_path) DO NOTHING;
       ''');
 
       db.execute('''
         INSERT INTO playlists (id, name, created_at, updated_at, track_count)
-        VALUES ('pl-smart', 'Smart Playlists', 1000, 1000, 5),
-               ('pl-favorites', 'Favorites', 2000, 2000, 3)
+        VALUES ('pl-smart', 'Smart Playlists', 1000, 1000, 3),
+               ('pl-favorites', 'Favorites', 2000, 2000, 4)
         ON CONFLICT(id) DO NOTHING;
+      ''');
+
+      db.execute('''
+        INSERT INTO playlist_tracks (playlist_id, track_id, position, added_at)
+        VALUES ('pl-smart', 'trk-1', 1, 1000),
+               ('pl-smart', 'trk-2', 2, 2000),
+               ('pl-smart', 'trk-5', 3, 3000),
+               ('pl-favorites', 'trk-1', 1, 1000),
+               ('pl-favorites', 'trk-2', 2, 2000),
+               ('pl-favorites', 'trk-5', 3, 3000),
+               ('pl-favorites', 'trk-6', 4, 4000)
+        ON CONFLICT(playlist_id, track_id, position) DO NOTHING;
+      ''');
+
+      db.execute('''
+        INSERT INTO scan_directories (id, path, is_active, last_scanned, file_count)
+        VALUES ('sd-1', '/storage/emulated/0/Music', 1, 1715000000000, 240),
+               ('sd-2', '/storage/emulated/0/Download', 1, 1715000000000, 45),
+               ('sd-3', '/storage/emulated/0/Podcasts', 0, 0, 0)
+        ON CONFLICT(path) DO NOTHING;
       ''');
     });
   } catch (_) {

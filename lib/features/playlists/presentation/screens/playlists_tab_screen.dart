@@ -92,6 +92,7 @@ class PlaylistsTabScreen extends ConsumerWidget {
     final playlistsAsync = ref.watch(playlistsListNotifierProvider);
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
       appBar: const GlassAppBar(
         titleText: 'Playlists',

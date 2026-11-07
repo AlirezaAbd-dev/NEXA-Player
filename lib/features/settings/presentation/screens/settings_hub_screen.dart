@@ -25,6 +25,7 @@ class SettingsHubScreen extends ConsumerWidget {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
       appBar: const GlassAppBar(
         titleText: 'Settings',
