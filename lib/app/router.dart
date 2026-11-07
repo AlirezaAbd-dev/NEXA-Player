@@ -6,6 +6,7 @@ import '../features/library/presentation/screens/songs_tab_screen.dart';
 import '../features/player/presentation/screens/now_playing_screen.dart';
 import '../features/playlists/presentation/screens/playlists_tab_screen.dart';
 import '../features/settings/presentation/screens/design_system_showcase_screen.dart';
+import '../features/settings/presentation/screens/scanner_settings_screen.dart';
 import '../features/settings/presentation/screens/settings_hub_screen.dart';
 import '../features/themes/presentation/screens/custom_theme_editor_screen.dart';
 import '../features/themes/presentation/screens/theme_picker_screen.dart';
@@ -88,6 +89,11 @@ final appRouter = GoRouter(
                   path: 'design-system',
                   builder: (context, state) =>
                       const DesignSystemShowcaseScreen(),
+                ),
+                GoRoute(
+                  path: 'scanner',
+                  builder: (context, state) =>
+                      const ScannerSettingsScreen(),
                 ),
               ],
             ),

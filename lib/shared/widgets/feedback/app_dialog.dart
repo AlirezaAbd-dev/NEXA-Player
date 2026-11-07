@@ -25,6 +25,7 @@ class AppDialog extends StatelessWidget {
     this.onPrimaryAction,
     this.secondaryActionText,
     this.onSecondaryAction,
+    this.actions,
     this.maxWidth = 460.0,
     this.minWidth = 280.0,
   });
@@ -38,6 +39,7 @@ class AppDialog extends StatelessWidget {
   final VoidCallback? onPrimaryAction;
   final String? secondaryActionText;
   final VoidCallback? onSecondaryAction;
+  final List<Widget>? actions;
   final double maxWidth;
   final double minWidth;
 
@@ -206,7 +208,13 @@ class AppDialog extends StatelessWidget {
                             content!,
                           ],
                           // Actions
-                          if (primaryActionText != null ||
+                          if (actions != null) ...[
+                            const SizedBox(height: AppSpacing.xl),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: actions!,
+                            ),
+                          ] else if (primaryActionText != null ||
                               secondaryActionText != null) ...[
                             const SizedBox(height: AppSpacing.xl),
                             _buildActionButtons(context, theme, primaryColor),

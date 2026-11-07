@@ -43,3 +43,12 @@ class ValidationFailure extends Failure {
     super.stackTrace,
   ]);
 }
+
+/// Failure representing media scanner errors.
+class ScannerFailure extends Failure {
+  const ScannerFailure(
+    super.message, [
+    super.cause,
+    super.stackTrace,
+  ]);
+}

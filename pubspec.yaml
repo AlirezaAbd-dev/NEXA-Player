@@ -44,6 +44,12 @@ dependencies:
   flex_color_scheme: ^8.0.2
   equatable: ^3.0.0
   shared_preferences: ^2.5.3
+  permission_handler: ^12.0.3
+  path: ^1.9.0
+  uuid: ^4.6.0
+  sqlite3_flutter_libs: ^0.5.42
+  sqlite3: ^2.9.4
+  path_provider: ^2.1.5
 
 dev_dependencies:
   flutter_test:

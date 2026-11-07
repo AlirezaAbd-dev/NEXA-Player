@@ -1,52 +1,20 @@
 import 'package:flutter/material.dart';
-import '../../../../core/design_system/app_spacing.dart';
-import '../../../../shared/models/album.dart';
-import '../../../../shared/widgets/cards/album_card.dart';
-import '../../../../shared/widgets/glass/glass_app_bar.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nexa_player/core/constants/phase2_keys.dart';
+import 'package:nexa_player/core/design_system/app_spacing.dart';
+import 'package:nexa_player/core/design_system/app_typography.dart';
+import 'package:nexa_player/features/library/presentation/providers/library_providers.dart';
+import 'package:nexa_player/features/library/presentation/screens/album_detail_screen.dart';
+import 'package:nexa_player/shared/widgets/cards/album_card.dart';
+import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
 
-/// Albums tab screen presenting an responsive album grid.
-class AlbumsTabScreen extends StatelessWidget {
+/// Albums tab screen displaying album grid.
+class AlbumsTabScreen extends ConsumerWidget {
   const AlbumsTabScreen({super.key});
 
-  static const List<Album> _sampleAlbums = [
-    Album(
-      id: 'alb-1',
-      title: 'Random Access Memories',
-      artist: 'Daft Punk',
-      year: 2013,
-      trackCount: 13,
-    ),
-    Album(
-      id: 'alb-2',
-      title: 'Starboy',
-      artist: 'The Weeknd',
-      year: 2016,
-      trackCount: 18,
-    ),
-    Album(
-      id: 'alb-3',
-      title: 'Currents',
-      artist: 'Tame Impala',
-      year: 2015,
-      trackCount: 13,
-    ),
-    Album(
-      id: 'alb-4',
-      title: 'After Hours',
-      artist: 'The Weeknd',
-      year: 2020,
-      trackCount: 14,
-    ),
-  ];
-
   @override
-  Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final crossAxisCount = screenWidth > 900
-        ? 4
-        : screenWidth > 600
-            ? 3
-            : 2;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final albumsAsync = ref.watch(albumsListProvider(null));
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -54,22 +22,54 @@ class AlbumsTabScreen extends StatelessWidget {
         titleText: 'Albums',
         automaticallyImplyLeading: false,
       ),
-      body: GridView.builder(
+      body: Padding(
         padding: const EdgeInsets.fromLTRB(16.0, 100.0, 16.0, 130.0),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: crossAxisCount,
-          crossAxisSpacing: AppSpacing.sm,
-          mainAxisSpacing: AppSpacing.sm,
-          childAspectRatio: 0.72,
+        child: albumsAsync.when(
+          data: (albums) {
+            if (albums.isEmpty) {
+              return const Center(
+                child: Text(
+                  'No albums found. Scan your media in Settings!',
+                  style: AppTypography.bodyMedium,
+                ),
+              );
+            }
+
+            return GridView.builder(
+              key: Phase2Keys.albumsGrid,
+              padding: EdgeInsets.zero,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: AppSpacing.md,
+                mainAxisSpacing: AppSpacing.md,
+                childAspectRatio: 0.72,
+              ),
+              itemCount: albums.length,
+              itemBuilder: (context, index) {
+                final album = albums[index];
+                return AlbumCard.fromAlbum(
+                  key: Phase2Keys.albumCard(album.id),
+                  album: album,
+                  mode: AlbumCardMode.grid,
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => AlbumDetailScreen(album: album),
+                      ),
+                    );
+                  },
+                );
+              },
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => Center(
+            child: Text(
+              'Error loading albums: $error',
+              style: AppTypography.bodyMedium,
+            ),
+          ),
         ),
-        itemCount: _sampleAlbums.length,
-        itemBuilder: (context, index) {
-          final album = _sampleAlbums[index];
-          return AlbumCard.fromAlbum(
-            album: album,
-            onTap: () {},
-          );
-        },
       ),
     );
   }

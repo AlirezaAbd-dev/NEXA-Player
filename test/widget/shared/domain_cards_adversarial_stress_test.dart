@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nexa_player/shared/models/album.dart';
-import 'package:nexa_player/shared/models/artist.dart';
-import 'package:nexa_player/shared/models/genre.dart';
 import 'package:nexa_player/shared/models/track.dart';
 import 'package:nexa_player/shared/widgets/cards/album_card.dart';
 import 'package:nexa_player/shared/widgets/cards/artist_card.dart';
@@ -316,12 +313,15 @@ void main() {
   });
 
   group('Adversarial Stress Test 3: AlbumCard Grid Aspect Ratio Scaling & Overflow Analysis', () {
-    testWidgets('Empirical Failure: AlbumCard overflows in 2-column grid at documented childAspectRatio: 0.8 on 320dp', (tester) async {
+    testWidgets('Empirical Verification: AlbumCard overflows in 2-column grid at documented childAspectRatio: 0.8 on 320dp', (tester) async {
       tester.view.physicalSize = const Size(320.0, 640.0);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      dynamic caughtException;
+      final errors = <FlutterErrorDetails>[];
+      final prevOnError = FlutterError.onError;
+      FlutterError.onError = (details) => errors.add(details);
+      addTearDown(() => FlutterError.onError = prevOnError);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -349,18 +349,19 @@ void main() {
         ),
       );
 
-      caughtException = tester.takeException();
       // Verifies that at the claimed childAspectRatio: 0.8, an overflow occurs
-      expect(caughtException, isNotNull);
-      expect(caughtException.toString(), contains('A RenderFlex overflowed'));
+      expect(errors.any((e) => e.toString().contains('A RenderFlex overflowed')), isTrue);
     });
 
-    testWidgets('Empirical Failure: AlbumCard overflows in 4-column grid at documented childAspectRatio: 0.8 on 800dp tablet', (tester) async {
+    testWidgets('Empirical Verification: AlbumCard overflows in 4-column grid at documented childAspectRatio: 0.8 on 800dp tablet', (tester) async {
       tester.view.physicalSize = const Size(800.0, 1000.0);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      dynamic caughtException;
+      final errors = <FlutterErrorDetails>[];
+      final prevOnError = FlutterError.onError;
+      FlutterError.onError = (details) => errors.add(details);
+      addTearDown(() => FlutterError.onError = prevOnError);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -388,9 +389,7 @@ void main() {
         ),
       );
 
-      caughtException = tester.takeException();
-      expect(caughtException, isNotNull);
-      expect(caughtException.toString(), contains('A RenderFlex overflowed'));
+      expect(errors.any((e) => e.toString().contains('A RenderFlex overflowed')), isTrue);
     });
 
     testWidgets('Empirical Boundary: AlbumCard renders with ZERO overflow when childAspectRatio <= 0.65', (tester) async {
@@ -565,11 +564,11 @@ void main() {
   group('Adversarial Stress Test 5: RepaintBoundary Encapsulation & Scrolling Performance', () {
     testWidgets('Every domain card widget has RepaintBoundary as root boundary', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: SingleChildScrollView(
               child: Column(
-                children: const [
+                children: [
                   TrackTile(title: 'T1', artist: 'A1'),
                   AlbumCard(title: 'Alb1', artist: 'Art1', mode: AlbumCardMode.grid),
                   AlbumCard(title: 'Alb2', artist: 'Art2', mode: AlbumCardMode.list),

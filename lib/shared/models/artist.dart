@@ -23,6 +23,28 @@ class Artist extends Equatable {
     return '$tLabel • $aLabel';
   }
 
+  /// Serializes entity to an SQLite-compatible map.
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'artwork_uri': artworkUri,
+      'track_count': trackCount,
+      'album_count': albumCount,
+    };
+  }
+
+  /// Deserializes entity from an SQLite query row or JSON map.
+  factory Artist.fromMap(Map<String, dynamic> map) {
+    return Artist(
+      id: map['id'] as String,
+      name: map['name'] as String,
+      artworkUri: map['artwork_uri'] as String? ?? map['artworkUri'] as String?,
+      trackCount: (map['track_count'] ?? map['trackCount'] ?? 0) as int,
+      albumCount: (map['album_count'] ?? map['albumCount'] ?? 0) as int,
+    );
+  }
+
   Artist copyWith({
     String? id,
     String? name,

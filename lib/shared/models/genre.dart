@@ -29,7 +29,6 @@ class Genre extends Equatable {
       );
     }
 
-    // Curated high-contrast aesthetic gradients
     const palettes = <List<Color>>[
       [Color(0xFF00E5FF), Color(0xFF651FFF)], // Cyan to Electric Purple
       [Color(0xFFFF3D00), Color(0xFFFF9100)], // Lava Red to Orange
@@ -46,6 +45,40 @@ class Genre extends Equatable {
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
       colors: palettes[index],
+    );
+  }
+
+  /// Serializes entity to an SQLite-compatible map.
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'track_count': trackCount,
+      'gradient_colors': gradientColors
+          ?.map((c) => c.value.toRadixString(16).padLeft(8, '0'))
+          .join(','),
+    };
+  }
+
+  /// Deserializes entity from an SQLite query row or JSON map.
+  factory Genre.fromMap(Map<String, dynamic> map) {
+    final colorsRaw = map['gradient_colors'] ?? map['gradientColors'];
+    List<Color>? colors;
+
+    if (colorsRaw is String && colorsRaw.isNotEmpty) {
+      colors = colorsRaw.split(',').map((hex) {
+        final val = int.tryParse(hex.trim(), radix: 16);
+        return val != null ? Color(val) : const Color(0xFF00E5FF);
+      }).toList();
+    } else if (colorsRaw is List<Color>) {
+      colors = colorsRaw;
+    }
+
+    return Genre(
+      id: map['id'] as String,
+      name: map['name'] as String,
+      trackCount: (map['track_count'] ?? map['trackCount'] ?? 0) as int,
+      gradientColors: colors,
     );
   }
 

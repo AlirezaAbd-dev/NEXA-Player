@@ -1,69 +1,41 @@
 import 'package:flutter/material.dart';
-import '../../../../core/design_system/app_spacing.dart';
-import '../../../../core/design_system/app_typography.dart';
-import '../../../../shared/models/track.dart';
-import '../../../../shared/widgets/cards/track_tile.dart';
-import '../../../../shared/widgets/glass/glass_app_bar.dart';
-import '../../../../shared/widgets/glass/glass_text_field.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nexa_player/core/constants/phase2_keys.dart';
+import 'package:nexa_player/core/design_system/app_spacing.dart';
+import 'package:nexa_player/core/design_system/app_typography.dart';
+import 'package:nexa_player/features/library/domain/repositories/tracks_repository.dart';
+import 'package:nexa_player/features/library/presentation/providers/library_providers.dart';
+import 'package:nexa_player/shared/models/track.dart';
+import 'package:nexa_player/shared/widgets/cards/track_tile.dart';
+import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
+import 'package:nexa_player/shared/widgets/glass/glass_text_field.dart';
 
-/// Songs tab screen displaying searchable song library.
-class SongsTabScreen extends StatefulWidget {
+/// Songs tab screen displaying searchable and sortable track library.
+class SongsTabScreen extends ConsumerStatefulWidget {
   const SongsTabScreen({super.key});
 
   @override
-  State<SongsTabScreen> createState() => _SongsTabScreenState();
+  ConsumerState<SongsTabScreen> createState() => _SongsTabScreenState();
 }
 
-class _SongsTabScreenState extends State<SongsTabScreen> {
+class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
   final _searchController = TextEditingController();
+  TrackSortBy _sortBy = TrackSortBy.title;
+  bool _ascending = true;
+  String _searchQuery = '';
 
-  static const List<Track> _sampleTracks = [
-    Track(
-      id: 'trk-1',
-      title: 'Starboy',
-      artist: 'The Weeknd • Daft Punk',
-      album: 'Starboy',
-      duration: Duration(minutes: 3, seconds: 50),
-      trackNumber: 1,
-      year: 2016,
-    ),
-    Track(
-      id: 'trk-2',
-      title: 'Get Lucky',
-      artist: 'Daft Punk • Pharrell Williams',
-      album: 'Random Access Memories',
-      duration: Duration(minutes: 4, seconds: 8),
-      trackNumber: 2,
-      year: 2013,
-    ),
-    Track(
-      id: 'trk-3',
-      title: 'Midnight City',
-      artist: 'M83',
-      album: 'Hurry Up, We\'re Dreaming',
-      duration: Duration(minutes: 4, seconds: 3),
-      trackNumber: 3,
-      year: 2011,
-    ),
-    Track(
-      id: 'trk-4',
-      title: 'The Less I Know The Better',
-      artist: 'Tame Impala',
-      album: 'Currents',
-      duration: Duration(minutes: 3, seconds: 36),
-      trackNumber: 4,
-      year: 2015,
-    ),
-    Track(
-      id: 'trk-5',
-      title: 'Blinding Lights',
-      artist: 'The Weeknd',
-      album: 'After Hours',
-      duration: Duration(minutes: 3, seconds: 20),
-      trackNumber: 5,
-      year: 2020,
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      final text = _searchController.text;
+      if (text != _searchQuery) {
+        setState(() {
+          _searchQuery = text;
+        });
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -71,45 +43,157 @@ class _SongsTabScreenState extends State<SongsTabScreen> {
     super.dispose();
   }
 
+  Future<void> _toggleFavorite(Track track) async {
+    final repo = ref.read(tracksRepositoryProvider);
+    final res = await repo.toggleFavorite(track.id);
+    if (res.isSuccess) {
+      ref.invalidate(tracksListProvider);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final queryParams = TrackQueryParams(
+      sortBy: _sortBy,
+      ascending: _ascending,
+      searchQuery: _searchQuery,
+    );
+
+    final tracksAsync = ref.watch(tracksListProvider(queryParams));
+
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: const GlassAppBar(
+      appBar: GlassAppBar(
         titleText: 'Songs',
         automaticallyImplyLeading: false,
         actions: [
-          IconButton(
-            icon: Icon(Icons.sort_rounded),
-            onPressed: null,
-            tooltip: 'Sort order',
+          PopupMenuButton<TrackSortBy>(
+            key: Phase2Keys.sortButton,
+            icon: const Icon(Icons.sort_rounded),
+            tooltip: 'Sort songs',
+            onSelected: (sortBy) {
+              setState(() {
+                if (_sortBy == sortBy) {
+                  _ascending = !_ascending;
+                } else {
+                  _sortBy = sortBy;
+                  _ascending = true;
+                }
+              });
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                key: Phase2Keys.sortMenuTitle,
+                value: TrackSortBy.title,
+                child: Text('Title'),
+              ),
+              const PopupMenuItem(
+                key: Phase2Keys.sortMenuArtist,
+                value: TrackSortBy.artist,
+                child: Text('Artist'),
+              ),
+              const PopupMenuItem(
+                key: Phase2Keys.sortMenuDuration,
+                value: TrackSortBy.duration,
+                child: Text('Duration'),
+              ),
+              const PopupMenuItem(
+                key: Phase2Keys.sortMenuDateAdded,
+                value: TrackSortBy.dateAdded,
+                child: Text('Date Added'),
+              ),
+            ],
           ),
         ],
       ),
-      body: ListView(
+      body: Padding(
         padding: const EdgeInsets.fromLTRB(16.0, 100.0, 16.0, 130.0),
-        children: [
-          GlassTextField(
-            controller: _searchController,
-            hintText: 'Search songs, artists, albums...',
-            prefixIcon: Icons.search_rounded,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            'All Songs (${_sampleTracks.length})',
-            style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          ..._sampleTracks.map(
-            (track) => Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: TrackTile.fromTrack(
-                track: track,
-                onTap: () {},
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GlassTextField(
+              key: Phase2Keys.searchField,
+              controller: _searchController,
+              hintText: 'Search songs, artists, albums...',
+              prefixIcon: Icons.search_rounded,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            tracksAsync.when(
+              data: (tracks) => Text(
+                'All Songs (${tracks.length})',
+                key: Phase2Keys.songCountHeader,
+                style: AppTypography.titleLarge
+                    .copyWith(fontWeight: FontWeight.bold),
+              ),
+              loading: () => Text(
+                'Loading songs...',
+                key: Phase2Keys.songCountHeader,
+                style: AppTypography.titleLarge
+                    .copyWith(fontWeight: FontWeight.bold),
+              ),
+              error: (_, __) => Text(
+                'All Songs (0)',
+                key: Phase2Keys.songCountHeader,
+                style: AppTypography.titleLarge
+                    .copyWith(fontWeight: FontWeight.bold),
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: AppSpacing.sm),
+            Expanded(
+              child: tracksAsync.when(
+                data: (tracks) {
+                  if (tracks.isEmpty) {
+                    return Center(
+                      child: Text(
+                        _searchQuery.isEmpty
+                            ? 'No songs found. Scan your device in Settings!'
+                            : 'No matching tracks.',
+                        style: AppTypography.bodyMedium,
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    key: Phase2Keys.allSongsList,
+                    padding: EdgeInsets.zero,
+                    itemCount: tracks.length,
+                    itemBuilder: (context, index) {
+                      final track = tracks[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        child: TrackTile.fromTrack(
+                          key: Phase2Keys.trackTile(track.id),
+                          track: track,
+                          trailing: IconButton(
+                            key: Phase2Keys.trackFavoriteToggle(track.id),
+                            icon: Icon(
+                              track.isFavorite
+                                  ? Icons.favorite_rounded
+                                  : Icons.favorite_border_rounded,
+                              color: track.isFavorite
+                                  ? Colors.redAccent
+                                  : null,
+                            ),
+                            onPressed: () => _toggleFavorite(track),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+                loading: () => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+                error: (error, _) => Center(
+                  child: Text(
+                    'Error loading tracks: $error',
+                    style: AppTypography.bodyMedium,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

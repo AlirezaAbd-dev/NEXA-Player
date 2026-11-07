@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nexa_player/core/di/injection.dart';
+import 'package:nexa_player/shared/services/database/app_database.dart';
 import 'package:nexa_player/shared/services/logging/logging_service.dart';
 import 'package:nexa_player/shared/services/storage/storage_service.dart';
 import 'package:talker_flutter/talker_flutter.dart';
@@ -17,4 +18,9 @@ final loggingServiceProvider = Provider<ILoggingService>((ref) {
 /// Exposes the [IStorageService] interface to Riverpod.
 final storageServiceProvider = Provider<IStorageService>((ref) {
   return getIt<IStorageService>();
+});
+
+/// Exposes the [IAppDatabase] interface to Riverpod.
+final appDatabaseProvider = Provider<IAppDatabase>((ref) {
+  return getIt<IAppDatabase>();
 });

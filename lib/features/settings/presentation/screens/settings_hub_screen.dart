@@ -165,7 +165,7 @@ class SettingsHubScreen extends ConsumerWidget {
             iconColor: Colors.lightGreenAccent,
             title: 'Scanner Settings',
             subtitle: 'Included folders, skip rules, tag encoding',
-            onTap: () {},
+            onTap: () => context.push(AppRoutes.scannerSettings),
           ),
           const SizedBox(height: AppSpacing.sm),
 
