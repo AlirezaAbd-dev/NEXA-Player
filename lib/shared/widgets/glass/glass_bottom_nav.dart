@@ -20,11 +20,11 @@ class GlassNavItem {
   final String? tooltip;
 }
 
-/// Frosted glass bottom navigation bar for the shell tabs.
+/// Modern floating bottom navigation bar for the shell tabs.
 ///
 /// Features:
-/// - Floating capsule pill geometry with 360° specular glass border.
-/// - Active tab accent glow indicator and animated pill background.
+/// - Floating capsule geometry with hairline border and soft blur.
+/// - Active tab accent indicator and subtle pill highlight.
 /// - Smooth animated transitions ([Curves.easeInOutCubic]).
 /// - Zero pixel overflow on all viewport widths (320dp+).
 /// - Pre-configured default destinations matching NEXA Player's 5 shell tabs.
@@ -34,7 +34,7 @@ class GlassBottomNav extends StatelessWidget {
     required this.currentIndex,
     required this.onTap,
     this.items = GlassBottomNav.defaultTabs,
-    this.height = 70.0,
+    this.height = 68.0,
     this.blur = GlassTokens.blurExtreme,
     this.opacity = GlassTokens.opacityNav,
     this.backgroundColor,
@@ -104,17 +104,17 @@ class GlassBottomNav extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final activeAccent = selectedColor ?? theme.colorScheme.primary;
     final inactiveColor =
-        unselectedColor ?? theme.colorScheme.onSurface.withOpacity(0.65);
+        unselectedColor ?? theme.colorScheme.onSurface.withOpacity(0.60);
 
-    final resolvedBorderColor = GlassTokens.resolveBorderColor(
-      context,
-      customColor: borderColor,
-    );
+    final resolvedBorderColor = borderColor ??
+        (isDark ? const Color(0x20FFFFFF) : const Color(0x10000000));
 
     final effectiveBackgroundColor = backgroundColor ??
-        theme.colorScheme.surface.withOpacity(isDark ? 0.25 : 0.60);
+        (isDark
+            ? const Color(0xFF141923).withOpacity(0.88)
+            : theme.colorScheme.surface.withOpacity(0.92));
 
-    final navRadius = BorderRadius.circular(GlassTokens.radiusPill);
+    final navRadius = BorderRadius.circular(24.0);
 
     Widget navContainer = Container(
       height: height,
@@ -129,110 +129,79 @@ class GlassBottomNav extends StatelessWidget {
             : null,
         boxShadow: [
           BoxShadow(
-            color: isDark ? const Color(0x60000000) : const Color(0x20000000),
-            blurRadius: 20.0,
-            offset: const Offset(0, 6),
+            color: isDark ? const Color(0x40000000) : const Color(0x15000000),
+            blurRadius: 18.0,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Stack(
-        children: [
-          // Inner top specular reflection
-          Positioned(
-            top: 0,
-            left: 20,
-            right: 20,
-            height: 1.0,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.white.withOpacity(isDark ? 0.35 : 0.70),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-          SafeArea(
-            top: false,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: List.generate(items.length, (index) {
-                final item = items[index];
-                final isSelected = index == currentIndex;
+      child: SafeArea(
+        top: false,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: List.generate(items.length, (index) {
+            final item = items[index];
+            final isSelected = index == currentIndex;
 
-                return Expanded(
-                  child: Tooltip(
-                    message: item.tooltip ?? item.label,
-                    child: InkWell(
-                      key: item.key,
-                      onTap: () => onTap(index),
-                      borderRadius: navRadius,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6.0),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            AnimatedContainer(
-                              duration: animationDuration,
-                              curve: animationCurve,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                                vertical: 4.0,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? activeAccent.withOpacity(isDark ? 0.24 : 0.18)
-                                    : Colors.transparent,
-                                borderRadius:
-                                    BorderRadius.circular(GlassTokens.radiusPill),
-                                boxShadow: (isSelected && showGlow)
-                                    ? [
-                                        BoxShadow(
-                                          color: activeAccent.withOpacity(0.38),
-                                          blurRadius: 14.0,
-                                          spreadRadius: 1.0,
-                                        ),
-                                      ]
-                                    : null,
-                              ),
-                              child: Icon(
-                                isSelected
-                                    ? (item.selectedIcon ?? item.icon)
-                                    : item.icon,
-                                color: isSelected ? activeAccent : inactiveColor,
-                                size: 24.0,
-                              ),
-                            ),
-                            const SizedBox(height: 3.0),
-                            AnimatedDefaultTextStyle(
-                              duration: animationDuration,
-                              curve: animationCurve,
-                              style: AppTypography.labelSmall.copyWith(
-                                fontFamily: 'Roboto',
-                                color: isSelected ? activeAccent : inactiveColor,
-                                fontWeight: isSelected
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
-                              ),
-                              child: Text(
-                                item.label,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
+            return Expanded(
+              child: Tooltip(
+                message: item.tooltip ?? item.label,
+                child: InkWell(
+                  key: item.key,
+                  onTap: () => onTap(index),
+                  borderRadius: navRadius,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        AnimatedContainer(
+                          duration: animationDuration,
+                          curve: animationCurve,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14.0,
+                            vertical: 3.0,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? activeAccent.withOpacity(isDark ? 0.20 : 0.14)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(16.0),
+                          ),
+                          child: Icon(
+                            isSelected
+                                ? (item.selectedIcon ?? item.icon)
+                                : item.icon,
+                            color: isSelected ? activeAccent : inactiveColor,
+                            size: 24.0,
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 2.0),
+                        AnimatedDefaultTextStyle(
+                          duration: animationDuration,
+                          curve: animationCurve,
+                          style: AppTypography.labelSmall.copyWith(
+                            fontFamily: 'Roboto',
+                            color: isSelected ? activeAccent : inactiveColor,
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                          ),
+                          child: Text(
+                            item.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                );
-              }),
-            ),
-          ),
-        ],
+                ),
+              ),
+            );
+          }),
+        ),
       ),
     );
 

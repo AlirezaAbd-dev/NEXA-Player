@@ -45,7 +45,7 @@ class AlbumsTabScreen extends ConsumerWidget {
                         : 2;
                 return GridView.builder(
                   key: Phase2Keys.albumsGrid,
-                  padding: EdgeInsets.zero,
+                  padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 140.0),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: crossAxisCount,
                     crossAxisSpacing: AppSpacing.md,

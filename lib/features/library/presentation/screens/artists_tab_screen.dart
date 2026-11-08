@@ -38,7 +38,7 @@ class ArtistsTabScreen extends ConsumerWidget {
 
             return ListView.builder(
               key: Phase2Keys.artistsList,
-              padding: EdgeInsets.zero,
+              padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 140.0),
               itemCount: artists.length,
               itemBuilder: (context, index) {
                 final artist = artists[index];

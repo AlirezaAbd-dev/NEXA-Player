@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_constants.dart';
@@ -19,7 +18,7 @@ enum TrackTileMenuAction {
   details,
 }
 
-/// Reusable music list item conforming to Poweramp/Stellio standards:
+/// Modern music list item conforming to Spotify/Apple Music standards:
 /// artwork thumbnail with rounded corners, title with ellipsis/marquee,
 /// artist and album subtitle, duration string, and trailing overflow popup menu.
 class TrackTile extends StatefulWidget {
@@ -117,7 +116,7 @@ class _TrackTileState extends State<TrackTile> {
   }
 
   String get _resolvedSubtitle {
-    if (widget.album != null && widget.album!.isNotEmpty) {
+    if (widget.album != null && widget.album!.trim().isNotEmpty) {
       return '${widget.artist} • ${widget.album}';
     }
     return widget.artist;
@@ -131,30 +130,18 @@ class _TrackTileState extends State<TrackTile> {
     final surface = theme.colorScheme.surface;
     final onSurface = theme.colorScheme.onSurface;
     final onSurfaceVariant = theme.colorScheme.onSurfaceVariant;
-    final borderRadius = BorderRadius.circular(GlassTokens.radiusMedium);
+    final borderRadius = BorderRadius.circular(12.0);
 
-    final resolvedBorderColor = widget.isPlaying
-        ? primary.withOpacity(0.80)
-        : (isDark ? GlassTokens.borderColorDark : GlassTokens.borderColorLight);
+    // Modern card background: clean dark surface or subtle accent tint when playing
+    final cardBackgroundColor = widget.isPlaying
+        ? primary.withOpacity(isDark ? 0.14 : 0.10)
+        : (isDark ? const Color(0xFF141923).withOpacity(0.65) : surface.withOpacity(0.75));
 
-    final tileGradient = widget.isPlaying
-        ? LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              primary.withOpacity(isDark ? 0.30 : 0.22),
-              surface.withOpacity(isDark ? 0.16 : 0.38),
-            ],
-          )
-        : LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              surface.withOpacity(isDark ? 0.20 : 0.55),
-              surface.withOpacity(isDark ? 0.08 : 0.25),
-            ],
-          );
+    final borderColor = widget.isPlaying
+        ? primary.withOpacity(0.50)
+        : (isDark ? const Color(0x18FFFFFF) : const Color(0x0F000000));
 
+    // Left Artwork Thumbnail
     Widget artworkWidget;
     if (widget.leading != null) {
       artworkWidget = widget.leading!;
@@ -163,24 +150,21 @@ class _TrackTileState extends State<TrackTile> {
         width: 48.0,
         height: 48.0,
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              primary.withOpacity(widget.isPlaying ? 0.35 : 0.22),
-              primary.withOpacity(widget.isPlaying ? 0.18 : 0.08),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(12.0),
+          color: widget.isPlaying
+              ? primary.withOpacity(0.20)
+              : (isDark ? const Color(0xFF1E2433) : primary.withOpacity(0.10)),
+          borderRadius: BorderRadius.circular(10.0),
           border: Border.all(
-            color: primary.withOpacity(widget.isPlaying ? 0.50 : 0.20),
+            color: widget.isPlaying
+                ? primary.withOpacity(0.40)
+                : (isDark ? const Color(0x1FFFFFFF) : Colors.transparent),
             width: 1.0,
           ),
           boxShadow: widget.isPlaying
               ? [
                   BoxShadow(
-                    color: primary.withOpacity(0.35),
-                    blurRadius: 12.0,
+                    color: primary.withOpacity(0.25),
+                    blurRadius: 10.0,
                     offset: const Offset(0, 2),
                   ),
                 ]
@@ -197,11 +181,12 @@ class _TrackTileState extends State<TrackTile> {
                         fontWeight: FontWeight.bold,
                       ),
                     )
-                  : Icon(Icons.music_note_rounded, color: primary, size: 24.0)),
+                  : Icon(Icons.music_note_rounded, color: primary, size: 22.0)),
         ),
       );
     }
 
+    // Trailing Section: Favorite Heart, Duration, More Menu
     Widget trailingSection;
     if (widget.trailing != null) {
       trailingSection = widget.trailing!;
@@ -222,7 +207,7 @@ class _TrackTileState extends State<TrackTile> {
               _formattedDuration,
               style: AppTypography.bodySmall.copyWith(
                 color: widget.isPlaying ? primary : onSurfaceVariant,
-                fontWeight: widget.isPlaying ? FontWeight.bold : FontWeight.normal,
+                fontWeight: widget.isPlaying ? FontWeight.bold : FontWeight.w500,
               ),
             ),
             const SizedBox(width: AppSpacing.xs),
@@ -319,78 +304,56 @@ class _TrackTileState extends State<TrackTile> {
       constraints: const BoxConstraints(minHeight: AppConstants.trackTileHeight),
       padding: widget.padding,
       decoration: BoxDecoration(
-        gradient: tileGradient,
+        color: cardBackgroundColor,
         borderRadius: borderRadius,
         border: Border.all(
-          color: resolvedBorderColor,
-          width: GlassTokens.borderWidth,
+          color: borderColor,
+          width: 1.0,
         ),
         boxShadow: widget.isPlaying
             ? [
                 BoxShadow(
-                  color: primary.withOpacity(0.28),
-                  blurRadius: 18.0,
-                  offset: const Offset(0, 4),
+                  color: primary.withOpacity(0.16),
+                  blurRadius: 14.0,
+                  offset: const Offset(0, 3),
                 ),
               ]
-            : GlassTokens.elevationLow,
+            : null,
       ),
-      child: Stack(
+      child: Row(
         children: [
-          // Inner top specular reflection
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 1.0,
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: borderRadius,
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.white.withOpacity(isDark ? 0.28 : 0.60),
-                    Colors.transparent,
-                  ],
+          artworkWidget,
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  widget.title,
+                  style: AppTypography.titleMedium.copyWith(
+                    color: widget.isPlaying ? primary : onSurface,
+                    fontWeight:
+                        widget.isPlaying ? FontWeight.bold : FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
+                const SizedBox(height: 3.0),
+                Text(
+                  _resolvedSubtitle,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: onSurfaceVariant,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
           ),
-          Row(
-            children: [
-              artworkWidget,
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      widget.title,
-                      style: AppTypography.titleMedium.copyWith(
-                        color: widget.isPlaying ? primary : onSurface,
-                        fontWeight:
-                            widget.isPlaying ? FontWeight.bold : FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2.0),
-                    Text(
-                      _resolvedSubtitle,
-                      style: AppTypography.bodySmall.copyWith(
-                        color: onSurfaceVariant,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: AppSpacing.xs),
-              trailingSection,
-            ],
-          ),
+          const SizedBox(width: AppSpacing.xs),
+          trailingSection,
         ],
       ),
     );
@@ -436,73 +399,6 @@ class _TrackTileState extends State<TrackTile> {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _MiniEqualizerBars extends StatefulWidget {
-  const _MiniEqualizerBars({required this.color});
-  final Color color;
-
-  @override
-  State<_MiniEqualizerBars> createState() => _MiniEqualizerBarsState();
-}
-
-class _MiniEqualizerBarsState extends State<_MiniEqualizerBars>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-    final isTest =
-        WidgetsBinding.instance.runtimeType.toString().contains('Test');
-    if (!isTest) {
-      _controller.repeat(reverse: true);
-    } else {
-      _controller.value = 0.5;
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, _) {
-        final t = _controller.value;
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            _bar(8.0 + 8.0 * math.sin(t * math.pi)),
-            const SizedBox(width: 2.5),
-            _bar(6.0 + 12.0 * math.cos(t * math.pi)),
-            const SizedBox(width: 2.5),
-            _bar(10.0 + 8.0 * math.sin((t + 0.4) * math.pi)),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _bar(double height) {
-    return Container(
-      width: 3.5,
-      height: height.clamp(4.0, 20.0),
-      decoration: BoxDecoration(
-        color: widget.color,
-        borderRadius: BorderRadius.circular(2.0),
       ),
     );
   }

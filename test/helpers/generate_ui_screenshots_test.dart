@@ -113,6 +113,8 @@ void main() {
     });
 
     addTearDown(tester.view.resetPhysicalSize);
+    tester.platformDispatcher.platformBrightnessTestValue = ui.Brightness.dark;
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
 
     // =========================================================================
     // 1. Navigation Shell Tabs (Songs, Albums, Artists, Playlists, Settings)
@@ -289,6 +291,7 @@ void main() {
     // =========================================================================
 
     // 4.1 Songs Tab in Daylight (Light Theme Mode)
+    tester.platformDispatcher.platformBrightnessTestValue = ui.Brightness.light;
     appRouter.go(AppRoutes.songs);
     await _captureWidget(
       tester: tester,
@@ -303,6 +306,7 @@ void main() {
       ),
       filename: '15_daylight_theme_songs.png',
     );
+    tester.platformDispatcher.platformBrightnessTestValue = ui.Brightness.dark;
 
     // 4.2 Albums Tab in Sakura (Pink/Crimson Accent Preset)
     appRouter.go(AppRoutes.albums);

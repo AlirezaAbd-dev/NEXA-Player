@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/extensions/duration_x.dart';
 import 'package:nexa_player/core/constants/phase2_keys.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
@@ -117,6 +118,7 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
               controller: _searchController,
               hintText: 'Search songs, artists, albums...',
               prefixIcon: Icons.search_rounded,
+              borderRadius: BorderRadius.circular(24.0),
             ),
             const SizedBox(height: AppSpacing.md),
             tracksAsync.when(
@@ -165,17 +167,30 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
                         child: TrackTile.fromTrack(
                           key: Phase2Keys.trackTile(track.id),
                           track: track,
-                          trailing: IconButton(
-                            key: Phase2Keys.trackFavoriteToggle(track.id),
-                            icon: Icon(
-                              track.isFavorite
-                                  ? Icons.favorite_rounded
-                                  : Icons.favorite_border_rounded,
-                              color: track.isFavorite
-                                  ? Colors.redAccent
-                                  : null,
-                            ),
-                            onPressed: () => _toggleFavorite(track),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                key: Phase2Keys.trackFavoriteToggle(track.id),
+                                icon: Icon(
+                                  track.isFavorite
+                                      ? Icons.favorite_rounded
+                                      : Icons.favorite_border_rounded,
+                                  color: track.isFavorite
+                                      ? Colors.redAccent.shade200
+                                      : null,
+                                ),
+                                onPressed: () => _toggleFavorite(track),
+                              ),
+                              if (track.duration.inMilliseconds > 0) ...[
+                                Text(
+                                  track.duration
+                                      .toMinutesSeconds(padMinutes: false),
+                                  style: AppTypography.bodySmall,
+                                ),
+                                const SizedBox(width: AppSpacing.xs),
+                              ],
+                            ],
                           ),
                         ),
                       );

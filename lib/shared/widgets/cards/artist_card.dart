@@ -8,27 +8,28 @@ import '../../models/artist.dart';
 
 /// Layout orientation mode for [ArtistCard].
 enum ArtistCardMode {
-  /// Horizontal list tile (standard).
-  list,
-
-  /// Centered vertical grid card.
+  /// Vertical layout with prominent circular avatar for grid collections.
   grid,
+
+  /// Horizontal list layout for artist list views.
+  list,
 }
 
-/// Reusable artist card with glowing circular avatar ring, artist name,
-/// discography metadata badges, and tactile spring interactions.
+/// Modern artist card with circular avatar,
+/// subtle accent ring, tactile spring feedback, and crisp typography.
 class ArtistCard extends StatefulWidget {
   const ArtistCard({
     super.key,
     required this.name,
     this.artworkUri,
-    this.trackCount = 0,
-    this.albumCount = 0,
+    this.trackCount,
+    this.albumCount,
     this.mode = ArtistCardMode.list,
+    this.avatarRadius = 24.0,
     this.heroTag,
     this.onTap,
+    this.onLongPress,
     this.enableBlur = true,
-    this.avatarRadius = 24.0,
   });
 
   /// Convenience factory constructing an [ArtistCard] from a domain [Artist].
@@ -36,10 +37,11 @@ class ArtistCard extends StatefulWidget {
     Key? key,
     required Artist artist,
     ArtistCardMode mode = ArtistCardMode.list,
+    double avatarRadius = 24.0,
     String? heroTag,
     VoidCallback? onTap,
+    VoidCallback? onLongPress,
     bool enableBlur = true,
-    double avatarRadius = 24.0,
   }) {
     return ArtistCard(
       key: key,
@@ -48,22 +50,24 @@ class ArtistCard extends StatefulWidget {
       trackCount: artist.trackCount,
       albumCount: artist.albumCount,
       mode: mode,
+      avatarRadius: avatarRadius,
       heroTag: heroTag,
       onTap: onTap,
+      onLongPress: onLongPress,
       enableBlur: enableBlur,
-      avatarRadius: avatarRadius,
     );
   }
 
   final String name;
   final String? artworkUri;
-  final int trackCount;
-  final int albumCount;
+  final int? trackCount;
+  final int? albumCount;
   final ArtistCardMode mode;
+  final double avatarRadius;
   final String? heroTag;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final bool enableBlur;
-  final double avatarRadius;
 
   @override
   State<ArtistCard> createState() => _ArtistCardState();
@@ -73,9 +77,14 @@ class _ArtistCardState extends State<ArtistCard> {
   bool _isPressed = false;
 
   String get _subtitle {
-    final tLabel = widget.trackCount == 1 ? '1 Track' : '${widget.trackCount} Tracks';
-    final aLabel = widget.albumCount == 1 ? '1 Album' : '${widget.albumCount} Albums';
-    return '$tLabel • $aLabel';
+    final parts = <String>[];
+    if (widget.trackCount != null) {
+      parts.add('${widget.trackCount} ${widget.trackCount == 1 ? "Track" : "Tracks"}');
+    }
+    if (widget.albumCount != null) {
+      parts.add('${widget.albumCount} ${widget.albumCount == 1 ? "Album" : "Albums"}');
+    }
+    return parts.join(' • ');
   }
 
   @override
@@ -83,39 +92,34 @@ class _ArtistCardState extends State<ArtistCard> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final primary = theme.colorScheme.primary;
-    final secondary = theme.colorScheme.secondary;
+    final surface = theme.colorScheme.surface;
     final onSurface = theme.colorScheme.onSurface;
     final onSurfaceVariant = theme.colorScheme.onSurfaceVariant;
-    final borderRadius = BorderRadius.circular(GlassTokens.radiusCard);
+    final borderRadius = BorderRadius.circular(16.0);
 
-    final resolvedBorderColor = GlassTokens.resolveBorderColor(context);
+    final resolvedBorderColor = isDark
+        ? const Color(0x18FFFFFF)
+        : const Color(0x0F000000);
 
-    // Glowing avatar with chromatic ring
+    // Glowing Circular Avatar
     Widget avatar = Container(
-      width: widget.avatarRadius * 2.2,
-      height: widget.avatarRadius * 2.2,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            primary,
-            secondary,
-          ],
+        border: Border.all(
+          color: primary.withOpacity(0.40),
+          width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: primary.withOpacity(0.35),
-            blurRadius: 14.0,
-            spreadRadius: 1.0,
+            color: primary.withOpacity(0.20),
+            blurRadius: 10.0,
           ),
         ],
       ),
       padding: const EdgeInsets.all(2.0),
       child: CircleAvatar(
         radius: widget.avatarRadius,
-        backgroundColor: theme.scaffoldBackgroundColor,
+        backgroundColor: isDark ? const Color(0xFF1E2433) : primary.withOpacity(0.12),
         child: Icon(
           Icons.person,
           color: primary,
@@ -138,28 +142,24 @@ class _ArtistCardState extends State<ArtistCard> {
         constraints: const BoxConstraints(minHeight: AppConstants.trackTileHeight),
         padding: const EdgeInsets.all(AppSpacing.sm),
         decoration: BoxDecoration(
-          gradient: GlassTokens.glassSurfaceGradient(
-            context,
-            opacity: isDark ? 0.16 : 0.45,
-          ),
+          color: isDark ? const Color(0xFF141923).withOpacity(0.65) : surface.withOpacity(0.75),
           borderRadius: borderRadius,
           border: Border.all(
             color: resolvedBorderColor,
-            width: GlassTokens.borderWidth,
+            width: 1.0,
           ),
           boxShadow: [
             BoxShadow(
-              color: primary.withOpacity(0.08),
-              blurRadius: 12.0,
-              offset: const Offset(0, 3),
+              color: isDark ? const Color(0x35000000) : const Color(0x10000000),
+              blurRadius: 10.0,
+              offset: const Offset(0, 2),
             ),
-            ...GlassTokens.elevationLow,
           ],
         ),
         child: Row(
           children: [
             avatar,
-            const SizedBox(width: AppSpacing.sm),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -198,16 +198,19 @@ class _ArtistCardState extends State<ArtistCard> {
       content = Container(
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          gradient: GlassTokens.glassSurfaceGradient(
-            context,
-            opacity: isDark ? 0.16 : 0.45,
-          ),
+          color: isDark ? const Color(0xFF141923).withOpacity(0.65) : surface.withOpacity(0.75),
           borderRadius: borderRadius,
           border: Border.all(
             color: resolvedBorderColor,
-            width: GlassTokens.borderWidth,
+            width: 1.0,
           ),
-          boxShadow: GlassTokens.elevationLow,
+          boxShadow: [
+            BoxShadow(
+              color: isDark ? const Color(0x35000000) : const Color(0x10000000),
+              blurRadius: 12.0,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -260,19 +263,20 @@ class _ArtistCardState extends State<ArtistCard> {
     return RepaintBoundary(
       child: Semantics(
         button: true,
-        label: 'Artist ${widget.name}, $_subtitle',
+        label: '${widget.name}, $_subtitle',
         child: GestureDetector(
           onTapDown: (_) => setState(() => _isPressed = true),
           onTapUp: (_) => setState(() => _isPressed = false),
           onTapCancel: () => setState(() => _isPressed = false),
           child: AnimatedScale(
-            scale: _isPressed ? 0.98 : 1.0,
+            scale: _isPressed ? 0.97 : 1.0,
             duration: const Duration(milliseconds: 140),
             curve: Curves.easeOutCubic,
             child: Material(
               color: Colors.transparent,
               child: InkWell(
                 onTap: widget.onTap,
+                onLongPress: widget.onLongPress,
                 borderRadius: borderRadius,
                 child: content,
               ),

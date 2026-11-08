@@ -122,7 +122,7 @@ class PlaylistsTabScreen extends ConsumerWidget {
 
             return ListView.builder(
               key: Phase2Keys.playlistsList,
-              padding: EdgeInsets.zero,
+              padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 140.0),
               itemCount: playlists.length,
               itemBuilder: (context, index) {
                 final playlist = playlists[index];

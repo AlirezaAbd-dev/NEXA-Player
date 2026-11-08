@@ -157,7 +157,6 @@ class _GlassTextFieldState extends State<GlassTextField> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final primary = theme.colorScheme.primary;
-    final surface = theme.colorScheme.surface;
     final errorColor = theme.colorScheme.error;
     final hasError = widget.errorText != null && widget.errorText!.isNotEmpty;
 
@@ -186,13 +185,19 @@ class _GlassTextFieldState extends State<GlassTextField> {
         ),
       ];
     } else {
-      borderColor = isDark ? GlassTokens.borderColorLight : GlassTokens.borderColorDark;
-      shadows = GlassTokens.elevationLow;
+      borderColor = isDark ? const Color(0x22FFFFFF) : const Color(0x15000000);
+      shadows = [
+        BoxShadow(
+          color: isDark ? const Color(0x20000000) : const Color(0x08000000),
+          blurRadius: 8.0,
+          offset: const Offset(0, 2),
+        ),
+      ];
     }
 
-    final double surfaceAlpha = _isFocused
-        ? (widget.opacity + 0.05).clamp(0.0, 1.0)
-        : widget.opacity;
+    final fillColor = isDark
+        ? const Color(0xFF161B26)
+        : theme.colorScheme.surfaceContainerHighest;
 
     final iconColor = _isFocused
         ? primary
@@ -217,7 +222,7 @@ class _GlassTextFieldState extends State<GlassTextField> {
 
     Widget inputContainer = Container(
       decoration: BoxDecoration(
-        color: surface.withOpacity(surfaceAlpha),
+        color: fillColor,
         borderRadius: resolvedRadius,
         border: Border.all(
           color: borderColor,

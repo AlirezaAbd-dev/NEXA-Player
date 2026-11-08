@@ -28,6 +28,12 @@ class ThemePresetCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
+    // Calculate contrast against card's surfaceColor
+    final cardIsDark =
+        ThemeData.estimateBrightnessForColor(surfaceColor) == Brightness.dark;
+    final titleColor = cardIsDark ? Colors.white : const Color(0xFF0F172A);
+    final subtitleColor = cardIsDark ? const Color(0x99FFFFFF) : const Color(0x99000000);
+
     return Semantics(
       selected: isSelected,
       button: true,
@@ -41,7 +47,7 @@ class ThemePresetCard extends StatelessWidget {
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: surfaceColor.withOpacity(isDark ? 0.6 : 0.8),
+              color: surfaceColor.withOpacity(isDark ? 0.70 : 0.85),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isSelected
@@ -54,12 +60,20 @@ class ThemePresetCard extends StatelessWidget {
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: primaryColor.withOpacity(0.3),
-                        blurRadius: 12,
+                        color: primaryColor.withOpacity(0.35),
+                        blurRadius: 14,
                         offset: const Offset(0, 4),
                       ),
                     ]
-                  : const [],
+                  : [
+                      BoxShadow(
+                        color: isDark
+                            ? const Color(0x30000000)
+                            : const Color(0x10000000),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,7 +88,10 @@ class ThemePresetCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: backgroundColor,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white24, width: 1),
+                        border: Border.all(
+                          color: cardIsDark ? Colors.white30 : Colors.black12,
+                          width: 1,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -98,6 +115,7 @@ class ThemePresetCard extends StatelessWidget {
                   title,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                    color: titleColor,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -107,7 +125,7 @@ class ThemePresetCard extends StatelessWidget {
                   Text(
                     subtitle!,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.grey,
+                      color: subtitleColor,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
