@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../features/equalizer/presentation/screens/equalizer_screen.dart';
 import '../features/library/presentation/screens/albums_tab_screen.dart';
 import '../features/library/presentation/screens/artists_tab_screen.dart';
 import '../features/library/presentation/screens/songs_tab_screen.dart';
@@ -107,6 +108,13 @@ final appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       path: AppRoutes.player,
       builder: (context, state) => const NowPlayingScreen(),
+    ),
+
+    // 3. Full-Screen Equalizer Route
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: AppRoutes.equalizer,
+      builder: (context, state) => const EqualizerScreen(),
     ),
   ],
 );

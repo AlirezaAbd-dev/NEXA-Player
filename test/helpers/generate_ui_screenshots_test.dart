@@ -204,6 +204,14 @@ void main() {
       filename: '14_now_playing_screen.png',
     );
 
+    // 2.6 Full-Screen Equalizer & DSP Engine Screen
+    appRouter.go(AppRoutes.equalizer);
+    await _captureWidget(
+      tester: tester,
+      widget: const ProviderScope(child: NexaPlayerApp()),
+      filename: '18_equalizer_dsp_screen.png',
+    );
+
     // =========================================================================
     // 3. Detail Screens (Album Detail, Artist Detail, Playlist Detail, Folders Tab)
     // =========================================================================

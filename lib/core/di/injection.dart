@@ -1,4 +1,6 @@
 import 'package:get_it/get_it.dart';
+import 'package:nexa_player/features/equalizer/data/services/pure_dart_equalizer_service.dart';
+import 'package:nexa_player/features/equalizer/domain/services/equalizer_service.dart';
 import 'package:nexa_player/features/library/data/repositories/sqlite_albums_repository.dart';
 import 'package:nexa_player/features/library/data/repositories/sqlite_artists_repository.dart';
 import 'package:nexa_player/features/library/data/repositories/sqlite_folders_repository.dart';
@@ -54,6 +56,7 @@ Future<void> configureDependencies({
   IAudioEngine? audioEngine,
   IPlaybackQueue? playbackQueue,
   ISleepTimerService? sleepTimerService,
+  IEqualizerService? equalizerService,
   bool seedDemoData = true,
 }) async {
   // 1. SharedPreferences instance
@@ -207,7 +210,19 @@ Future<void> configureDependencies({
     );
   }
 
-  // 10. Seed demo library if database is freshly opened and empty
+  // 10. Equalizer & DSP Service
+  if (!getIt.isRegistered<IEqualizerService>()) {
+    final eq = equalizerService ??
+        PureDartEqualizerService(
+          storageService: getIt.isRegistered<IStorageService>()
+              ? getIt<IStorageService>()
+              : null,
+        );
+    await eq.initialize();
+    getIt.registerSingleton<IEqualizerService>(eq);
+  }
+
+  // 11. Seed demo library if database is freshly opened and empty
   if (seedDemoData && !db.isClosed) {
     _seedDemoData(db);
   }

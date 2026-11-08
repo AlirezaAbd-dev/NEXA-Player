@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../app/routes.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../shared/widgets/glass/app_ambient_background.dart';
 import '../../domain/entities/playback_state.dart';
@@ -143,6 +144,11 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                             icon: const Icon(Icons.bedtime_outlined, size: 22),
                             onPressed: () => SleepTimerBottomSheet.show(context),
                             tooltip: 'Sleep Timer',
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.equalizer_rounded, size: 22),
+                            onPressed: () => context.push(AppRoutes.equalizer),
+                            tooltip: 'Equalizer & DSP',
                           ),
                         ],
                       ),

@@ -24,6 +24,10 @@ abstract final class StorageKeys {
   // Audio Engine & Equalizer
   static const String equalizerEnabled = 'nexa_eq_enabled';
   static const String equalizerPreset = 'nexa_eq_preset';
+  static const String equalizerPreamp = 'nexa_eq_preamp';
+  static const String equalizerBands = 'nexa_eq_bands';
+  static const String equalizerReverb = 'nexa_eq_reverb';
+  static const String equalizerCustomPresets = 'nexa_eq_custom_presets';
   static const String bassBoost = 'nexa_eq_bass_boost';
   static const String virtualizer = 'nexa_eq_virtualizer';
   static const String crossfadeDurationMs = 'nexa_audio_crossfade_ms';

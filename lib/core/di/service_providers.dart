@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nexa_player/core/di/injection.dart';
+import 'package:nexa_player/features/equalizer/domain/services/equalizer_service.dart';
 import 'package:nexa_player/features/player/data/services/nexa_audio_handler.dart';
 import 'package:nexa_player/features/player/domain/services/audio_engine.dart';
 import 'package:nexa_player/features/player/domain/services/playback_queue.dart';
@@ -48,4 +49,10 @@ final sleepTimerServiceProvider = Provider<ISleepTimerService>((ref) {
 final nexaAudioHandlerProvider = Provider<NexaAudioHandler>((ref) {
   return getIt<NexaAudioHandler>();
 });
+
+/// Exposes the [IEqualizerService] interface to Riverpod.
+final equalizerServiceProvider = Provider<IEqualizerService>((ref) {
+  return getIt<IEqualizerService>();
+});
+
 

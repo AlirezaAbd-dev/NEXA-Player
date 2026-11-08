@@ -143,8 +143,8 @@ class SettingsHubScreen extends ConsumerWidget {
             icon: Icons.equalizer_rounded,
             iconColor: Colors.tealAccent,
             title: 'Equalizer & DSP Engine',
-            subtitle: '12-Band Parametric EQ, Z-Bass, Reverb, Compressor',
-            onTap: () {},
+            subtitle: '10-Band Parametric EQ, Z-Bass, Reverb, Presets',
+            onTap: () => context.push(AppRoutes.equalizer),
           ),
           const SizedBox(height: AppSpacing.sm),
 
