@@ -8,6 +8,7 @@ import 'package:nexa_player/features/player/data/services/sleep_timer_service_im
 import 'package:nexa_player/features/player/presentation/screens/now_playing_screen.dart';
 import 'package:nexa_player/features/player/presentation/widgets/queue_bottom_sheet.dart';
 import 'package:nexa_player/features/player/presentation/widgets/sleep_timer_bottom_sheet.dart';
+import 'package:nexa_player/features/player/presentation/widgets/waveform_visualizer.dart';
 import 'package:nexa_player/shared/models/track.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../unit/player/player_notifier_test.dart';
@@ -93,7 +94,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Starboy'), findsWidgets);
-      expect(find.byType(Slider), findsOneWidget);
+      expect(find.byType(WaveformVisualizer), findsOneWidget);
       expect(find.byTooltip('Play'), findsWidgets);
       expect(find.byTooltip('Next'), findsOneWidget);
       expect(find.byTooltip('Previous'), findsOneWidget);

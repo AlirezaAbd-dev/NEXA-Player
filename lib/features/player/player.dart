@@ -12,3 +12,8 @@ export 'data/services/nexa_audio_handler.dart';
 export 'presentation/providers/player_notifier.dart';
 export 'presentation/providers/player_providers.dart';
 export 'presentation/screens/now_playing_screen.dart';
+export 'presentation/widgets/hero_artwork_card.dart';
+export 'presentation/widgets/queue_bottom_sheet.dart';
+export 'presentation/widgets/rating_bar_widget.dart';
+export 'presentation/widgets/sleep_timer_bottom_sheet.dart';
+export 'presentation/widgets/waveform_visualizer.dart';
