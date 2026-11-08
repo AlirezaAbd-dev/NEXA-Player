@@ -9,6 +9,13 @@ import 'package:nexa_player/features/library/domain/repositories/artists_reposit
 import 'package:nexa_player/features/library/domain/repositories/folders_repository.dart';
 import 'package:nexa_player/features/library/domain/repositories/genres_repository.dart';
 import 'package:nexa_player/features/library/domain/repositories/tracks_repository.dart';
+import 'package:nexa_player/features/player/data/services/just_audio_engine.dart';
+import 'package:nexa_player/features/player/data/services/nexa_audio_handler.dart';
+import 'package:nexa_player/features/player/data/services/playback_queue_impl.dart';
+import 'package:nexa_player/features/player/data/services/sleep_timer_service_impl.dart';
+import 'package:nexa_player/features/player/domain/services/audio_engine.dart';
+import 'package:nexa_player/features/player/domain/services/playback_queue.dart';
+import 'package:nexa_player/features/player/domain/services/sleep_timer_service.dart';
 import 'package:nexa_player/features/playlists/data/repositories/sqlite_playlists_repository.dart';
 import 'package:nexa_player/features/playlists/domain/repositories/playlists_repository.dart';
 import 'package:nexa_player/features/scanner/data/media_scanner_service_impl.dart';
@@ -44,6 +51,9 @@ Future<void> configureDependencies({
   IFoldersRepository? foldersRepository,
   IPlaylistsRepository? playlistsRepository,
   IScanDirectoriesRepository? scanDirectoriesRepository,
+  IAudioEngine? audioEngine,
+  IPlaybackQueue? playbackQueue,
+  ISleepTimerService? sleepTimerService,
   bool seedDemoData = true,
 }) async {
   // 1. SharedPreferences instance
@@ -162,7 +172,42 @@ Future<void> configureDependencies({
     );
   }
 
-  // 9. Seed demo library if database is freshly opened and empty
+  // 9. Audio Engine & Playback Services
+  if (!getIt.isRegistered<IAudioEngine>()) {
+    getIt.registerSingleton<IAudioEngine>(
+      audioEngine ?? JustAudioEngine(),
+    );
+  }
+
+  if (!getIt.isRegistered<IPlaybackQueue>()) {
+    getIt.registerSingleton<IPlaybackQueue>(
+      playbackQueue ?? PlaybackQueueImpl(),
+    );
+  }
+
+  if (!getIt.isRegistered<ISleepTimerService>()) {
+    getIt.registerSingleton<ISleepTimerService>(
+      sleepTimerService ??
+          SleepTimerServiceImpl(
+            onVolumeFade: (multiplier) {
+              if (getIt.isRegistered<IAudioEngine>()) {
+                getIt<IAudioEngine>().setVolume(multiplier);
+              }
+            },
+          ),
+    );
+  }
+
+  if (!getIt.isRegistered<NexaAudioHandler>()) {
+    getIt.registerSingleton<NexaAudioHandler>(
+      NexaAudioHandler(
+        engine: getIt<IAudioEngine>(),
+        queue: getIt<IPlaybackQueue>(),
+      ),
+    );
+  }
+
+  // 10. Seed demo library if database is freshly opened and empty
   if (seedDemoData && !db.isClosed) {
     _seedDemoData(db);
   }

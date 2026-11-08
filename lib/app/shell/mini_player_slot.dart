@@ -1,8 +1,10 @@
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/design_system/app_spacing.dart';
 import '../../core/design_system/app_typography.dart';
+import '../../features/player/presentation/providers/player_providers.dart';
 import '../routes.dart';
 
 /// Semantic Keys matching ShellNavigationTest.
@@ -12,33 +14,33 @@ abstract final class _MiniPlayerKeys {
 }
 
 /// Modern floating mini-player capsule persistent across all tab switches.
-class MiniPlayerSlot extends StatefulWidget {
+class MiniPlayerSlot extends ConsumerStatefulWidget {
   const MiniPlayerSlot({
     super.key,
-    this.title = 'Starboy',
-    this.artist = 'The Weeknd • Daft Punk',
+    this.title,
+    this.artist,
     this.artworkUri,
-    this.isPlaying = true,
-    this.progress = 0.35,
+    this.isPlaying,
+    this.progress,
     this.onTap,
     this.onPlayPause,
     this.onNext,
   });
 
-  final String title;
-  final String artist;
+  final String? title;
+  final String? artist;
   final String? artworkUri;
-  final bool isPlaying;
-  final double progress;
+  final bool? isPlaying;
+  final double? progress;
   final VoidCallback? onTap;
   final VoidCallback? onPlayPause;
   final VoidCallback? onNext;
 
   @override
-  State<MiniPlayerSlot> createState() => _MiniPlayerSlotState();
+  ConsumerState<MiniPlayerSlot> createState() => _MiniPlayerSlotState();
 }
 
-class _MiniPlayerSlotState extends State<MiniPlayerSlot>
+class _MiniPlayerSlotState extends ConsumerState<MiniPlayerSlot>
     with SingleTickerProviderStateMixin {
   late bool _isPlaying;
   late final AnimationController _rotationController;
@@ -49,11 +51,12 @@ class _MiniPlayerSlotState extends State<MiniPlayerSlot>
   @override
   void initState() {
     super.initState();
-    _isPlaying = widget.isPlaying;
+    _isPlaying = widget.isPlaying ?? true;
     _rotationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 12),
     );
+
     if (_isPlaying && !_isTest) {
       _rotationController.repeat();
     } else if (_isPlaying) {
@@ -64,15 +67,19 @@ class _MiniPlayerSlotState extends State<MiniPlayerSlot>
   @override
   void didUpdateWidget(MiniPlayerSlot oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.isPlaying != oldWidget.isPlaying) {
-      _isPlaying = widget.isPlaying;
-      if (_isPlaying && !_isTest) {
-        _rotationController.repeat();
-      } else if (_isPlaying) {
-        _rotationController.value = 0.25;
-      } else {
-        _rotationController.stop();
-      }
+    if (widget.isPlaying != null && widget.isPlaying != oldWidget.isPlaying) {
+      _isPlaying = widget.isPlaying!;
+      _syncRotation(_isPlaying);
+    }
+  }
+
+  void _syncRotation(bool isPlaying) {
+    if (isPlaying && !_isTest) {
+      if (!_rotationController.isAnimating) _rotationController.repeat();
+    } else if (isPlaying) {
+      _rotationController.value = 0.25;
+    } else {
+      _rotationController.stop();
     }
   }
 
@@ -85,15 +92,22 @@ class _MiniPlayerSlotState extends State<MiniPlayerSlot>
   void _handlePlayPause() {
     setState(() {
       _isPlaying = !_isPlaying;
-      if (_isPlaying && !_isTest) {
-        _rotationController.repeat();
-      } else if (_isPlaying) {
-        _rotationController.value = 0.25;
-      } else {
-        _rotationController.stop();
-      }
+      _syncRotation(_isPlaying);
     });
-    widget.onPlayPause?.call();
+
+    if (widget.onPlayPause != null) {
+      widget.onPlayPause!();
+    } else {
+      ref.read(playerNotifierProvider.notifier).togglePlayPause();
+    }
+  }
+
+  void _handleNext() {
+    if (widget.onNext != null) {
+      widget.onNext!();
+    } else {
+      ref.read(playerNotifierProvider.notifier).skipNext();
+    }
   }
 
   @override
@@ -103,6 +117,16 @@ class _MiniPlayerSlotState extends State<MiniPlayerSlot>
     final isDark = theme.brightness == Brightness.dark;
     final primary = colorScheme.primary;
     final capsuleRadius = BorderRadius.circular(16.0);
+
+    final playerState = ref.watch(playerNotifierProvider);
+    final currentTrack = playerState.currentTrack;
+
+    final title = widget.title ?? (currentTrack?.title ?? 'Starboy');
+    final artist = widget.artist ?? (currentTrack?.artistAndAlbum ?? 'The Weeknd • Daft Punk');
+    final isPlaying = widget.isPlaying ?? (currentTrack != null ? playerState.isPlaying : _isPlaying);
+    final progress = widget.progress ?? (currentTrack != null ? playerState.progress : 0.35);
+
+    _syncRotation(isPlaying);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 4.0),
@@ -191,7 +215,7 @@ class _MiniPlayerSlotState extends State<MiniPlayerSlot>
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  widget.title,
+                                  title,
                                   style: AppTypography.titleMedium.copyWith(
                                     color: colorScheme.onSurface,
                                     fontWeight: FontWeight.bold,
@@ -201,9 +225,9 @@ class _MiniPlayerSlotState extends State<MiniPlayerSlot>
                                 ),
                                 const SizedBox(height: 2.0),
                                 Text(
-                                  widget.artist,
+                                  artist,
                                   style: AppTypography.bodySmall.copyWith(
-                                    color: colorScheme.onSurface.withOpacity(0.70),
+                                    color: colorScheme.onSurface.withOpacity(0.65),
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -212,50 +236,54 @@ class _MiniPlayerSlotState extends State<MiniPlayerSlot>
                             ),
                           ),
 
-                          // 3. Heart Button
-                          IconButton(
-                            icon: Icon(
-                              Icons.favorite_rounded,
-                              color: Colors.redAccent.shade200,
-                              size: 22.0,
-                            ),
-                            onPressed: () {},
-                            tooltip: 'Like',
-                          ),
-
-                          // 4. Play / Pause Button
+                          // 3. Play / Pause Button
                           IconButton(
                             key: _MiniPlayerKeys.miniPlayerPlayPause,
-                            iconSize: 36.0,
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
                             icon: Icon(
-                              _isPlaying
+                              isPlaying
                                   ? Icons.pause_circle_filled_rounded
                                   : Icons.play_circle_fill_rounded,
+                              size: 36.0,
                               color: primary,
                             ),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 40.0,
+                              minHeight: 40.0,
+                            ),
                             onPressed: _handlePlayPause,
-                            tooltip: _isPlaying ? 'Pause' : 'Play',
                           ),
-                          const SizedBox(width: AppSpacing.xs),
+
+                          // 4. Skip Next Button
+                          IconButton(
+                            icon: Icon(
+                              Icons.skip_next_rounded,
+                              size: 26.0,
+                              color: colorScheme.onSurface.withOpacity(0.70),
+                            ),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 36.0,
+                              minHeight: 36.0,
+                            ),
+                            onPressed: _handleNext,
+                          ),
                         ],
                       ),
                     ),
 
-                    // 5. Linear Progress Micro-Seek Indicator
+                    // 5. Linear Progress Line Indicator
                     ClipRRect(
-                      borderRadius: const BorderRadius.only(
-                        bottomLeft: Radius.circular(16.0),
-                        bottomRight: Radius.circular(16.0),
+                      borderRadius: const BorderRadius.vertical(
+                        bottom: Radius.circular(16.0),
                       ),
-                      child: SizedBox(
-                        height: 2.5,
-                        child: LinearProgressIndicator(
-                          value: widget.progress.clamp(0.0, 1.0),
-                          backgroundColor: colorScheme.onSurface.withOpacity(0.08),
-                          valueColor: AlwaysStoppedAnimation<Color>(primary),
-                        ),
+                      child: LinearProgressIndicator(
+                        value: progress.clamp(0.0, 1.0),
+                        minHeight: 2.5,
+                        backgroundColor: isDark
+                            ? const Color(0x18FFFFFF)
+                            : const Color(0x10000000),
+                        valueColor: AlwaysStoppedAnimation<Color>(primary),
                       ),
                     ),
                   ],

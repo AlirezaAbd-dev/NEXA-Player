@@ -6,6 +6,7 @@ import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
 import 'package:nexa_player/features/library/domain/repositories/tracks_repository.dart';
 import 'package:nexa_player/features/library/presentation/providers/library_providers.dart';
+import 'package:nexa_player/features/player/player.dart';
 import 'package:nexa_player/shared/models/track.dart';
 import 'package:nexa_player/shared/widgets/cards/track_tile.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
@@ -156,17 +157,30 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
                     );
                   }
 
+                  final activePlayingTrack = ref.watch(currentTrackProvider);
+                  final isEnginePlaying = ref.watch(isPlayingProvider);
+
                   return ListView.builder(
                     key: Phase2Keys.allSongsList,
                     padding: EdgeInsets.zero,
                     itemCount: tracks.length,
                     itemBuilder: (context, index) {
                       final track = tracks[index];
+                      final isPlaying = isEnginePlaying && activePlayingTrack?.id == track.id;
+
                       return Padding(
                         padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                         child: TrackTile.fromTrack(
                           key: Phase2Keys.trackTile(track.id),
                           track: track,
+                          isPlaying: isPlaying,
+                          onTap: () {
+                            ref.read(playerNotifierProvider.notifier).playTrack(
+                                  track,
+                                  queue: tracks,
+                                  initialIndex: index,
+                                );
+                          },
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [

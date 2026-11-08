@@ -1,26 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/design_system/app_typography.dart';
+import '../../../../core/extensions/duration_x.dart';
 import '../../../../shared/widgets/glass/app_ambient_background.dart';
+import '../../domain/entities/playback_state.dart';
+import '../providers/player_providers.dart';
+import '../widgets/queue_bottom_sheet.dart';
+import '../widgets/sleep_timer_bottom_sheet.dart';
 
 /// Full-screen modern Now Playing screen with hero album art,
 /// ambient glow reflection, fluid progress seeker, and prominent playback controls.
-class NowPlayingScreen extends StatefulWidget {
+class NowPlayingScreen extends ConsumerStatefulWidget {
   const NowPlayingScreen({super.key});
 
   @override
-  State<NowPlayingScreen> createState() => _NowPlayingScreenState();
+  ConsumerState<NowPlayingScreen> createState() => _NowPlayingScreenState();
 }
 
-class _NowPlayingScreenState extends State<NowPlayingScreen>
+class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
     with SingleTickerProviderStateMixin {
-  bool _isPlaying = true;
-  bool _isShuffle = false;
-  int _repeatMode = 0; // 0 = off, 1 = all, 2 = one
-  double _position = 42.0;
-  final double _duration = 230.0;
-  bool _isFavorite = true;
   late final AnimationController _rotationController;
+  double? _dragPositionSeconds;
 
   bool get _isTest =>
       WidgetsBinding.instance.runtimeType.toString().contains('Test');
@@ -32,11 +33,16 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
       vsync: this,
       duration: const Duration(seconds: 14),
     );
-    if (_isPlaying && !_isTest) {
-      _rotationController.repeat();
-    } else if (_isPlaying) {
-      _rotationController.value = 0.2;
-    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final isPlaying = ref.read(playerNotifierProvider).isPlaying;
+      if (isPlaying && !_isTest) {
+        _rotationController.repeat();
+      } else if (isPlaying) {
+        _rotationController.value = 0.2;
+      }
+    });
   }
 
   @override
@@ -45,17 +51,16 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
     super.dispose();
   }
 
-  void _togglePlayPause() {
-    setState(() {
-      _isPlaying = !_isPlaying;
-      if (_isPlaying && !_isTest) {
+  void _syncRotation(bool isPlaying) {
+    if (isPlaying) {
+      if (!_rotationController.isAnimating && !_isTest) {
         _rotationController.repeat();
-      } else if (_isPlaying) {
+      } else if (_isTest) {
         _rotationController.value = 0.2;
-      } else {
-        _rotationController.stop();
       }
-    });
+    } else {
+      _rotationController.stop();
+    }
   }
 
   @override
@@ -64,6 +69,28 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final primary = colorScheme.primary;
+
+    final playerState = ref.watch(playerNotifierProvider);
+    final currentTrack = playerState.currentTrack;
+    final isPlaying = playerState.isPlaying;
+
+    _syncRotation(isPlaying);
+
+    final title = currentTrack?.title ?? 'Starboy';
+    final artistAndAlbum = currentTrack?.artistAndAlbum ?? 'The Weeknd • Daft Punk';
+    final albumHeader = (currentTrack != null && currentTrack.album.isNotEmpty)
+        ? currentTrack.album
+        : 'Starboy';
+
+    final isFavorite = currentTrack?.isFavorite ?? true;
+    final isShuffle = playerState.playbackMode == PlaybackMode.shuffle;
+    final playbackMode = playerState.playbackMode;
+
+    final totalSeconds = playerState.duration.inSeconds > 0
+        ? playerState.duration.inSeconds.toDouble()
+        : 230.0;
+    final currentSeconds = _dragPositionSeconds ??
+        playerState.position.inSeconds.toDouble().clamp(0.0, totalSeconds);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -101,17 +128,19 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Starboy',
+                            albumHeader,
                             style: AppTypography.titleSmall.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
                       IconButton(
-                        icon: const Icon(Icons.more_vert_rounded),
-                        onPressed: () {},
-                        tooltip: 'Options',
+                        icon: const Icon(Icons.bedtime_outlined),
+                        onPressed: () => SleepTimerBottomSheet.show(context),
+                        tooltip: 'Sleep Timer',
                       ),
                     ],
                   ),
@@ -229,7 +258,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Starboy',
+                              title,
                               style: AppTypography.headlineMedium.copyWith(
                                 color: colorScheme.onSurface,
                                 fontWeight: FontWeight.bold,
@@ -239,7 +268,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'The Weeknd • Daft Punk',
+                              artistAndAlbum,
                               style: AppTypography.titleMedium.copyWith(
                                 color: colorScheme.onSurface.withOpacity(0.70),
                               ),
@@ -251,11 +280,13 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                       ),
                       IconButton(
                         icon: Icon(
-                          _isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                          color: _isFavorite ? Colors.redAccent.shade200 : colorScheme.onSurface.withOpacity(0.6),
+                          isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                          color: isFavorite ? Colors.redAccent.shade200 : colorScheme.onSurface.withOpacity(0.6),
                           size: 28,
                         ),
-                        onPressed: () => setState(() => _isFavorite = !_isFavorite),
+                        onPressed: () {
+                          ref.read(playerNotifierProvider.notifier).toggleFavorite();
+                        },
                         tooltip: 'Favorite',
                       ),
                     ],
@@ -274,9 +305,17 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                           thumbColor: primary,
                         ),
                         child: Slider(
-                          value: _position,
-                          max: _duration,
-                          onChanged: (val) => setState(() => _position = val),
+                          value: currentSeconds,
+                          max: totalSeconds,
+                          onChanged: (val) {
+                            setState(() => _dragPositionSeconds = val);
+                          },
+                          onChangeEnd: (val) {
+                            setState(() => _dragPositionSeconds = null);
+                            ref.read(playerNotifierProvider.notifier).seek(
+                                  Duration(seconds: val.toInt()),
+                                );
+                          },
                         ),
                       ),
                       Padding(
@@ -285,14 +324,14 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              '0:${_position.toInt().toString().padLeft(2, '0')}',
+                              Duration(seconds: currentSeconds.toInt()).toMinutesSeconds(padMinutes: false),
                               style: AppTypography.labelSmall.copyWith(
                                 color: colorScheme.onSurface.withOpacity(0.65),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                             Text(
-                              '3:50',
+                              Duration(seconds: totalSeconds.toInt()).toMinutesSeconds(padMinutes: false),
                               style: AppTypography.labelSmall.copyWith(
                                 color: colorScheme.onSurface.withOpacity(0.65),
                                 fontWeight: FontWeight.w600,
@@ -310,15 +349,19 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                     children: [
                       IconButton(
                         icon: Icon(
-                          _isShuffle ? Icons.shuffle_on_rounded : Icons.shuffle_rounded,
-                          color: _isShuffle ? primary : colorScheme.onSurface.withOpacity(0.65),
+                          isShuffle ? Icons.shuffle_on_rounded : Icons.shuffle_rounded,
+                          color: isShuffle ? primary : colorScheme.onSurface.withOpacity(0.65),
                         ),
-                        onPressed: () => setState(() => _isShuffle = !_isShuffle),
+                        onPressed: () {
+                          ref.read(playerNotifierProvider.notifier).toggleShuffle();
+                        },
                         tooltip: 'Shuffle',
                       ),
                       IconButton(
                         icon: const Icon(Icons.skip_previous_rounded, size: 38),
-                        onPressed: () {},
+                        onPressed: () {
+                          ref.read(playerNotifierProvider.notifier).skipPrevious();
+                        },
                         tooltip: 'Previous',
                       ),
 
@@ -339,30 +382,36 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                         ),
                         child: IconButton(
                           icon: Icon(
-                            _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                            isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
                             size: 36,
                             color: isDark ? const Color(0xFF0A0D14) : Colors.white,
                           ),
-                          onPressed: _togglePlayPause,
-                          tooltip: _isPlaying ? 'Pause' : 'Play',
+                          onPressed: () {
+                            ref.read(playerNotifierProvider.notifier).togglePlayPause();
+                          },
+                          tooltip: isPlaying ? 'Pause' : 'Play',
                         ),
                       ),
 
                       IconButton(
                         icon: const Icon(Icons.skip_next_rounded, size: 38),
-                        onPressed: () {},
+                        onPressed: () {
+                          ref.read(playerNotifierProvider.notifier).skipNext();
+                        },
                         tooltip: 'Next',
                       ),
                       IconButton(
                         icon: Icon(
-                          _repeatMode == 0
-                              ? Icons.repeat_rounded
-                              : _repeatMode == 1
+                          playbackMode == PlaybackMode.repeatOne
+                              ? Icons.repeat_one_rounded
+                              : playbackMode == PlaybackMode.repeatAll
                                   ? Icons.repeat_on_rounded
-                                  : Icons.repeat_one_rounded,
-                          color: _repeatMode > 0 ? primary : colorScheme.onSurface.withOpacity(0.65),
+                                  : Icons.repeat_rounded,
+                          color: playbackMode.isRepeating ? primary : colorScheme.onSurface.withOpacity(0.65),
                         ),
-                        onPressed: () => setState(() => _repeatMode = (_repeatMode + 1) % 3),
+                        onPressed: () {
+                          ref.read(playerNotifierProvider.notifier).cycleRepeatMode();
+                        },
                         tooltip: 'Repeat',
                       ),
                     ],
@@ -376,12 +425,12 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                       children: [
                         IconButton(
                           icon: Icon(
-                            Icons.devices_rounded,
+                            Icons.bedtime_rounded,
                             color: colorScheme.onSurface.withOpacity(0.6),
                             size: 22,
                           ),
-                          onPressed: () {},
-                          tooltip: 'Connect to a device',
+                          onPressed: () => SleepTimerBottomSheet.show(context),
+                          tooltip: 'Sleep Timer',
                         ),
                         IconButton(
                           icon: Icon(
@@ -389,7 +438,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                             color: colorScheme.onSurface.withOpacity(0.6),
                             size: 22,
                           ),
-                          onPressed: () {},
+                          onPressed: () => QueueBottomSheet.show(context),
                           tooltip: 'Queue',
                         ),
                       ],
