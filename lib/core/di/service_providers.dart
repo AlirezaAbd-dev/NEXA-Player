@@ -5,6 +5,10 @@ import 'package:nexa_player/features/player/data/services/nexa_audio_handler.dar
 import 'package:nexa_player/features/player/domain/services/audio_engine.dart';
 import 'package:nexa_player/features/player/domain/services/playback_queue.dart';
 import 'package:nexa_player/features/player/domain/services/sleep_timer_service.dart';
+import 'package:nexa_player/features/playlists/domain/services/m3u_service.dart';
+import 'package:nexa_player/features/playlists/domain/services/ringtone_service.dart';
+import 'package:nexa_player/features/playlists/domain/services/share_service.dart';
+import 'package:nexa_player/features/playlists/domain/services/tag_editor_service.dart';
 import 'package:nexa_player/shared/services/database/app_database.dart';
 import 'package:nexa_player/shared/services/logging/logging_service.dart';
 import 'package:nexa_player/shared/services/storage/storage_service.dart';
@@ -53,6 +57,26 @@ final nexaAudioHandlerProvider = Provider<NexaAudioHandler>((ref) {
 /// Exposes the [IEqualizerService] interface to Riverpod.
 final equalizerServiceProvider = Provider<IEqualizerService>((ref) {
   return getIt<IEqualizerService>();
+});
+
+/// Exposes the [IM3uService] interface to Riverpod.
+final m3uServiceProvider = Provider<IM3uService>((ref) {
+  return getIt<IM3uService>();
+});
+
+/// Exposes the [ITagEditorService] interface to Riverpod.
+final tagEditorServiceProvider = Provider<ITagEditorService>((ref) {
+  return getIt<ITagEditorService>();
+});
+
+/// Exposes the [IRingtoneService] interface to Riverpod.
+final ringtoneServiceProvider = Provider<IRingtoneService>((ref) {
+  return getIt<IRingtoneService>();
+});
+
+/// Exposes the [IShareService] interface to Riverpod.
+final shareServiceProvider = Provider<IShareService>((ref) {
+  return getIt<IShareService>();
 });
 
 

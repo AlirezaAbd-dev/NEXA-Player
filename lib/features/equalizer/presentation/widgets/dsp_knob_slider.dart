@@ -109,7 +109,7 @@ class DspKnobSlider extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    fontFamily: 'monospace',
+                    fontFamily: 'Roboto',
                     color: isActive
                         ? effectiveAccent
                         : theme.colorScheme.onSurface.withOpacity(0.4),

@@ -6,11 +6,13 @@ import '../features/library/presentation/screens/artists_tab_screen.dart';
 import '../features/library/presentation/screens/songs_tab_screen.dart';
 import '../features/player/presentation/screens/now_playing_screen.dart';
 import '../features/playlists/presentation/screens/playlists_tab_screen.dart';
+import '../features/playlists/presentation/screens/ringtone_trimmer_screen.dart';
 import '../features/settings/presentation/screens/design_system_showcase_screen.dart';
 import '../features/settings/presentation/screens/scanner_settings_screen.dart';
 import '../features/settings/presentation/screens/settings_hub_screen.dart';
 import '../features/themes/presentation/screens/custom_theme_editor_screen.dart';
 import '../features/themes/presentation/screens/theme_picker_screen.dart';
+import '../shared/models/track.dart';
 import 'routes.dart';
 import 'shell/scaffold_with_nav_bar.dart';
 
@@ -115,6 +117,24 @@ final appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       path: AppRoutes.equalizer,
       builder: (context, state) => const EqualizerScreen(),
+    ),
+
+    // 4. Full-Screen Ringtone Trimmer Route
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: AppRoutes.ringtoneTrimmer,
+      builder: (context, state) {
+        final track = state.extra as Track? ??
+            const Track(
+              id: 'demo-track',
+              title: 'Ringtone Audio',
+              artist: 'NEXA',
+              album: 'Audio',
+              duration: Duration(seconds: 180),
+              filePath: '/storage/emulated/0/Music/demo.mp3',
+            );
+        return RingtoneTrimmerScreen(track: track);
+      },
     ),
   ],
 );

@@ -5,6 +5,7 @@ import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
 import 'package:nexa_player/features/playlists/presentation/providers/playlists_providers.dart';
 import 'package:nexa_player/features/playlists/presentation/screens/playlist_detail_screen.dart';
+import 'package:nexa_player/features/playlists/presentation/widgets/m3u_import_dialog.dart';
 import 'package:nexa_player/shared/models/playlist.dart';
 import 'package:nexa_player/shared/widgets/feedback/app_dialog.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
@@ -13,7 +14,7 @@ import 'package:nexa_player/shared/widgets/glass/glass_card.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_fab.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_text_field.dart';
 
-/// Playlists tab screen managing user playlists.
+/// Playlists tab screen managing user playlists and smart auto-generated playlists.
 class PlaylistsTabScreen extends ConsumerWidget {
   const PlaylistsTabScreen({super.key});
 
@@ -90,13 +91,23 @@ class PlaylistsTabScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final playlistsAsync = ref.watch(playlistsListNotifierProvider);
+    final smartPlaylists = ref.watch(smartPlaylistsProvider);
+    final theme = Theme.of(context);
+    final accent = theme.colorScheme.primary;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
-      appBar: const GlassAppBar(
+      appBar: GlassAppBar(
         titleText: 'Playlists',
         automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.file_download_outlined, color: Colors.white70),
+            tooltip: 'Import M3U',
+            onPressed: () => M3uImportDialog.show(context),
+          ),
+        ],
       ),
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 70.0),
@@ -109,95 +120,201 @@ class PlaylistsTabScreen extends ConsumerWidget {
       ),
       body: Padding(
         padding: const EdgeInsets.fromLTRB(16.0, 100.0, 16.0, 130.0),
-        child: playlistsAsync.when(
-          data: (playlists) {
-            if (playlists.isEmpty) {
-              return const Center(
-                child: Text(
-                  'No playlists yet. Tap "+ New Playlist" to create one!',
-                  style: AppTypography.bodyMedium,
-                ),
-              );
-            }
-
-            return ListView.builder(
-              key: Phase2Keys.playlistsList,
-              padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 140.0),
-              itemCount: playlists.length,
-              itemBuilder: (context, index) {
-                final playlist = playlists[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  child: GlassCard(
-                    key: Phase2Keys.playlistItem(playlist.id),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.sm,
-                    ),
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) =>
-                              PlaylistDetailScreen(playlist: playlist),
-                        ),
-                      );
-                    },
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            color: Colors.white.withOpacity(0.08),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Smart Playlists Section
+            Text(
+              'SMART PLAYLISTS',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.8,
+                color: Colors.white.withOpacity(0.5),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 72,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                itemCount: smartPlaylists.length,
+                itemBuilder: (ctx, i) {
+                  final sp = smartPlaylists[i];
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 10),
+                    child: InkWell(
+                      onTap: () {
+                        final simulatedPlaylist = Playlist(
+                          id: 'smart_${sp.type.name}',
+                          name: sp.title,
+                          isSmart: true,
+                          smartCriteria: sp.type.name,
+                          createdAt: DateTime.now(),
+                          updatedAt: DateTime.now(),
+                          trackCount: 0,
+                        );
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) =>
+                                PlaylistDetailScreen(playlist: simulatedPlaylist),
                           ),
-                          child: const Icon(
-                            Icons.queue_music_rounded,
-                            color: Colors.white70,
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        width: 140,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF141924),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.06),
                           ),
                         ),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                playlist.name,
-                                style: AppTypography.titleMedium.copyWith(
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: accent.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(sp.icon, color: accent, size: 20),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                sp.title,
+                                style: const TextStyle(
+                                  color: Colors.white,
                                   fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // User Playlists Header
+            Text(
+              'MY PLAYLISTS',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.8,
+                color: Colors.white.withOpacity(0.5),
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // User Playlists List
+            Expanded(
+              child: playlistsAsync.when(
+                data: (playlists) {
+                  if (playlists.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        'No playlists yet. Tap "+ New Playlist" to create one!',
+                        style: AppTypography.bodyMedium,
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    key: Phase2Keys.playlistsList,
+                    padding: const EdgeInsets.only(bottom: 80.0),
+                    itemCount: playlists.length,
+                    itemBuilder: (context, index) {
+                      final playlist = playlists[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        child: GlassCard(
+                          key: Phase2Keys.playlistItem(playlist.id),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md,
+                            vertical: AppSpacing.sm,
+                          ),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) =>
+                                    PlaylistDetailScreen(playlist: playlist),
+                              ),
+                            );
+                          },
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  color: Colors.white.withOpacity(0.08),
+                                ),
+                                child: const Icon(
+                                  Icons.queue_music_rounded,
+                                  color: Colors.white70,
                                 ),
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                playlist.trackCountLabel,
-                                style: AppTypography.bodySmall,
+                              const SizedBox(width: AppSpacing.md),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      playlist.name,
+                                      style: AppTypography.titleMedium.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      playlist.trackCountLabel,
+                                      style: AppTypography.bodySmall,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                key: Phase2Keys.playlistDeleteButton(playlist.id),
+                                icon: const Icon(
+                                  Icons.delete_outline_rounded,
+                                  color: Colors.redAccent,
+                                ),
+                                onPressed: () =>
+                                    _showDeleteDialog(context, ref, playlist),
                               ),
                             ],
                           ),
                         ),
-                        IconButton(
-                          key: Phase2Keys.playlistDeleteButton(playlist.id),
-                          icon: const Icon(
-                            Icons.delete_outline_rounded,
-                            color: Colors.redAccent,
-                          ),
-                          onPressed: () =>
-                              _showDeleteDialog(context, ref, playlist),
-                        ),
-                      ],
-                    ),
+                      );
+                    },
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, _) => Center(
+                  child: Text(
+                    'Error loading playlists: $error',
+                    style: AppTypography.bodyMedium,
                   ),
-                );
-              },
-            );
-          },
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Center(
-            child: Text(
-              'Error loading playlists: $error',
-              style: AppTypography.bodyMedium,
+                ),
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );

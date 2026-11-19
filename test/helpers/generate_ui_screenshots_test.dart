@@ -14,13 +14,16 @@ import 'package:nexa_player/core/theme/app_theme.dart';
 import 'package:nexa_player/core/theme/theme_controller.dart';
 import 'package:nexa_player/core/theme/theme_preset.dart';
 import 'package:nexa_player/core/theme/theme_state.dart';
+import 'package:nexa_player/features/equalizer/domain/services/equalizer_service.dart';
 import 'package:nexa_player/features/library/presentation/screens/album_detail_screen.dart';
 import 'package:nexa_player/features/library/presentation/screens/artist_detail_screen.dart';
 import 'package:nexa_player/features/library/presentation/screens/folders_tab_screen.dart';
 import 'package:nexa_player/features/playlists/presentation/screens/playlist_detail_screen.dart';
+import 'package:nexa_player/features/playlists/presentation/screens/ringtone_trimmer_screen.dart';
 import 'package:nexa_player/shared/models/album.dart';
 import 'package:nexa_player/shared/models/artist.dart';
 import 'package:nexa_player/shared/models/playlist.dart';
+import 'package:nexa_player/shared/models/track.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const String _kOutDirPath =
@@ -205,6 +208,9 @@ void main() {
     );
 
     // 2.6 Full-Screen Equalizer & DSP Engine Screen
+    if (getIt.isRegistered<IEqualizerService>()) {
+      await getIt<IEqualizerService>().applyPreset('rock');
+    }
     appRouter.go(AppRoutes.equalizer);
     await _captureWidget(
       tester: tester,
@@ -292,6 +298,27 @@ void main() {
         ),
       ),
       filename: '08_folders_tab.png',
+    );
+
+    // 3.5 Ringtone Trimmer Screen (Phase 6 Audio Slicing)
+    const sampleTrack = Track(
+      id: 'trk-ringtone',
+      title: 'Midnight City',
+      artist: 'M83',
+      album: 'Hurry Up, We\'re Dreaming',
+      duration: Duration(seconds: 243),
+      filePath: '/music/m83/midnight_city.mp3',
+    );
+    await _captureWidget(
+      tester: tester,
+      widget: ProviderScope(
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: darkTheme,
+          home: const RingtoneTrimmerScreen(track: sampleTrack),
+        ),
+      ),
+      filename: '19_ringtone_trimmer_screen.png',
     );
 
     // =========================================================================

@@ -181,7 +181,7 @@ class EqCurvePainter extends CustomPainter {
               : textColor.withOpacity(0.4),
           fontSize: 9.0,
           fontWeight: isZero ? FontWeight.bold : FontWeight.w500,
-          fontFamily: 'monospace',
+          fontFamily: 'Roboto',
         ),
       );
       textPainter.layout();

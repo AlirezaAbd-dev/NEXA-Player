@@ -16,6 +16,8 @@ enum TrackTileMenuAction {
   goToArtist,
   share,
   details,
+  editTags,
+  trimRingtone,
 }
 
 /// Modern music list item conforming to Spotify/Apple Music standards:
@@ -291,6 +293,26 @@ class _TrackTileState extends State<TrackTile> {
                     Icon(Icons.share_rounded),
                     SizedBox(width: 8),
                     Text('Share'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: TrackTileMenuAction.editTags,
+                child: Row(
+                  children: [
+                    Icon(Icons.edit_note_rounded),
+                    SizedBox(width: 8),
+                    Text('Edit tags'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: TrackTileMenuAction.trimRingtone,
+                child: Row(
+                  children: [
+                    Icon(Icons.content_cut_rounded),
+                    SizedBox(width: 8),
+                    Text('Trim ringtone'),
                   ],
                 ),
               ),

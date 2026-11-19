@@ -43,7 +43,7 @@ class EqBandSlider extends StatelessWidget {
             style: TextStyle(
               fontSize: 10.5,
               fontWeight: FontWeight.w700,
-              fontFamily: 'monospace',
+              fontFamily: 'Roboto',
               color: gainColor,
             ),
           ),

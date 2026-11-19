@@ -398,7 +398,7 @@ class EqualizerScreen extends ConsumerWidget {
                       '31Hz - 16kHz',
                       style: TextStyle(
                         fontSize: 9.5,
-                        fontFamily: 'monospace',
+                        fontFamily: 'Roboto',
                         color: Colors.white.withOpacity(0.6),
                         fontWeight: FontWeight.w600,
                       ),
@@ -475,7 +475,7 @@ class EqualizerScreen extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
-                fontFamily: 'monospace',
+                fontFamily: 'Roboto',
                 color: isEnabled && preamp.abs() > 0.05
                     ? accentColor
                     : Colors.white54,
@@ -525,7 +525,7 @@ class EqualizerScreen extends ConsumerWidget {
                   '-15 dB  /  +15 dB',
                   style: TextStyle(
                     fontSize: 9.5,
-                    fontFamily: 'monospace',
+                    fontFamily: 'Roboto',
                     color: Colors.white.withOpacity(0.3),
                   ),
                 ),

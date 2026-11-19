@@ -19,7 +19,15 @@ import 'package:nexa_player/features/player/domain/services/audio_engine.dart';
 import 'package:nexa_player/features/player/domain/services/playback_queue.dart';
 import 'package:nexa_player/features/player/domain/services/sleep_timer_service.dart';
 import 'package:nexa_player/features/playlists/data/repositories/sqlite_playlists_repository.dart';
+import 'package:nexa_player/features/playlists/data/services/m3u_service_impl.dart';
+import 'package:nexa_player/features/playlists/data/services/ringtone_service_impl.dart';
+import 'package:nexa_player/features/playlists/data/services/share_service_impl.dart';
+import 'package:nexa_player/features/playlists/data/services/tag_editor_service_impl.dart';
 import 'package:nexa_player/features/playlists/domain/repositories/playlists_repository.dart';
+import 'package:nexa_player/features/playlists/domain/services/m3u_service.dart';
+import 'package:nexa_player/features/playlists/domain/services/ringtone_service.dart';
+import 'package:nexa_player/features/playlists/domain/services/share_service.dart';
+import 'package:nexa_player/features/playlists/domain/services/tag_editor_service.dart';
 import 'package:nexa_player/features/scanner/data/media_scanner_service_impl.dart';
 import 'package:nexa_player/features/scanner/data/pure_dart_audio_metadata_reader.dart';
 import 'package:nexa_player/features/scanner/data/repositories/sqlite_scan_directories_repository.dart';
@@ -57,6 +65,10 @@ Future<void> configureDependencies({
   IPlaybackQueue? playbackQueue,
   ISleepTimerService? sleepTimerService,
   IEqualizerService? equalizerService,
+  IM3uService? m3uService,
+  ITagEditorService? tagEditorService,
+  IRingtoneService? ringtoneService,
+  IShareService? shareService,
   bool seedDemoData = true,
 }) async {
   // 1. SharedPreferences instance
@@ -222,7 +234,36 @@ Future<void> configureDependencies({
     getIt.registerSingleton<IEqualizerService>(eq);
   }
 
-  // 11. Seed demo library if database is freshly opened and empty
+  // 11. Playlist & Track Operations Services
+  if (!getIt.isRegistered<IM3uService>()) {
+    getIt.registerSingleton<IM3uService>(
+      m3uService ??
+          M3uServiceImpl(
+            playlistsRepository: getIt<IPlaylistsRepository>(),
+            tracksRepository: getIt<ITracksRepository>(),
+          ),
+    );
+  }
+
+  if (!getIt.isRegistered<ITagEditorService>()) {
+    getIt.registerSingleton<ITagEditorService>(
+      tagEditorService ?? TagEditorServiceImpl(getIt<IAppDatabase>()),
+    );
+  }
+
+  if (!getIt.isRegistered<IRingtoneService>()) {
+    getIt.registerSingleton<IRingtoneService>(
+      ringtoneService ?? RingtoneServiceImpl(),
+    );
+  }
+
+  if (!getIt.isRegistered<IShareService>()) {
+    getIt.registerSingleton<IShareService>(
+      shareService ?? const ShareServiceImpl(),
+    );
+  }
+
+  // 12. Seed demo library if database is freshly opened and empty
   if (seedDemoData && !db.isClosed) {
     _seedDemoData(db);
   }
