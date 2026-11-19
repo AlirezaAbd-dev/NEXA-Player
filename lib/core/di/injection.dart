@@ -1,6 +1,9 @@
 import 'package:get_it/get_it.dart';
 import 'package:nexa_player/features/equalizer/data/services/pure_dart_equalizer_service.dart';
 import 'package:nexa_player/features/equalizer/domain/services/equalizer_service.dart';
+import 'package:nexa_player/features/lyrics/data/services/lrclib_api_client.dart';
+import 'package:nexa_player/features/lyrics/data/services/lyrics_service_impl.dart';
+import 'package:nexa_player/features/lyrics/domain/services/lyrics_service.dart';
 import 'package:nexa_player/features/library/data/repositories/sqlite_albums_repository.dart';
 import 'package:nexa_player/features/library/data/repositories/sqlite_artists_repository.dart';
 import 'package:nexa_player/features/library/data/repositories/sqlite_folders_repository.dart';
@@ -69,6 +72,8 @@ Future<void> configureDependencies({
   ITagEditorService? tagEditorService,
   IRingtoneService? ringtoneService,
   IShareService? shareService,
+  ILrclibApiClient? lrclibApiClient,
+  ILyricsService? lyricsService,
   bool seedDemoData = true,
 }) async {
   // 1. SharedPreferences instance
@@ -263,7 +268,24 @@ Future<void> configureDependencies({
     );
   }
 
-  // 12. Seed demo library if database is freshly opened and empty
+  // 12. Lyrics Services
+  if (!getIt.isRegistered<ILrclibApiClient>()) {
+    getIt.registerSingleton<ILrclibApiClient>(
+      lrclibApiClient ?? LrclibApiClient(),
+    );
+  }
+
+  if (!getIt.isRegistered<ILyricsService>()) {
+    getIt.registerSingleton<ILyricsService>(
+      lyricsService ??
+          LyricsServiceImpl(
+            storageService: getIt<IStorageService>(),
+            lrclibClient: getIt<ILrclibApiClient>(),
+          ),
+    );
+  }
+
+  // 13. Seed demo library if database is freshly opened and empty
   if (seedDemoData && !db.isClosed) {
     _seedDemoData(db);
   }

@@ -1,3 +1,12 @@
-/// Lyrics feature module for NEXA Player.
-library;
-// Component exports will be registered during Milestone 4.
+export 'domain/models/lyric_line.dart';
+export 'domain/models/lyrics.dart';
+export 'domain/models/lyrics_source.dart';
+export 'domain/services/lrc_parser.dart';
+export 'domain/services/lyrics_service.dart';
+export 'data/services/lrclib_api_client.dart';
+export 'data/services/lyrics_service_impl.dart';
+export 'presentation/providers/lyrics_providers.dart';
+export 'presentation/screens/lyrics_screen.dart';
+export 'presentation/widgets/lyrics_editor_modal.dart';
+export 'presentation/widgets/lyrics_time_offset_control.dart';
+export 'presentation/widgets/synced_lyrics_view.dart';

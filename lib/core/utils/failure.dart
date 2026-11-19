@@ -52,3 +52,12 @@ class ScannerFailure extends Failure {
     super.stackTrace,
   ]);
 }
+
+/// Failure representing network, connectivity, or remote API errors.
+class NetworkFailure extends Failure {
+  const NetworkFailure(
+    super.message, [
+    super.cause,
+    super.stackTrace,
+  ]);
+}

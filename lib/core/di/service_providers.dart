@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nexa_player/core/di/injection.dart';
 import 'package:nexa_player/features/equalizer/domain/services/equalizer_service.dart';
+import 'package:nexa_player/features/lyrics/data/services/lrclib_api_client.dart';
+import 'package:nexa_player/features/lyrics/domain/services/lyrics_service.dart';
 import 'package:nexa_player/features/player/data/services/nexa_audio_handler.dart';
 import 'package:nexa_player/features/player/domain/services/audio_engine.dart';
 import 'package:nexa_player/features/player/domain/services/playback_queue.dart';
@@ -78,5 +80,16 @@ final ringtoneServiceProvider = Provider<IRingtoneService>((ref) {
 final shareServiceProvider = Provider<IShareService>((ref) {
   return getIt<IShareService>();
 });
+
+/// Exposes the [ILrclibApiClient] interface to Riverpod.
+final lrclibApiClientProvider = Provider<ILrclibApiClient>((ref) {
+  return getIt<ILrclibApiClient>();
+});
+
+/// Exposes the [ILyricsService] interface to Riverpod.
+final lyricsServiceProvider = Provider<ILyricsService>((ref) {
+  return getIt<ILyricsService>();
+});
+
 
 

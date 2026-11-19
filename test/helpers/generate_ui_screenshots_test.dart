@@ -18,8 +18,10 @@ import 'package:nexa_player/features/equalizer/domain/services/equalizer_service
 import 'package:nexa_player/features/library/presentation/screens/album_detail_screen.dart';
 import 'package:nexa_player/features/library/presentation/screens/artist_detail_screen.dart';
 import 'package:nexa_player/features/library/presentation/screens/folders_tab_screen.dart';
+import 'package:nexa_player/features/lyrics/lyrics.dart';
 import 'package:nexa_player/features/playlists/presentation/screens/playlist_detail_screen.dart';
 import 'package:nexa_player/features/playlists/presentation/screens/ringtone_trimmer_screen.dart';
+import 'package:nexa_player/features/player/presentation/providers/player_providers.dart';
 import 'package:nexa_player/shared/models/album.dart';
 import 'package:nexa_player/shared/models/artist.dart';
 import 'package:nexa_player/shared/models/playlist.dart';
@@ -319,6 +321,38 @@ void main() {
         ),
       ),
       filename: '19_ringtone_trimmer_screen.png',
+    );
+
+    // 3.6 Synced Lyrics Karaoke Screen (Phase 7 Lyrics System)
+    const sampleLyrics = Lyrics(
+      trackId: 'trk-ringtone',
+      isSynced: true,
+      source: LyricsSource.lrclib,
+      lines: [
+        LyricLine(timestamp: Duration(seconds: 15), text: 'Waiting in a car'),
+        LyricLine(timestamp: Duration(seconds: 18), text: 'Waiting for a ride in the dark'),
+        LyricLine(timestamp: Duration(seconds: 22), text: 'The night city grows'),
+        LyricLine(timestamp: Duration(seconds: 26), text: 'Look and see her eyes, they glow'),
+        LyricLine(timestamp: Duration(seconds: 30), text: 'Waiting in a car'),
+        LyricLine(timestamp: Duration(seconds: 34), text: 'Waiting for a ride in the dark'),
+        LyricLine(timestamp: Duration(seconds: 38), text: 'The night city grows'),
+      ],
+    );
+    await _captureWidget(
+      tester: tester,
+      widget: ProviderScope(
+        overrides: [
+          currentTrackProvider.overrideWithValue(sampleTrack),
+          activeLyricIndexProvider.overrideWithValue(2),
+          trackLyricsProvider(sampleTrack).overrideWith((ref) => Future.value(sampleLyrics)),
+        ],
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: darkTheme,
+          home: const LyricsScreen(),
+        ),
+      ),
+      filename: '20_lyrics_screen.png',
     );
 
     // =========================================================================

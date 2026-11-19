@@ -100,30 +100,37 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 30),
+                        icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 28),
                         onPressed: () => context.pop(),
                         tooltip: 'Minimize',
+                        padding: const EdgeInsets.all(6),
+                        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                       ),
-                      Column(
-                        children: [
-                          Text(
-                            'PLAYING FROM ALBUM',
-                            style: AppTypography.labelSmall.copyWith(
-                              letterSpacing: 1.2,
-                              color: colorScheme.onSurface.withOpacity(0.6),
-                              fontWeight: FontWeight.w600,
+                      Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'PLAYING FROM ALBUM',
+                              style: AppTypography.labelSmall.copyWith(
+                                letterSpacing: 1.2,
+                                color: colorScheme.onSurface.withOpacity(0.6),
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            albumHeader,
-                            style: AppTypography.titleSmall.copyWith(
-                              fontWeight: FontWeight.bold,
+                            const SizedBox(height: 2),
+                            Text(
+                              albumHeader,
+                              style: AppTypography.titleSmall.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                       Row(
                         mainAxisSize: MainAxisSize.min,
@@ -139,16 +146,22 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                             ),
                             onPressed: _cycleLayoutMode,
                             tooltip: 'Switch Layout Mode',
+                            padding: const EdgeInsets.all(6),
+                            constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.bedtime_outlined, size: 22),
-                            onPressed: () => SleepTimerBottomSheet.show(context),
-                            tooltip: 'Sleep Timer',
+                            icon: const Icon(Icons.lyrics_rounded, size: 22),
+                            onPressed: () => context.push(AppRoutes.lyrics),
+                            tooltip: 'Lyrics',
+                            padding: const EdgeInsets.all(6),
+                            constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
                           ),
                           IconButton(
                             icon: const Icon(Icons.equalizer_rounded, size: 22),
                             onPressed: () => context.push(AppRoutes.equalizer),
                             tooltip: 'Equalizer & DSP',
+                            padding: const EdgeInsets.all(6),
+                            constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
                           ),
                         ],
                       ),

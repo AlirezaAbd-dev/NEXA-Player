@@ -4,6 +4,7 @@ import '../features/equalizer/presentation/screens/equalizer_screen.dart';
 import '../features/library/presentation/screens/albums_tab_screen.dart';
 import '../features/library/presentation/screens/artists_tab_screen.dart';
 import '../features/library/presentation/screens/songs_tab_screen.dart';
+import '../features/lyrics/lyrics.dart';
 import '../features/player/presentation/screens/now_playing_screen.dart';
 import '../features/playlists/presentation/screens/playlists_tab_screen.dart';
 import '../features/playlists/presentation/screens/ringtone_trimmer_screen.dart';
@@ -135,6 +136,13 @@ final appRouter = GoRouter(
             );
         return RingtoneTrimmerScreen(track: track);
       },
+    ),
+
+    // 5. Full-Screen Synced Lyrics Route
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: AppRoutes.lyrics,
+      builder: (context, state) => const LyricsScreen(),
     ),
   ],
 );
