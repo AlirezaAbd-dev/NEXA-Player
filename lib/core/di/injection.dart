@@ -41,6 +41,7 @@ import 'package:nexa_player/features/search/data/repositories/sqlite_search_repo
 import 'package:nexa_player/features/search/domain/repositories/search_repository.dart';
 import 'package:nexa_player/features/settings/data/services/settings_service_impl.dart';
 import 'package:nexa_player/features/settings/domain/services/settings_service.dart';
+import 'package:nexa_player/features/visualizer/domain/services/waveform_pre_processor.dart';
 import 'package:nexa_player/shared/services/database/app_database.dart';
 import 'package:nexa_player/shared/services/logging/logging_service.dart';
 import 'package:nexa_player/shared/services/logging/talker_logging_service.dart';
@@ -78,6 +79,7 @@ Future<void> configureDependencies({
   IShareService? shareService,
   ILrclibApiClient? lrclibApiClient,
   ILyricsService? lyricsService,
+  IWaveformPreProcessor? waveformPreProcessor,
   ISearchRepository? searchRepository,
   ISettingsService? settingsService,
   bool seedDemoData = true,
@@ -301,14 +303,24 @@ Future<void> configureDependencies({
     );
   }
 
-  // 13. Settings Service
+  // 13. Visualizer Waveform Pre-processor
+  if (!getIt.isRegistered<IWaveformPreProcessor>()) {
+    getIt.registerSingleton<IWaveformPreProcessor>(
+      waveformPreProcessor ??
+          WaveformPreProcessorImpl(
+            getIt<IStorageService>(),
+          ),
+    );
+  }
+
+  // 14. Settings Service
   if (!getIt.isRegistered<ISettingsService>()) {
     getIt.registerSingleton<ISettingsService>(
       settingsService ?? SettingsServiceImpl(getIt<IStorageService>()),
     );
   }
 
-  // 14. Seed demo library if database is freshly opened and empty
+  // 15. Seed demo library if database is freshly opened and empty
   if (seedDemoData && !db.isClosed) {
     _seedDemoData(db);
   }

@@ -256,7 +256,19 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
 
-            // 4. Playback & Controls
+            // 4. Visualizer & Spectrum Engine
+            _buildCategoryCard(
+              context,
+              icon: Icons.graphic_eq_rounded,
+              iconColor: Colors.purpleAccent,
+              title: 'Visualizer & Spectrum',
+              subtitle: 'FFT Bars, Circle, Wave, Spectrogram, VU Meter',
+              badge: 'REAL-TIME FFT',
+              onTap: () => context.push(AppRoutes.visualizerSettings),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+
+            // 5. Playback & Controls
             _buildCategoryCard(
               context,
               icon: Icons.gamepad_rounded,

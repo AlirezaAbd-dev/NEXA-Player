@@ -147,4 +147,12 @@ abstract final class StorageKeys {
   // Privacy & Storage
   static const String privacyCrashReporting = 'nexa_privacy_crash_reporting';
   static const String privacyAnalytics = 'nexa_privacy_analytics';
+
+  // Visualizer & Spectrum Settings (Phase 10)
+  static const String visualizerStyle = 'nexa_visualizer_style';
+  static const String visualizerColor = 'nexa_visualizer_color';
+  static const String visualizerSensitivity = 'nexa_visualizer_sensitivity';
+  static const String visualizerFpsCap = 'nexa_visualizer_fps_cap';
+  static const String visualizerFftSize = 'nexa_visualizer_fft_size';
+  static const String visualizerShowOnLockscreen = 'nexa_visualizer_show_lockscreen';
 }

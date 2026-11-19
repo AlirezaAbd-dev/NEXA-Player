@@ -19,6 +19,7 @@ abstract final class AppRoutes {
   static const String powerSavingSettings = '/settings/power-saving';
   static const String notificationSettings = '/settings/notifications';
   static const String privacySettings = '/settings/privacy';
+  static const String visualizerSettings = '/settings/visualizer';
   static const String aboutSettings = '/settings/about';
   static const String appearanceSettings = '/settings/appearance';
   static const String player = '/player';

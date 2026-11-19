@@ -647,6 +647,36 @@ class SettingsServiceImpl implements ISettingsService {
       keywords: ['clear history', 'recent searches', 'privacy', 'reset'],
     ),
 
+    // Visualizer & Spectrum Engine
+    SettingSearchItem(
+      title: 'Visualizer Style',
+      subtitle: 'Bars, Circle, Wave, Spectrogram, VU Meter',
+      category: 'Visualizer & Spectrum',
+      route: AppRoutes.visualizerSettings,
+      keywords: ['visualizer', 'spectrum', 'fft', 'bars', 'vu meter', 'circle', 'wave'],
+    ),
+    SettingSearchItem(
+      title: 'Visualizer Color Accent',
+      subtitle: 'Neon Cyan, Electric Orchid, Cyber Gold, Hot Pink, Emerald Neon, Amber Flame',
+      category: 'Visualizer & Spectrum',
+      route: AppRoutes.visualizerSettings,
+      keywords: ['color', 'accent', 'visualizer', 'neon', 'glow', 'spectrum'],
+    ),
+    SettingSearchItem(
+      title: 'Visualizer Sensitivity',
+      subtitle: 'Magnitude dynamic gain from 0.5x to 2.5x',
+      category: 'Visualizer & Spectrum',
+      route: AppRoutes.visualizerSettings,
+      keywords: ['sensitivity', 'gain', 'amplitude', 'visualizer', 'fft'],
+    ),
+    SettingSearchItem(
+      title: 'Visualizer Frame Rate (FPS)',
+      subtitle: 'Cap animation rate: 30, 60, or 120 FPS',
+      category: 'Visualizer & Spectrum',
+      route: AppRoutes.visualizerSettings,
+      keywords: ['fps', 'framerate', 'smoothness', '120hz', '60fps'],
+    ),
+
     // About
     SettingSearchItem(
       title: 'About NEXA Player',

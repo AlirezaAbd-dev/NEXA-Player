@@ -57,4 +57,7 @@ extension DurationX on Duration {
 
   /// Shorthand getter for strict `hh:mm:ss` format.
   String get hhMmSs => toHoursMinutesSeconds();
+
+  /// Convenient helper for `mm:ss` format.
+  String toFormattedMmSs() => toMinutesSeconds();
 }

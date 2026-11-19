@@ -12,6 +12,7 @@ import '../features/search/search.dart';
 import '../features/settings/settings.dart';
 import '../features/themes/presentation/screens/custom_theme_editor_screen.dart';
 import '../features/themes/presentation/screens/theme_picker_screen.dart';
+import '../features/visualizer/visualizer.dart';
 import '../shared/models/track.dart';
 import 'routes.dart';
 import 'shell/scaffold_with_nav_bar.dart';
@@ -132,6 +133,11 @@ final appRouter = GoRouter(
                   path: 'privacy',
                   builder: (context, state) =>
                       const PrivacyStorageSettingsScreen(),
+                ),
+                GoRoute(
+                  path: 'visualizer',
+                  builder: (context, state) =>
+                      const VisualizerSettingsScreen(),
                 ),
                 GoRoute(
                   path: 'about',

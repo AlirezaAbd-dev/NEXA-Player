@@ -24,6 +24,7 @@ import 'package:nexa_player/features/playlists/presentation/screens/ringtone_tri
 import 'package:nexa_player/features/player/presentation/providers/player_providers.dart';
 import 'package:nexa_player/features/search/search.dart';
 import 'package:nexa_player/features/settings/settings.dart';
+import 'package:nexa_player/features/visualizer/visualizer.dart';
 import 'package:nexa_player/shared/models/album.dart';
 import 'package:nexa_player/shared/models/artist.dart';
 import 'package:nexa_player/shared/models/playlist.dart';
@@ -453,6 +454,19 @@ void main() {
         ),
       ),
       filename: '23_audio_settings.png',
+    );
+
+    // 3.14 Visualizer & Spectrum Engine Settings (Phase 10)
+    await _captureWidget(
+      tester: tester,
+      widget: ProviderScope(
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: darkTheme,
+          home: const VisualizerSettingsScreen(),
+        ),
+      ),
+      filename: '24_visualizer_spectrum.png',
     );
 
     // =========================================================================

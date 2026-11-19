@@ -13,6 +13,7 @@ import 'package:nexa_player/features/playlists/domain/services/share_service.dar
 import 'package:nexa_player/features/playlists/domain/services/tag_editor_service.dart';
 import 'package:nexa_player/features/search/domain/repositories/search_repository.dart';
 import 'package:nexa_player/features/settings/domain/services/settings_service.dart';
+import 'package:nexa_player/features/visualizer/domain/services/waveform_pre_processor.dart';
 import 'package:nexa_player/shared/services/database/app_database.dart';
 import 'package:nexa_player/shared/services/logging/logging_service.dart';
 import 'package:nexa_player/shared/services/storage/storage_service.dart';
@@ -102,6 +103,12 @@ final searchRepositoryProvider = Provider<ISearchRepository>((ref) {
 final settingsServiceProvider = Provider<ISettingsService>((ref) {
   return getIt<ISettingsService>();
 });
+
+/// Exposes the [IWaveformPreProcessor] interface to Riverpod.
+final waveformPreProcessorProvider = Provider<IWaveformPreProcessor>((ref) {
+  return getIt<IWaveformPreProcessor>();
+});
+
 
 
 

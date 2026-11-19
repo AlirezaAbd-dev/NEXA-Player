@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes.dart';
 import '../../../../core/design_system/app_typography.dart';
+import '../../../../core/di/service_providers.dart';
 import '../../../../shared/widgets/glass/app_ambient_background.dart';
+import '../../../visualizer/visualizer.dart';
 import '../../domain/entities/playback_state.dart';
 import '../providers/player_providers.dart';
 import '../widgets/hero_artwork_card.dart';
@@ -41,6 +43,8 @@ class NowPlayingScreen extends ConsumerStatefulWidget {
 
 class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
   NowPlayingLayoutMode _layoutMode = NowPlayingLayoutMode.standard;
+  bool _showSpectrumVisualizer = false;
+  List<double>? _cachedWaveform;
 
   void _cycleLayoutMode() {
     HapticFeedback.selectionClick();
@@ -55,6 +59,31 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
         case NowPlayingLayoutMode.art:
           _layoutMode = NowPlayingLayoutMode.standard;
           break;
+      }
+    });
+  }
+
+  void _loadWaveformIfAvailable(String? trackId, String? filePath) {
+    if (trackId == null) return;
+    final preProcessor = ref.read(waveformPreProcessorProvider);
+    preProcessor
+        .getOrAnalyzeWaveform(trackId: trackId, filePath: filePath ?? '')
+        .then((amplitudes) {
+      if (mounted && amplitudes.isNotEmpty) {
+        setState(() {
+          _cachedWaveform = amplitudes;
+        });
+      }
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final currentTrack = ref.read(playerNotifierProvider).currentTrack;
+      if (currentTrack != null) {
+        _loadWaveformIfAvailable(currentTrack.id, currentTrack.filePath);
       }
     });
   }
@@ -146,6 +175,24 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                             ),
                             onPressed: _cycleLayoutMode,
                             tooltip: 'Switch Layout Mode',
+                            padding: const EdgeInsets.all(6),
+                            constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              _showSpectrumVisualizer
+                                  ? Icons.graphic_eq_rounded
+                                  : Icons.waterfall_chart_rounded,
+                              size: 22,
+                              color: _showSpectrumVisualizer ? primary : null,
+                            ),
+                            onPressed: () {
+                              HapticFeedback.selectionClick();
+                              setState(() {
+                                _showSpectrumVisualizer = !_showSpectrumVisualizer;
+                              });
+                            },
+                            tooltip: 'Toggle Spectrum Visualizer',
                             padding: const EdgeInsets.all(6),
                             constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
                           ),
@@ -258,19 +305,30 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                     ],
                   ),
 
-                  // Seekable Interactive Waveform Visualizer
-                  WaveformVisualizer(
-                    position: playerState.position,
-                    duration: playerState.duration.inSeconds > 0
-                        ? playerState.duration
-                        : const Duration(seconds: 230),
-                    isPlaying: isPlaying,
-                    trackSeed: currentTrack?.id ?? 'default_seed',
-                    activeColor: primary,
-                    onSeek: (newPos) {
-                      ref.read(playerNotifierProvider.notifier).seek(newPos);
-                    },
-                  ),
+                  // Seekable Interactive Waveform Visualizer or Real-time Spectrum
+                  _showSpectrumVisualizer
+                      ? SizedBox(
+                          height: 72,
+                          child: GestureDetector(
+                            onTap: () => context.push(AppRoutes.visualizerSettings),
+                            child: const SpectrumVisualizerWidget(
+                              height: 72,
+                            ),
+                          ),
+                        )
+                      : WaveformVisualizer(
+                          position: playerState.position,
+                          duration: playerState.duration.inSeconds > 0
+                              ? playerState.duration
+                              : const Duration(seconds: 230),
+                          isPlaying: isPlaying,
+                          trackSeed: currentTrack?.id ?? 'default_seed',
+                          cachedAmplitudes: _cachedWaveform,
+                          activeColor: primary,
+                          onSeek: (newPos) {
+                            ref.read(playerNotifierProvider.notifier).seek(newPos);
+                          },
+                        ),
 
                   // Modern Playback Controls Row
                   Row(
