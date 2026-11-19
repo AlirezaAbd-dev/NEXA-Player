@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nexa_player/core/constants/phase2_keys.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
+import 'package:nexa_player/core/design_system/glass_tokens.dart';
+import 'package:nexa_player/core/di/service_providers.dart';
 import 'package:nexa_player/features/library/presentation/providers/library_providers.dart';
 import 'package:nexa_player/features/scanner/domain/media_scanner_service.dart';
 import 'package:nexa_player/features/scanner/presentation/providers/scanner_providers.dart';
@@ -25,6 +27,10 @@ class ScannerSettingsScreen extends ConsumerStatefulWidget {
 class _ScannerSettingsScreenState extends ConsumerState<ScannerSettingsScreen> {
   bool _skipShortFiles = true;
   double _minDuration = 5.0;
+  bool _skipNoMedia = true;
+  bool _skipMp4 = true;
+  bool _scanOnLaunch = true;
+  final String _tagEncoding = 'Auto (UTF-8 / ID3v2)';
 
   void _showAddFolderDialog(BuildContext context) {
     final controller = TextEditingController();
@@ -65,12 +71,56 @@ class _ScannerSettingsScreenState extends ConsumerState<ScannerSettingsScreen> {
     );
   }
 
+  void _confirmDropDatabase(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AppDialog(
+        title: 'Drop & Wipe Database?',
+        content: const Text(
+          'This will purge all indexed tracks, albums, artists, and playlists from the database cache. Physical audio files on your storage will remain untouched.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          GlassButton(
+            label: 'Wipe Database',
+            accentColor: Colors.redAccent,
+            onPressed: () {
+              final db = ref.read(appDatabaseProvider);
+              db.execute('DELETE FROM tracks;');
+              db.execute('DELETE FROM albums;');
+              db.execute('DELETE FROM artists;');
+              db.execute('DELETE FROM genres;');
+
+              ref.invalidate(tracksListProvider);
+              ref.invalidate(albumsListProvider);
+              ref.invalidate(artistsListProvider);
+              ref.invalidate(genresListProvider);
+              ref.invalidate(foldersTreeProvider);
+
+              Navigator.of(ctx).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Database reset. Tap "Scan Now" to re-index.'),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _startRescan(List<ScanDirectory> dirs) async {
-    final activePaths = dirs.where((d) => d.isEnabled).map((d) => d.path).toList();
+    final activePaths =
+        dirs.where((d) => d.isEnabled).map((d) => d.path).toList();
     final config = ScannerConfig(
       skipShortAudio: _skipShortFiles,
       minDurationSeconds: _minDuration.round(),
-      skipNoMedia: true,
+      skipNoMedia: _skipNoMedia,
       skipSmallFiles: true,
     );
 
@@ -91,6 +141,8 @@ class _ScannerSettingsScreenState extends ConsumerState<ScannerSettingsScreen> {
   Widget build(BuildContext context) {
     final directoriesAsync = ref.watch(scanDirectoriesProvider);
     final scannerState = ref.watch(scannerStateNotifierProvider);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       key: Phase2Keys.scannerSettingsScreen,
@@ -100,7 +152,7 @@ class _ScannerSettingsScreenState extends ConsumerState<ScannerSettingsScreen> {
         titleText: 'Media Scanner',
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16.0, 100.0, 16.0, 40.0),
+        padding: const EdgeInsets.fromLTRB(16.0, 100.0, 16.0, 130.0),
         children: [
           // Section 1: Scan Actions & Status
           GlassCard(
@@ -160,7 +212,7 @@ class _ScannerSettingsScreenState extends ConsumerState<ScannerSettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Skip Heuristics',
+                  'Skip Heuristics & Filtering',
                   style: AppTypography.titleMedium
                       .copyWith(fontWeight: FontWeight.bold),
                 ),
@@ -202,12 +254,100 @@ class _ScannerSettingsScreenState extends ConsumerState<ScannerSettingsScreen> {
                     },
                   ),
                 ],
+                const Divider(color: Colors.white12),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Skip .nomedia Directories'),
+                  subtitle: const Text(
+                    'Respect Android hidden directory marker flags',
+                    style: AppTypography.bodySmall,
+                  ),
+                  value: _skipNoMedia,
+                  onChanged: (val) {
+                    setState(() {
+                      _skipNoMedia = val;
+                    });
+                  },
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Skip Video/MP4 Audio Containers'),
+                  subtitle: const Text(
+                    'Filter out video files from audio library scan',
+                    style: AppTypography.bodySmall,
+                  ),
+                  value: _skipMp4,
+                  onChanged: (val) {
+                    setState(() {
+                      _skipMp4 = val;
+                    });
+                  },
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Automatic Scan on App Launch'),
+                  subtitle: const Text(
+                    'Detect newly downloaded media on startup',
+                    style: AppTypography.bodySmall,
+                  ),
+                  value: _scanOnLaunch,
+                  onChanged: (val) {
+                    setState(() {
+                      _scanOnLaunch = val;
+                    });
+                  },
+                ),
               ],
             ),
           ),
           const SizedBox(height: AppSpacing.md),
 
-          // Section 3: Music Folders
+          // Section 3: Metadata & Formats
+          GlassCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Tag Encoding & Formats',
+                  style: AppTypography.titleMedium
+                      .copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Tag Encoding'),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary.withOpacity(0.12),
+                        borderRadius:
+                            BorderRadius.circular(GlassTokens.radiusSmall),
+                      ),
+                      child: Text(
+                        _tagEncoding,
+                        style: AppTypography.labelSmall.copyWith(
+                          color: colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                const Text(
+                  'Recognized Extensions: .mp3, .flac, .m4a, .wav, .aac, .ogg, .opus',
+                  style: TextStyle(color: Colors.white54, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+
+          // Section 4: Music Folders
           GlassCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -272,8 +412,39 @@ class _ScannerSettingsScreenState extends ConsumerState<ScannerSettingsScreen> {
                       },
                     );
                   },
-                  loading: () => const Center(child: CircularProgressIndicator()),
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
                   error: (e, _) => Text('Error: $e'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+
+          // Section 5: Database Maintenance (Dangerous)
+          GlassCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Database Maintenance',
+                  style: AppTypography.titleMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.redAccent,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Purge and reconstruct the local SQLite music database index.',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                GlassButton(
+                  label: 'Drop & Reconstruct Database',
+                  accentColor: Colors.redAccent,
+                  onPressed: () => _confirmDropDatabase(context),
                 ),
               ],
             ),

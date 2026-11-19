@@ -9,9 +9,7 @@ import '../features/player/presentation/screens/now_playing_screen.dart';
 import '../features/playlists/presentation/screens/playlists_tab_screen.dart';
 import '../features/playlists/presentation/screens/ringtone_trimmer_screen.dart';
 import '../features/search/search.dart';
-import '../features/settings/presentation/screens/design_system_showcase_screen.dart';
-import '../features/settings/presentation/screens/scanner_settings_screen.dart';
-import '../features/settings/presentation/screens/settings_hub_screen.dart';
+import '../features/settings/settings.dart';
 import '../features/themes/presentation/screens/custom_theme_editor_screen.dart';
 import '../features/themes/presentation/screens/theme_picker_screen.dart';
 import '../shared/models/track.dart';
@@ -99,6 +97,46 @@ final appRouter = GoRouter(
                   path: 'scanner',
                   builder: (context, state) =>
                       const ScannerSettingsScreen(),
+                ),
+                GoRoute(
+                  path: 'audio',
+                  builder: (context, state) =>
+                      const AudioSettingsScreen(),
+                ),
+                GoRoute(
+                  path: 'controls',
+                  builder: (context, state) =>
+                      const ControlSettingsScreen(),
+                ),
+                GoRoute(
+                  path: 'album-art',
+                  builder: (context, state) =>
+                      const AlbumArtSettingsScreen(),
+                ),
+                GoRoute(
+                  path: 'metadata',
+                  builder: (context, state) =>
+                      const MetadataLyricsSettingsScreen(),
+                ),
+                GoRoute(
+                  path: 'power-saving',
+                  builder: (context, state) =>
+                      const PowerSavingSettingsScreen(),
+                ),
+                GoRoute(
+                  path: 'notifications',
+                  builder: (context, state) =>
+                      const NotificationsSettingsScreen(),
+                ),
+                GoRoute(
+                  path: 'privacy',
+                  builder: (context, state) =>
+                      const PrivacyStorageSettingsScreen(),
+                ),
+                GoRoute(
+                  path: 'about',
+                  builder: (context, state) =>
+                      const AboutSettingsScreen(),
                 ),
               ],
             ),

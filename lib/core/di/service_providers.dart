@@ -12,6 +12,7 @@ import 'package:nexa_player/features/playlists/domain/services/ringtone_service.
 import 'package:nexa_player/features/playlists/domain/services/share_service.dart';
 import 'package:nexa_player/features/playlists/domain/services/tag_editor_service.dart';
 import 'package:nexa_player/features/search/domain/repositories/search_repository.dart';
+import 'package:nexa_player/features/settings/domain/services/settings_service.dart';
 import 'package:nexa_player/shared/services/database/app_database.dart';
 import 'package:nexa_player/shared/services/logging/logging_service.dart';
 import 'package:nexa_player/shared/services/storage/storage_service.dart';
@@ -96,6 +97,12 @@ final lyricsServiceProvider = Provider<ILyricsService>((ref) {
 final searchRepositoryProvider = Provider<ISearchRepository>((ref) {
   return getIt<ISearchRepository>();
 });
+
+/// Exposes the [ISettingsService] interface to Riverpod.
+final settingsServiceProvider = Provider<ISettingsService>((ref) {
+  return getIt<ISettingsService>();
+});
+
 
 
 

@@ -23,6 +23,7 @@ import 'package:nexa_player/features/playlists/presentation/screens/playlist_det
 import 'package:nexa_player/features/playlists/presentation/screens/ringtone_trimmer_screen.dart';
 import 'package:nexa_player/features/player/presentation/providers/player_providers.dart';
 import 'package:nexa_player/features/search/search.dart';
+import 'package:nexa_player/features/settings/settings.dart';
 import 'package:nexa_player/shared/models/album.dart';
 import 'package:nexa_player/shared/models/artist.dart';
 import 'package:nexa_player/shared/models/playlist.dart';
@@ -408,6 +409,50 @@ void main() {
         ),
       ),
       filename: '21_search_screen.png',
+    );
+
+    // 3.7 Settings In-Hub Live Search
+    await _captureWidget(
+      tester: tester,
+      widget: ProviderScope(
+        overrides: [
+          settingsSearchQueryProvider.overrideWith((ref) => 'crossfade'),
+        ],
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: darkTheme,
+          home: const SettingsHubScreen(),
+        ),
+      ),
+      filename: '22_settings_hub_search.png',
+    );
+
+    // 3.8 Audio Settings Screen (Full Hardware & Output Configurations)
+    await _captureWidget(
+      tester: tester,
+      widget: ProviderScope(
+        overrides: [
+          audioSettingsProvider.overrideWith((ref) {
+            final s = AudioSettingsNotifier(getIt<ISettingsService>());
+            s.update(const AudioSettings(
+              crossfadeEnabled: true,
+              crossfadeDurationSeconds: 4,
+              sampleRate: '96',
+              bitDepth: '24',
+              audioOutput: 'usb_dac',
+              replayGainMode: 'smart',
+              replayGainPreampDb: 3.5,
+            ));
+            return s;
+          }),
+        ],
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: darkTheme,
+          home: const AudioSettingsScreen(),
+        ),
+      ),
+      filename: '23_audio_settings.png',
     );
 
     // =========================================================================

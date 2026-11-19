@@ -39,6 +39,8 @@ import 'package:nexa_player/features/scanner/domain/media_scanner_service.dart';
 import 'package:nexa_player/features/scanner/domain/repositories/scan_directories_repository.dart';
 import 'package:nexa_player/features/search/data/repositories/sqlite_search_repository.dart';
 import 'package:nexa_player/features/search/domain/repositories/search_repository.dart';
+import 'package:nexa_player/features/settings/data/services/settings_service_impl.dart';
+import 'package:nexa_player/features/settings/domain/services/settings_service.dart';
 import 'package:nexa_player/shared/services/database/app_database.dart';
 import 'package:nexa_player/shared/services/logging/logging_service.dart';
 import 'package:nexa_player/shared/services/logging/talker_logging_service.dart';
@@ -77,6 +79,7 @@ Future<void> configureDependencies({
   ILrclibApiClient? lrclibApiClient,
   ILyricsService? lyricsService,
   ISearchRepository? searchRepository,
+  ISettingsService? settingsService,
   bool seedDemoData = true,
 }) async {
   // 1. SharedPreferences instance
@@ -298,7 +301,14 @@ Future<void> configureDependencies({
     );
   }
 
-  // 13. Seed demo library if database is freshly opened and empty
+  // 13. Settings Service
+  if (!getIt.isRegistered<ISettingsService>()) {
+    getIt.registerSingleton<ISettingsService>(
+      settingsService ?? SettingsServiceImpl(getIt<IStorageService>()),
+    );
+  }
+
+  // 14. Seed demo library if database is freshly opened and empty
   if (seedDemoData && !db.isClosed) {
     _seedDemoData(db);
   }
