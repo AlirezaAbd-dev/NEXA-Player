@@ -8,6 +8,7 @@ import '../features/lyrics/lyrics.dart';
 import '../features/player/presentation/screens/now_playing_screen.dart';
 import '../features/playlists/presentation/screens/playlists_tab_screen.dart';
 import '../features/playlists/presentation/screens/ringtone_trimmer_screen.dart';
+import '../features/search/search.dart';
 import '../features/settings/presentation/screens/design_system_showcase_screen.dart';
 import '../features/settings/presentation/screens/scanner_settings_screen.dart';
 import '../features/settings/presentation/screens/settings_hub_screen.dart';
@@ -143,6 +144,13 @@ final appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       path: AppRoutes.lyrics,
       builder: (context, state) => const LyricsScreen(),
+    ),
+
+    // 6. Full-Screen Search Route
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: AppRoutes.search,
+      builder: (context, state) => const SearchScreen(),
     ),
   ],
 );

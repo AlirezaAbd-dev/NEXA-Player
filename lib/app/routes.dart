@@ -16,4 +16,5 @@ abstract final class AppRoutes {
   static const String equalizer = '/equalizer';
   static const String ringtoneTrimmer = '/ringtone-trimmer';
   static const String lyrics = '/lyrics';
+  static const String search = '/search';
 }

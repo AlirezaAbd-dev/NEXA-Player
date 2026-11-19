@@ -11,6 +11,7 @@ import 'package:nexa_player/features/playlists/domain/services/m3u_service.dart'
 import 'package:nexa_player/features/playlists/domain/services/ringtone_service.dart';
 import 'package:nexa_player/features/playlists/domain/services/share_service.dart';
 import 'package:nexa_player/features/playlists/domain/services/tag_editor_service.dart';
+import 'package:nexa_player/features/search/domain/repositories/search_repository.dart';
 import 'package:nexa_player/shared/services/database/app_database.dart';
 import 'package:nexa_player/shared/services/logging/logging_service.dart';
 import 'package:nexa_player/shared/services/storage/storage_service.dart';
@@ -89,6 +90,11 @@ final lrclibApiClientProvider = Provider<ILrclibApiClient>((ref) {
 /// Exposes the [ILyricsService] interface to Riverpod.
 final lyricsServiceProvider = Provider<ILyricsService>((ref) {
   return getIt<ILyricsService>();
+});
+
+/// Exposes the [ISearchRepository] interface to Riverpod.
+final searchRepositoryProvider = Provider<ISearchRepository>((ref) {
+  return getIt<ISearchRepository>();
 });
 
 

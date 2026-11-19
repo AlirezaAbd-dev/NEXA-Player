@@ -22,6 +22,7 @@ import 'package:nexa_player/features/lyrics/lyrics.dart';
 import 'package:nexa_player/features/playlists/presentation/screens/playlist_detail_screen.dart';
 import 'package:nexa_player/features/playlists/presentation/screens/ringtone_trimmer_screen.dart';
 import 'package:nexa_player/features/player/presentation/providers/player_providers.dart';
+import 'package:nexa_player/features/search/search.dart';
 import 'package:nexa_player/shared/models/album.dart';
 import 'package:nexa_player/shared/models/artist.dart';
 import 'package:nexa_player/shared/models/playlist.dart';
@@ -353,6 +354,60 @@ void main() {
         ),
       ),
       filename: '20_lyrics_screen.png',
+    );
+
+    // 3.7 Cross-Library Search Screen (Phase 8 Search & Filter)
+    const searchSampleTrack1 = Track(
+      id: 'trk-search-1',
+      title: 'Starboy (feat. Daft Punk)',
+      artist: 'The Weeknd',
+      album: 'Starboy',
+      duration: Duration(seconds: 230),
+      filePath: '/music/starboy.mp3',
+    );
+    const searchSampleTrack2 = Track(
+      id: 'trk-search-2',
+      title: 'I Feel It Coming',
+      artist: 'The Weeknd',
+      album: 'Starboy',
+      duration: Duration(seconds: 269),
+      filePath: '/music/feel_it.mp3',
+    );
+    const searchSampleAlbum = Album(
+      id: 'alb-search-1',
+      title: 'Starboy',
+      artist: 'The Weeknd',
+      year: 2016,
+      trackCount: 18,
+    );
+    const searchSampleArtist = Artist(
+      id: 'art-search-1',
+      name: 'The Weeknd',
+      trackCount: 18,
+      albumCount: 1,
+    );
+    const searchDemoResult = SearchResult(
+      query: 'Starboy',
+      tracks: [searchSampleTrack1, searchSampleTrack2],
+      albums: [searchSampleAlbum],
+      artists: [searchSampleArtist],
+    );
+
+    await _captureWidget(
+      tester: tester,
+      widget: ProviderScope(
+        overrides: [
+          searchQueryProvider.overrideWith((ref) => 'Starboy'),
+          searchCategoryProvider.overrideWith((ref) => SearchResultCategory.all),
+          searchResultsProvider.overrideWith((ref) => Future.value(searchDemoResult)),
+        ],
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: darkTheme,
+          home: const SearchScreen(),
+        ),
+      ),
+      filename: '21_search_screen.png',
     );
 
     // =========================================================================

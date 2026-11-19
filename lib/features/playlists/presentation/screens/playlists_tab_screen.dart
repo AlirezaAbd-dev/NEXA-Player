@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:nexa_player/app/routes.dart';
 import 'package:nexa_player/core/constants/phase2_keys.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
@@ -102,6 +104,11 @@ class PlaylistsTabScreen extends ConsumerWidget {
         titleText: 'Playlists',
         automaticallyImplyLeading: false,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.search_rounded, color: Colors.white70),
+            tooltip: 'Search library',
+            onPressed: () => context.push(AppRoutes.search),
+          ),
           IconButton(
             icon: const Icon(Icons.file_download_outlined, color: Colors.white70),
             tooltip: 'Import M3U',

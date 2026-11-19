@@ -38,4 +38,7 @@ abstract final class StorageKeys {
   static const String lastScanTimestamp = 'nexa_last_scan_timestamp';
   static const String sortOrder = 'nexa_library_sort_order';
   static const String sortAscending = 'nexa_library_sort_ascending';
+
+  // Search
+  static const String recentSearches = 'nexa_recent_searches';
 }

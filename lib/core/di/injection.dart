@@ -37,6 +37,8 @@ import 'package:nexa_player/features/scanner/data/repositories/sqlite_scan_direc
 import 'package:nexa_player/features/scanner/domain/audio_metadata_reader.dart';
 import 'package:nexa_player/features/scanner/domain/media_scanner_service.dart';
 import 'package:nexa_player/features/scanner/domain/repositories/scan_directories_repository.dart';
+import 'package:nexa_player/features/search/data/repositories/sqlite_search_repository.dart';
+import 'package:nexa_player/features/search/domain/repositories/search_repository.dart';
 import 'package:nexa_player/shared/services/database/app_database.dart';
 import 'package:nexa_player/shared/services/logging/logging_service.dart';
 import 'package:nexa_player/shared/services/logging/talker_logging_service.dart';
@@ -74,6 +76,7 @@ Future<void> configureDependencies({
   IShareService? shareService,
   ILrclibApiClient? lrclibApiClient,
   ILyricsService? lyricsService,
+  ISearchRepository? searchRepository,
   bool seedDemoData = true,
 }) async {
   // 1. SharedPreferences instance
@@ -189,6 +192,16 @@ Future<void> configureDependencies({
   if (!getIt.isRegistered<IPlaylistsRepository>()) {
     getIt.registerSingleton<IPlaylistsRepository>(
       playlistsRepository ?? SqlitePlaylistsRepository(db),
+    );
+  }
+
+  if (!getIt.isRegistered<ISearchRepository>()) {
+    getIt.registerSingleton<ISearchRepository>(
+      searchRepository ??
+          SqliteSearchRepository(
+            database: db,
+            storage: getIt<IStorageService>(),
+          ),
     );
   }
 
