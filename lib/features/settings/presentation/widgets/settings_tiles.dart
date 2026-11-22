@@ -441,36 +441,42 @@ class SettingsSelectorTile<T> extends StatelessWidget {
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 4,
-              ),
-              decoration: BoxDecoration(
-                color: colorScheme.primary.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(GlassTokens.radiusSmall),
-                border: Border.all(
-                  color: colorScheme.primary.withOpacity(0.25),
-                  width: 0.8,
+            Flexible(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
                 ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    displayLabel,
-                    style: AppTypography.labelSmall.copyWith(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.w600,
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(GlassTokens.radiusSmall),
+                  border: Border.all(
+                    color: colorScheme.primary.withOpacity(0.25),
+                    width: 0.8,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        displayLabel,
+                        style: AppTypography.labelSmall.copyWith(
+                          color: colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.unfold_more_rounded,
-                    size: 14,
-                    color: colorScheme.primary.withOpacity(0.7),
-                  ),
-                ],
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.unfold_more_rounded,
+                      size: 14,
+                      color: colorScheme.primary.withOpacity(0.7),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

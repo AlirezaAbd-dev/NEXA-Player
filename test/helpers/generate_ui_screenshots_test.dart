@@ -524,6 +524,110 @@ void main() {
       filename: '28_wear_os_companion.png',
     );
 
+    // 3.19 Auto & Wearable Settings (Phase 13)
+    await _captureWidget(
+      tester: tester,
+      widget: ProviderScope(
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: darkTheme,
+          home: const AutoWearableSettingsScreen(),
+        ),
+      ),
+      filename: '29_auto_wearable_settings.png',
+    );
+
+    // 3.20 About & Audiophile Specs Screen (Phase 9)
+    await _captureWidget(
+      tester: tester,
+      widget: ProviderScope(
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: darkTheme,
+          home: const AboutSettingsScreen(),
+        ),
+      ),
+      filename: '30_about_settings.png',
+    );
+
+    // 3.21 Album Art & Covers Cache Settings (Phase 9)
+    await _captureWidget(
+      tester: tester,
+      widget: ProviderScope(
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: darkTheme,
+          home: const AlbumArtSettingsScreen(),
+        ),
+      ),
+      filename: '31_album_art_settings.png',
+    );
+
+    // 3.22 Gesture & Headset Controls Settings (Phase 9)
+    await _captureWidget(
+      tester: tester,
+      widget: ProviderScope(
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: darkTheme,
+          home: const ControlSettingsScreen(),
+        ),
+      ),
+      filename: '32_control_settings.png',
+    );
+
+    // 3.23 Lock Screen & Notifications Settings (Phase 9)
+    await _captureWidget(
+      tester: tester,
+      widget: ProviderScope(
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: darkTheme,
+          home: const NotificationsSettingsScreen(),
+        ),
+      ),
+      filename: '33_notifications_settings.png',
+    );
+
+    // 3.24 Power Saving & Audio Focus Settings (Phase 9)
+    await _captureWidget(
+      tester: tester,
+      widget: ProviderScope(
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: darkTheme,
+          home: const PowerSavingSettingsScreen(),
+        ),
+      ),
+      filename: '34_power_saving_settings.png',
+    );
+
+    // 3.25 Privacy & Storage Backup Settings (Phase 9)
+    await _captureWidget(
+      tester: tester,
+      widget: ProviderScope(
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: darkTheme,
+          home: const PrivacyStorageSettingsScreen(),
+        ),
+      ),
+      filename: '35_privacy_storage_settings.png',
+    );
+
+    // 3.26 Metadata & Lyrics Provider Settings (Phase 9)
+    await _captureWidget(
+      tester: tester,
+      widget: ProviderScope(
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: darkTheme,
+          home: const MetadataLyricsSettingsScreen(),
+        ),
+      ),
+      filename: '36_metadata_lyrics_settings.png',
+    );
+
     // =========================================================================
     // 4. Multi-Theme Variations (Daylight Light Mode & Sakura Pink Preset)
     // =========================================================================
@@ -570,7 +674,7 @@ void main() {
       tester: tester,
       widget: const ProviderScope(child: NexaPlayerApp()),
       filename: '17_desktop_layout.png',
-      size: const Size(1000 * 2.0, 650 * 2.0),
+      size: const Size(1200 * 2.0, 800 * 2.0),
     );
   });
 }
