@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=NEXA Player
+GenericName=Audio Player
+Comment=High-fidelity Neo-Modern Obsidian AMOLED Music Player with Parametric EQ, FFT Visualizer & Synced Lyrics
+Exec=nexa_player %U
+Icon=nexa-player
+Terminal=false
+Type=Application
+Categories=AudioVideo;Audio;Player;Music;
+MimeType=audio/mpeg;audio/x-mpeg;audio/mp3;audio/x-mp3;audio/mpeg3;audio/x-mpeg3;audio/mpg;audio/x-mpg;audio/x-mpegaudio;audio/flac;audio/x-flac;audio/wav;audio/x-wav;audio/aac;audio/ogg;audio/x-vorbis+ogg;audio/opus;audio/mp4;audio/m4a;
+StartupWMClass=nexa_player
+Keywords=audio;music;player;equalizer;flac;mp3;karaoke;visualizer;

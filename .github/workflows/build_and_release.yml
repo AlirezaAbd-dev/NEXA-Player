@@ -1,0 +1,198 @@
+name: Build & Release Multi-Platform Matrix
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  # ===========================================================================
+  # 1. Android Build (APK Split per ABI & App Bundle AAB)
+  # ===========================================================================
+  build-android:
+    name: Android (APK & AAB)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Run Test Suite
+        run: flutter test
+
+      - name: Build Split per ABI Release APKs
+        run: flutter build apk --release --split-per-abi
+
+      - name: Build Release App Bundle (AAB)
+        run: flutter build appbundle --release
+
+      - name: Stage Android Artifacts
+        run: |
+          mkdir -p staging/android
+          cp build/app/outputs/flutter-apk/*.apk staging/android/
+          cp build/app/outputs/bundle/release/*.aab staging/android/
+
+      - name: Upload Android Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexa-player-android
+          path: staging/android/*
+
+  # ===========================================================================
+  # 2. Linux Desktop Build & Debian Package (.deb)
+  # ===========================================================================
+  build-linux:
+    name: Linux (.deb & Binary)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Linux Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libasound2-dev dpkg-dev
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build Linux Desktop Release
+        run: flutter build linux --release
+
+      - name: Package Debian (.deb) Archive
+        run: |
+          chmod +x packaging/linux/build_deb.sh
+          ./packaging/linux/build_deb.sh
+
+      - name: Upload Linux Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexa-player-linux
+          path: dist/linux/*.deb
+
+  # ===========================================================================
+  # 3. Windows Desktop Build & Inno Setup Installer (.exe)
+  # ===========================================================================
+  build-windows:
+    name: Windows (Installer .exe)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build Windows Desktop Release
+        run: flutter build windows --release
+
+      - name: Compile Inno Setup Installer
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
+        with:
+          path: packaging/windows/installer.iss
+
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexa-player-windows
+          path: dist/windows/*.exe
+
+  # ===========================================================================
+  # 4. macOS Desktop Build & Disk Image (.dmg)
+  # ===========================================================================
+  build-macos:
+    name: macOS (.dmg)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build macOS Desktop Release
+        run: flutter build macos --release
+
+      - name: Package macOS Disk Image (.dmg)
+        run: |
+          chmod +x packaging/macos/build_dmg.sh
+          ./packaging/macos/build_dmg.sh
+
+      - name: Upload macOS Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexa-player-macos
+          path: dist/macos/*.dmg
+
+  # ===========================================================================
+  # 5. Automated GitHub Release on Version Tag (v*)
+  # ===========================================================================
+  release:
+    name: Create GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [ build-android, build-linux, build-windows, build-macos ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download All Platform Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Organize Release Binaries
+        run: |
+          mkdir -p release-binaries
+          find release-artifacts -type f \( -name "*.apk" -o -name "*.aab" -o -name "*.deb" -o -name "*.exe" -o -name "*.dmg" \) -exec cp {} release-binaries/ \;
+          ls -la release-binaries/
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-binaries/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false

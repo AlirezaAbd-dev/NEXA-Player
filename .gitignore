@@ -45,3 +45,6 @@ app.*.map.json
 # Agent workspace files
 .agents/
 
+# Local distribution outputs
+/dist/
+
