@@ -53,6 +53,11 @@ abstract final class GlassTokens {
   static const double radiusFab = 100.0;
   static const double radiusCircular = 999.0;
 
+  // Short aliases
+  static const double radiusSm = radiusSmall;
+  static const double radiusMd = radiusMedium;
+  static const double radiusLg = radiusLarge;
+
   // BorderRadius convenience getters
   static BorderRadius get cardBorderRadius => BorderRadius.circular(radiusCard);
   static BorderRadius get pillBorderRadius => BorderRadius.circular(radiusPill);

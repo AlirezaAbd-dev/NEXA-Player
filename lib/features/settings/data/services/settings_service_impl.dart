@@ -716,6 +716,43 @@ class SettingsServiceImpl implements ISettingsService {
       keywords: ['wear os', 'watch', 'smartwatch', 'galaxy watch', 'pixel watch', 'wrist', 'rotary'],
     ),
 
+    // Cloud & Network Streaming (Phase 14)
+    SettingSearchItem(
+      title: 'Cloud & Network Streaming Hub',
+      subtitle: 'DLNA/UPnP Casting, NAS storage endpoints, and audiophile web radio',
+      category: 'Cloud & Network',
+      route: AppRoutes.cloud,
+      keywords: ['cloud', 'network', 'stream', 'dlna', 'upnp', 'chromecast', 'speaker', 'cast', 'wifi'],
+    ),
+    SettingSearchItem(
+      title: 'Network Audio Casting (UPnP / DLNA)',
+      subtitle: 'Stream bit-perfect audio to home speakers, Sonos, Denon, and smart displays',
+      category: 'Cloud & Network',
+      route: AppRoutes.cloud,
+      keywords: ['cast', 'dlna', 'upnp', 'speaker', 'hi-fi', 'sonos', 'denon', 'chromecast', 'receiver'],
+    ),
+    SettingSearchItem(
+      title: 'Remote Storage & NAS Sync (WebDAV)',
+      subtitle: 'Browse and stream music from Synology, QNAP, TrueNAS, and Nextcloud',
+      category: 'Cloud & Network',
+      route: AppRoutes.cloud,
+      keywords: ['nas', 'webdav', 'synology', 'qnap', 'truenas', 'nextcloud', 'remote', 'storage', 'server'],
+    ),
+    SettingSearchItem(
+      title: 'Lossless Audiophile Web Radio',
+      subtitle: 'Curated FLAC 24-bit and 320k radio stations (Radio Paradise, Linn Jazz, SomaFM)',
+      category: 'Cloud & Network',
+      route: AppRoutes.cloudRadio,
+      keywords: ['radio', 'web radio', 'flac', 'lossless', 'linn', 'soma', 'paradise', 'broadcast', 'internet radio'],
+    ),
+    SettingSearchItem(
+      title: 'Streaming Disk Cache Quota',
+      subtitle: 'Manage offline LRU disk cache quota for streamed audio files',
+      category: 'Cloud & Network',
+      route: AppRoutes.cloud,
+      keywords: ['cache', 'disk', 'quota', 'offline', 'storage', 'download', 'purge', 'megabytes'],
+    ),
+
     // About
     SettingSearchItem(
       title: 'About NEXA Player',

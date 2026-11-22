@@ -292,6 +292,18 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
 
+            // Cloud & Network Streaming (Phase 14)
+            _buildCategoryCard(
+              context,
+              icon: Icons.cloud_sync_rounded,
+              iconColor: const Color(0xFF00E5FF),
+              title: 'Cloud & Network Streaming',
+              subtitle: 'UPnP/DLNA Casting, WebDAV/NAS sync, Lossless Web Radio',
+              badge: 'DLNA / NAS',
+              onTap: () => context.push(AppRoutes.cloud),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+
             // 5. Playback & Controls
             _buildCategoryCard(
               context,

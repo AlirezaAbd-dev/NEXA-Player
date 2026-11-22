@@ -170,4 +170,12 @@ abstract final class StorageKeys {
   static const String carModeLargeButtons = 'nexa_car_large_buttons';
   static const String carModeBluetoothAutoLaunch = 'nexa_car_bt_auto_launch';
   static const String wearCompanionEnabled = 'nexa_wear_companion_enabled';
+
+  // Cloud & Network Streaming (Phase 14)
+  static const String networkServersList = 'nexa_network_servers_list';
+  static const String cloudCacheMaxMb = 'nexa_cloud_cache_max_mb';
+  static const String cloudAutoDiscoverCast = 'nexa_cloud_auto_discover_cast';
+  static const String cloudBufferAheadSec = 'nexa_cloud_buffer_ahead_sec';
+  static const String cloudLosslessAudio = 'nexa_cloud_lossless_audio';
+  static const String lastCastDeviceId = 'nexa_last_cast_device_id';
 }

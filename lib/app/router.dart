@@ -16,6 +16,7 @@ import '../features/themes/presentation/screens/theme_picker_screen.dart';
 import '../features/visualizer/visualizer.dart';
 import '../features/widgets/widgets.dart';
 import '../features/auto/auto.dart';
+import '../features/cloud/cloud.dart';
 import '../shared/models/track.dart';
 import 'routes.dart';
 import 'shell/scaffold_with_nav_bar.dart';
@@ -231,6 +232,30 @@ final appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       path: AppRoutes.wear,
       builder: (context, state) => const WearCompanionScreen(),
+    ),
+
+    // 11. Cloud & Network Streaming Hub (Phase 14)
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: AppRoutes.cloud,
+      builder: (context, state) => const CloudStreamingHubScreen(),
+    ),
+
+    // 12. Remote Network Storage Browser (WebDAV / NAS)
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: AppRoutes.cloudBrowse,
+      builder: (context, state) {
+        final serverId = state.uri.queryParameters['serverId'] ?? '';
+        return NetworkServerBrowserScreen(serverId: serverId);
+      },
+    ),
+
+    // 13. Audiophile Web Radio Broadcasts
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: AppRoutes.cloudRadio,
+      builder: (context, state) => const WebRadioScreen(),
     ),
   ],
 );

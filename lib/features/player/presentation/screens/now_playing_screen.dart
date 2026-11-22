@@ -8,6 +8,7 @@ import '../../../../core/di/service_providers.dart';
 import '../../../../core/theme/dynamic_palette_providers.dart';
 import '../../../../shared/widgets/glass/app_ambient_background.dart';
 import '../../../visualizer/visualizer.dart';
+import '../../../cloud/cloud.dart';
 import '../../domain/entities/playback_state.dart';
 import '../providers/player_providers.dart';
 import '../widgets/hero_artwork_card.dart';
@@ -111,6 +112,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
     final isFavorite = currentTrack?.isFavorite ?? true;
     final isShuffle = playerState.playbackMode == PlaybackMode.shuffle;
     final playbackMode = playerState.playbackMode;
+    final isCasting = ref.watch(isCastingActiveProvider);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -168,70 +170,88 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                           ],
                         ),
                       ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: Icon(
-                              _layoutMode == NowPlayingLayoutMode.standard
-                                  ? Icons.view_carousel_rounded
-                                  : _layoutMode == NowPlayingLayoutMode.vinyl
-                                      ? Icons.album_rounded
-                                      : Icons.image_rounded,
-                              size: 22,
-                            ),
-                            onPressed: _cycleLayoutMode,
-                            tooltip: 'Switch Layout Mode',
-                            padding: const EdgeInsets.all(6),
-                            constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+                      Flexible(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: Icon(
+                                  _layoutMode == NowPlayingLayoutMode.standard
+                                      ? Icons.view_carousel_rounded
+                                      : _layoutMode == NowPlayingLayoutMode.vinyl
+                                          ? Icons.album_rounded
+                                          : Icons.image_rounded,
+                                  size: 22,
+                                ),
+                                onPressed: _cycleLayoutMode,
+                                tooltip: 'Switch Layout Mode',
+                                padding: const EdgeInsets.all(6),
+                                constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+                              ),
+                              IconButton(
+                                icon: Icon(
+                                  _showSpectrumVisualizer
+                                      ? Icons.graphic_eq_rounded
+                                      : Icons.waterfall_chart_rounded,
+                                  size: 22,
+                                  color: _showSpectrumVisualizer ? primary : null,
+                                ),
+                                onPressed: () {
+                                  HapticFeedback.selectionClick();
+                                  setState(() {
+                                    _showSpectrumVisualizer = !_showSpectrumVisualizer;
+                                  });
+                                },
+                                tooltip: 'Toggle Spectrum Visualizer',
+                                padding: const EdgeInsets.all(6),
+                                constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.lyrics_rounded, size: 22),
+                                onPressed: () => context.push(AppRoutes.lyrics),
+                                tooltip: 'Lyrics',
+                                padding: const EdgeInsets.all(6),
+                                constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.equalizer_rounded, size: 22),
+                                onPressed: () => context.push(AppRoutes.equalizer),
+                                tooltip: 'Equalizer & DSP',
+                                padding: const EdgeInsets.all(6),
+                                constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.nightlight_round, size: 22),
+                                onPressed: () => context.push(AppRoutes.standby),
+                                tooltip: 'Bedside Standby Mode',
+                                padding: const EdgeInsets.all(6),
+                                constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.directions_car_rounded, size: 22),
+                                onPressed: () => context.push(AppRoutes.carMode),
+                                tooltip: 'Car Driving Mode',
+                                padding: const EdgeInsets.all(6),
+                                constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+                              ),
+                              IconButton(
+                                key: const ValueKey('cast_now_playing_button'),
+                                icon: Icon(
+                                  isCasting ? Icons.cast_connected_rounded : Icons.cast_rounded,
+                                  size: 22,
+                                  color: isCasting ? const Color(0xFF00E676) : null,
+                                ),
+                                onPressed: () => CastDevicePickerModal.show(context),
+                                tooltip: 'Cast Audio',
+                                padding: const EdgeInsets.all(6),
+                                constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+                              ),
+                            ],
                           ),
-                          IconButton(
-                            icon: Icon(
-                              _showSpectrumVisualizer
-                                  ? Icons.graphic_eq_rounded
-                                  : Icons.waterfall_chart_rounded,
-                              size: 22,
-                              color: _showSpectrumVisualizer ? primary : null,
-                            ),
-                            onPressed: () {
-                              HapticFeedback.selectionClick();
-                              setState(() {
-                                _showSpectrumVisualizer = !_showSpectrumVisualizer;
-                              });
-                            },
-                            tooltip: 'Toggle Spectrum Visualizer',
-                            padding: const EdgeInsets.all(6),
-                            constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.lyrics_rounded, size: 22),
-                            onPressed: () => context.push(AppRoutes.lyrics),
-                            tooltip: 'Lyrics',
-                            padding: const EdgeInsets.all(6),
-                            constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.equalizer_rounded, size: 22),
-                            onPressed: () => context.push(AppRoutes.equalizer),
-                            tooltip: 'Equalizer & DSP',
-                            padding: const EdgeInsets.all(6),
-                            constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.nightlight_round, size: 22),
-                            onPressed: () => context.push(AppRoutes.standby),
-                            tooltip: 'Bedside Standby Mode',
-                            padding: const EdgeInsets.all(6),
-                            constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.directions_car_rounded, size: 22),
-                            onPressed: () => context.push(AppRoutes.carMode),
-                            tooltip: 'Car Driving Mode',
-                            padding: const EdgeInsets.all(6),
-                            constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
-                          ),
-                        ],
+                        ),
                       ),
                     ],
                   ),

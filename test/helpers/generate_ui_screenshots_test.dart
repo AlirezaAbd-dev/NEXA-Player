@@ -15,6 +15,7 @@ import 'package:nexa_player/core/theme/theme_controller.dart';
 import 'package:nexa_player/core/theme/theme_preset.dart';
 import 'package:nexa_player/core/theme/theme_state.dart';
 import 'package:nexa_player/features/auto/auto.dart';
+import 'package:nexa_player/features/cloud/cloud.dart';
 import 'package:nexa_player/features/equalizer/domain/services/equalizer_service.dart';
 import 'package:nexa_player/features/library/presentation/screens/album_detail_screen.dart';
 import 'package:nexa_player/features/library/presentation/screens/artist_detail_screen.dart';
@@ -627,6 +628,63 @@ void main() {
       ),
       filename: '36_metadata_lyrics_settings.png',
     );
+
+    // =========================================================================
+    // 3.27 - 3.29 Cloud & Network Streaming Hub (Phase 14)
+    // =========================================================================
+
+    // 3.27 Cloud & Network Streaming Hub (DLNA Cast, NAS Storage, Web Radio, Cache)
+    await _captureWidget(
+      tester: tester,
+      widget: ProviderScope(
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: darkTheme,
+          home: const CloudStreamingHubScreen(),
+        ),
+      ),
+      filename: '37_cloud_streaming_hub.png',
+    );
+
+    // 3.28 Remote Network Storage Browser (WebDAV / NAS Directory Explorer)
+    await _captureWidget(
+      tester: tester,
+      widget: ProviderScope(
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: darkTheme,
+          home: const NetworkServerBrowserScreen(serverId: 'nexa_demo_synology'),
+        ),
+      ),
+      filename: '38_network_server_browser.png',
+    );
+
+    // 3.29 DLNA & UPnP Casting Device Picker Modal
+    final modalDiscovery = UpnpSsdpDiscoveryService(enableMockFallbacks: true, broadcastPackets: false);
+    await modalDiscovery.startDiscovery();
+    await _captureWidget(
+      tester: tester,
+      widget: ProviderScope(
+        overrides: [
+          castDiscoveryServiceProvider.overrideWithValue(modalDiscovery),
+        ],
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: darkTheme,
+          home: const Scaffold(
+            backgroundColor: Color(0xFF07090E),
+            body: SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(top: 120),
+                child: CastDevicePickerModal(),
+              ),
+            ),
+          ),
+        ),
+      ),
+      filename: '39_dlna_cast_picker.png',
+    );
+    await modalDiscovery.dispose();
 
     // =========================================================================
     // 4. Multi-Theme Variations (Daylight Light Mode & Sakura Pink Preset)

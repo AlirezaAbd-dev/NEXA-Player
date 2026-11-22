@@ -33,4 +33,12 @@ abstract final class AppRoutes {
   static const String standby = '/standby';
   static const String carMode = '/car-mode';
   static const String wear = '/wear';
+
+  // Cloud & Network Streaming (Phase 14)
+  static const String cloud = '/cloud';
+  static const String cloudBrowse = '/cloud/browse';
+  static const String cloudRadio = '/cloud/radio';
 }
+
+/// Convenience alias for [AppRoutes].
+typedef Routes = AppRoutes;
