@@ -224,6 +224,13 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                             padding: const EdgeInsets.all(6),
                             constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
                           ),
+                          IconButton(
+                            icon: const Icon(Icons.directions_car_rounded, size: 22),
+                            onPressed: () => context.push(AppRoutes.carMode),
+                            tooltip: 'Car Driving Mode',
+                            padding: const EdgeInsets.all(6),
+                            constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+                          ),
                         ],
                       ),
                     ],

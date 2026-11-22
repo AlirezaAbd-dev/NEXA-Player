@@ -1,24 +1,56 @@
 import 'dart:async';
 import 'package:audio_service/audio_service.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../shared/models/track.dart';
+import '../../../library/domain/repositories/tracks_repository.dart';
+import '../../../playlists/domain/repositories/playlists_repository.dart';
+import '../../../search/domain/repositories/search_repository.dart';
 import '../../domain/entities/playback_state.dart' as domain;
 import '../../domain/services/audio_engine.dart';
 import '../../domain/services/playback_queue.dart';
 
 /// Background audio handler integrating NEXA Player with the platform OS media session,
-/// lock screen controls, headset events, and notification tray.
+/// lock screen controls, headset events, notification tray, and Android Auto MediaBrowser.
 class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
   NexaAudioHandler({
     required IAudioEngine engine,
     required IPlaybackQueue queue,
+    ITracksRepository? tracksRepository,
+    IPlaylistsRepository? playlistsRepository,
+    ISearchRepository? searchRepository,
   })  : _engine = engine,
-        _queue = queue {
+        _queue = queue,
+        _tracksRepository = tracksRepository,
+        _playlistsRepository = playlistsRepository,
+        _searchRepository = searchRepository {
     _bindStreams();
   }
 
   final IAudioEngine _engine;
   final IPlaybackQueue _queue;
+  final ITracksRepository? _tracksRepository;
+  final IPlaylistsRepository? _playlistsRepository;
+  final ISearchRepository? _searchRepository;
+
   final List<StreamSubscription> _subscriptions = [];
+
+  ITracksRepository? get _effectiveTracksRepo =>
+      _tracksRepository ??
+      (getIt.isRegistered<ITracksRepository>()
+          ? getIt<ITracksRepository>()
+          : null);
+
+  IPlaylistsRepository? get _effectivePlaylistsRepo =>
+      _playlistsRepository ??
+      (getIt.isRegistered<IPlaylistsRepository>()
+          ? getIt<IPlaylistsRepository>()
+          : null);
+
+  ISearchRepository? get _effectiveSearchRepo =>
+      _searchRepository ??
+      (getIt.isRegistered<ISearchRepository>()
+          ? getIt<ISearchRepository>()
+          : null);
 
   void _bindStreams() {
     _subscriptions.add(
@@ -38,7 +70,7 @@ class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
     );
   }
 
-  MediaItem _toMediaItem(Track track) {
+  MediaItem _toMediaItem(Track track, {bool playable = true}) {
     return MediaItem(
       id: track.id,
       title: track.title,
@@ -46,6 +78,7 @@ class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
       album: track.album,
       duration: track.duration,
       artUri: track.artworkUri != null ? Uri.tryParse(track.artworkUri!) : null,
+      playable: playable,
       extras: {
         'filePath': track.filePath,
         'year': track.year,
@@ -77,6 +110,9 @@ class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
           MediaAction.seekBackward,
           MediaAction.setShuffleMode,
           MediaAction.setRepeatMode,
+          MediaAction.playFromMediaId,
+          MediaAction.playFromSearch,
+          MediaAction.setRating,
         },
         androidCompactActionIndices: const [0, 1, 2],
         processingState: isBuffering
@@ -118,7 +154,6 @@ class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> skipToPrevious() async {
-    // If playing for more than 3 seconds, restart current track first
     if (_engine.position > const Duration(seconds: 3)) {
       await _engine.seek(Duration.zero);
       return;
@@ -161,6 +196,263 @@ class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
       _queue.setMode(domain.PlaybackMode.shuffle);
     } else {
       _queue.setMode(domain.PlaybackMode.ordered);
+    }
+  }
+
+  // ===========================================================================
+  // Android Auto MediaBrowser Hierarchy
+  // ===========================================================================
+
+  static const String rootMediaId = 'root';
+  static const String rootSongsId = 'root/songs';
+  static const String rootFavoritesId = 'root/favorites';
+  static const String rootPlaylistsId = 'root/playlists';
+  static const String rootQueueId = 'root/queue';
+
+  @override
+  Future<List<MediaItem>> getChildren(
+    String parentMediaId, [
+    Map<String, dynamic>? options,
+  ]) async {
+    // 1. Top-Level MediaBrowser Root Hierarchy for Android Auto & Wear OS
+    if (parentMediaId == AudioService.browsableRootId ||
+        parentMediaId == rootMediaId) {
+      return const [
+        MediaItem(
+          id: rootSongsId,
+          title: 'All Tracks',
+          album: 'NEXA High-Res Engine',
+          artist: 'Browse complete music library',
+          playable: false,
+        ),
+        MediaItem(
+          id: rootFavoritesId,
+          title: 'Favorites',
+          album: 'NEXA High-Res Engine',
+          artist: 'Starred favorite songs',
+          playable: false,
+        ),
+        MediaItem(
+          id: rootPlaylistsId,
+          title: 'Playlists',
+          album: 'NEXA High-Res Engine',
+          artist: 'Custom playlists',
+          playable: false,
+        ),
+        MediaItem(
+          id: rootQueueId,
+          title: 'Up Next Queue',
+          album: 'NEXA High-Res Engine',
+          artist: 'Active playback queue',
+          playable: false,
+        ),
+      ];
+    }
+
+    // 2. All Songs List
+    if (parentMediaId == rootSongsId) {
+      final repo = _effectiveTracksRepo;
+      if (repo == null) return const [];
+      final res = await repo.getAllTracks();
+      final tracks = res.valueOrNull ?? [];
+      return tracks.map((t) => _toMediaItem(t, playable: true)).toList();
+    }
+
+    // 3. Favorites List
+    if (parentMediaId == rootFavoritesId) {
+      final repo = _effectiveTracksRepo;
+      if (repo == null) return const [];
+      final res = await repo.getAllTracks();
+      final tracks = res.valueOrNull ?? [];
+      final favs = tracks.where((t) => t.isFavorite).toList();
+      return favs.map((t) => _toMediaItem(t, playable: true)).toList();
+    }
+
+    // 4. Playlists Overview
+    if (parentMediaId == rootPlaylistsId) {
+      final repo = _effectivePlaylistsRepo;
+      if (repo == null) return const [];
+      final res = await repo.getAllPlaylists();
+      final playlists = res.valueOrNull ?? [];
+      return playlists.map((p) => MediaItem(
+        id: 'playlist/${p.id}',
+        title: p.name,
+        album: 'Playlist (${p.trackCount} tracks)',
+        artist: 'NEXA Playlist',
+        playable: false,
+      )).toList();
+    }
+
+    // 5. Tracks inside a specific Playlist
+    if (parentMediaId.startsWith('playlist/')) {
+      final playlistId = parentMediaId.substring('playlist/'.length);
+      final repo = _effectivePlaylistsRepo;
+      if (repo == null) return const [];
+      final res = await repo.getTracksForPlaylist(playlistId);
+      final tracks = res.valueOrNull ?? [];
+      return tracks.map((t) => _toMediaItem(t, playable: true)).toList();
+    }
+
+    // 6. Active Playback Queue
+    if (parentMediaId == rootQueueId) {
+      return _queue.state.tracks
+          .map((t) => _toMediaItem(t, playable: true))
+          .toList();
+    }
+
+    return const [];
+  }
+
+  @override
+  Future<MediaItem?> getMediaItem(String mediaId) async {
+    // Check if item is in active queue
+    for (final track in _queue.state.tracks) {
+      if (track.id == mediaId) {
+        return _toMediaItem(track);
+      }
+    }
+
+    // Otherwise check tracks repository
+    final repo = _effectiveTracksRepo;
+    if (repo != null) {
+      final res = await repo.getTrackById(mediaId);
+      final track = res.valueOrNull;
+      if (track != null) {
+        return _toMediaItem(track);
+      }
+    }
+
+    return null;
+  }
+
+  @override
+  Future<void> playFromMediaId(
+    String mediaId, [
+    Map<String, dynamic>? extras,
+  ]) async {
+    // 1. Play entire Favorites
+    if (mediaId == rootFavoritesId) {
+      final repo = _effectiveTracksRepo;
+      if (repo != null) {
+        final res = await repo.getAllTracks();
+        final favs = (res.valueOrNull ?? []).where((t) => t.isFavorite).toList();
+        if (favs.isNotEmpty) {
+          _queue.setQueue(favs, initialIndex: 0);
+          await _engine.load(favs.first, autoPlay: true);
+        }
+      }
+      return;
+    }
+
+    // 2. Play entire Playlist
+    if (mediaId.startsWith('playlist/')) {
+      final playlistId = mediaId.substring('playlist/'.length);
+      final repo = _effectivePlaylistsRepo;
+      if (repo != null) {
+        final res = await repo.getTracksForPlaylist(playlistId);
+        final tracks = res.valueOrNull ?? [];
+        if (tracks.isNotEmpty) {
+          _queue.setQueue(tracks, initialIndex: 0);
+          await _engine.load(tracks.first, autoPlay: true);
+        }
+      }
+      return;
+    }
+
+    // 3. Play specific Track ID
+    final trackIndex = _queue.state.tracks.indexWhere((t) => t.id == mediaId);
+    if (trackIndex >= 0) {
+      final track = _queue.skipToIndex(trackIndex);
+      if (track != null) {
+        await _engine.load(track, autoPlay: true);
+      }
+      return;
+    }
+
+    // Track is not in current queue; load from repository
+    final repo = _effectiveTracksRepo;
+    if (repo != null) {
+      final res = await repo.getTrackById(mediaId);
+      final track = res.valueOrNull;
+      if (track != null) {
+        _queue.setQueue([track], initialIndex: 0);
+        await _engine.load(track, autoPlay: true);
+      }
+    }
+  }
+
+  @override
+  Future<List<MediaItem>> search(
+    String query, [
+    Map<String, dynamic>? extras,
+  ]) async {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return const [];
+
+    final searchRepo = _effectiveSearchRepo;
+    if (searchRepo != null) {
+      final res = await searchRepo.search(query: q);
+      final searchResult = res.valueOrNull;
+      if (searchResult != null) {
+        return searchResult.tracks
+            .map((t) => _toMediaItem(t, playable: true))
+            .toList();
+      }
+    }
+
+    // Fallback search directly in tracks repo
+    final tracksRepo = _effectiveTracksRepo;
+    if (tracksRepo != null) {
+      final res = await tracksRepo.getAllTracks();
+      final tracks = res.valueOrNull ?? [];
+      final matches = tracks.where((t) {
+        return t.title.toLowerCase().contains(q) ||
+            t.artist.toLowerCase().contains(q) ||
+            t.album.toLowerCase().contains(q);
+      }).toList();
+
+      return matches
+          .map((t) => _toMediaItem(t, playable: true))
+          .toList();
+    }
+
+    return const [];
+  }
+
+  @override
+  Future<void> playFromSearch(
+    String query, [
+    Map<String, dynamic>? extras,
+  ]) async {
+    final matches = await search(query, extras);
+    if (matches.isNotEmpty) {
+      await playFromMediaId(matches.first.id);
+    }
+  }
+
+  @override
+  Future<dynamic> customAction(
+    String name, [
+    Map<String, dynamic>? extras,
+  ]) async {
+    switch (name) {
+      case 'toggleFavorite':
+        final current = _queue.state.currentTrack;
+        if (current != null) {
+          final repo = _effectiveTracksRepo;
+          if (repo != null) {
+            await repo.toggleFavorite(current.id);
+          }
+        }
+        break;
+      case 'shuffleQueue':
+        final currentMode = _queue.state.mode;
+        if (currentMode == domain.PlaybackMode.shuffle) {
+          _queue.setMode(domain.PlaybackMode.ordered);
+        } else {
+          _queue.setMode(domain.PlaybackMode.shuffle);
+        }
+        break;
     }
   }
 

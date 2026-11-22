@@ -164,4 +164,10 @@ abstract final class StorageKeys {
   static const String widgetCornerRadius = 'nexa_widget_corner_radius';
   static const String widgetShowGlow = 'nexa_widget_show_glow';
   static const String widgetAdaptiveColors = 'nexa_widget_adaptive_colors';
+
+  // Auto & Wearable Ecosystem (Phase 13)
+  static const String carModeKeepScreenAwake = 'nexa_car_keep_screen_awake';
+  static const String carModeLargeButtons = 'nexa_car_large_buttons';
+  static const String carModeBluetoothAutoLaunch = 'nexa_car_bt_auto_launch';
+  static const String wearCompanionEnabled = 'nexa_wear_companion_enabled';
 }

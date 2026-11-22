@@ -693,6 +693,29 @@ class SettingsServiceImpl implements ISettingsService {
       keywords: ['standby', 'bedside', 'clock', 'nightstand', 'turntable', 'oled', 'burn-in', 'dim'],
     ),
 
+    // Auto & Wearable Ecosystem (Phase 13)
+    SettingSearchItem(
+      title: 'Car Mode Driving Dashboard',
+      subtitle: 'Distraction-free oversized 72dp controls for vehicle cradle',
+      category: 'Auto & Wearables',
+      route: AppRoutes.carMode,
+      keywords: ['car', 'driving', 'auto', 'dashboard', 'bluetooth', 'cradle', 'oversized'],
+    ),
+    SettingSearchItem(
+      title: 'Android Auto & Automotive OS',
+      subtitle: 'MediaBrowser service hierarchy and Google Assistant voice search in car',
+      category: 'Auto & Wearables',
+      route: AppRoutes.autoSettings,
+      keywords: ['android auto', 'infotainment', 'head unit', 'automotive', 'assistant', 'voice'],
+    ),
+    SettingSearchItem(
+      title: 'Wear OS Smartwatch Hub',
+      subtitle: 'Galaxy Watch and Pixel Watch remote control with bezel rotary scrubbing',
+      category: 'Auto & Wearables',
+      route: AppRoutes.wear,
+      keywords: ['wear os', 'watch', 'smartwatch', 'galaxy watch', 'pixel watch', 'wrist', 'rotary'],
+    ),
+
     // About
     SettingSearchItem(
       title: 'About NEXA Player',

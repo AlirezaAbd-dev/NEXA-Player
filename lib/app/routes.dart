@@ -22,6 +22,7 @@ abstract final class AppRoutes {
   static const String visualizerSettings = '/settings/visualizer';
   static const String aboutSettings = '/settings/about';
   static const String appearanceSettings = '/settings/appearance';
+  static const String autoSettings = '/settings/auto';
   static const String player = '/player';
   static const String equalizer = '/equalizer';
   static const String ringtoneTrimmer = '/ringtone-trimmer';
@@ -30,4 +31,6 @@ abstract final class AppRoutes {
   static const String nowPlaying = '/player';
   static const String widgets = '/widgets';
   static const String standby = '/standby';
+  static const String carMode = '/car-mode';
+  static const String wear = '/wear';
 }

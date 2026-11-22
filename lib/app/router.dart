@@ -15,6 +15,7 @@ import '../features/themes/presentation/screens/custom_theme_editor_screen.dart'
 import '../features/themes/presentation/screens/theme_picker_screen.dart';
 import '../features/visualizer/visualizer.dart';
 import '../features/widgets/widgets.dart';
+import '../features/auto/auto.dart';
 import '../shared/models/track.dart';
 import 'routes.dart';
 import 'shell/scaffold_with_nav_bar.dart';
@@ -146,6 +147,11 @@ final appRouter = GoRouter(
                   builder: (context, state) =>
                       const AboutSettingsScreen(),
                 ),
+                GoRoute(
+                  path: 'auto',
+                  builder: (context, state) =>
+                      const AutoWearableSettingsScreen(),
+                ),
               ],
             ),
           ],
@@ -211,6 +217,20 @@ final appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       path: AppRoutes.standby,
       builder: (context, state) => const StandbyModeScreen(),
+    ),
+
+    // 9. In-App Driving Car Mode HUD
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: AppRoutes.carMode,
+      builder: (context, state) => const CarModeScreen(),
+    ),
+
+    // 10. Wear OS & Smartwatch Remote Companion
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: AppRoutes.wear,
+      builder: (context, state) => const WearCompanionScreen(),
     ),
   ],
 );

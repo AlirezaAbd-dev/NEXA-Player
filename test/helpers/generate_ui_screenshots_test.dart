@@ -14,6 +14,7 @@ import 'package:nexa_player/core/theme/app_theme.dart';
 import 'package:nexa_player/core/theme/theme_controller.dart';
 import 'package:nexa_player/core/theme/theme_preset.dart';
 import 'package:nexa_player/core/theme/theme_state.dart';
+import 'package:nexa_player/features/auto/auto.dart';
 import 'package:nexa_player/features/equalizer/domain/services/equalizer_service.dart';
 import 'package:nexa_player/features/library/presentation/screens/album_detail_screen.dart';
 import 'package:nexa_player/features/library/presentation/screens/artist_detail_screen.dart';
@@ -495,6 +496,32 @@ void main() {
         ),
       ),
       filename: '26_standby_bedside_mode.png',
+    );
+
+    // 3.17 In-App Car Mode Driving Dashboard (Phase 13)
+    await _captureWidget(
+      tester: tester,
+      widget: ProviderScope(
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: darkTheme,
+          home: const CarModeScreen(),
+        ),
+      ),
+      filename: '27_car_mode_dashboard.png',
+    );
+
+    // 3.18 Wear OS Smartwatch Remote Companion (Phase 13)
+    await _captureWidget(
+      tester: tester,
+      widget: ProviderScope(
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: darkTheme,
+          home: const WearCompanionScreen(),
+        ),
+      ),
+      filename: '28_wear_os_companion.png',
     );
 
     // =========================================================================

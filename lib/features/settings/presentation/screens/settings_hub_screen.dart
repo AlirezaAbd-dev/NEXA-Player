@@ -280,6 +280,18 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
 
+            // Auto & Wearable Ecosystem (Phase 13)
+            _buildCategoryCard(
+              context,
+              icon: Icons.directions_car_rounded,
+              iconColor: Colors.cyanAccent,
+              title: 'Auto & Wearables',
+              subtitle: 'Android Auto, Car Mode HUD, Galaxy/Pixel Watch companion',
+              badge: 'AUTOMOTIVE',
+              onTap: () => context.push(AppRoutes.autoSettings),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+
             // 5. Playback & Controls
             _buildCategoryCard(
               context,
