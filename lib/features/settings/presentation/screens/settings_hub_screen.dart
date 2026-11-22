@@ -268,6 +268,18 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
 
+            // Homescreen Widgets & Bedside Standby (Phase 12)
+            _buildCategoryCard(
+              context,
+              icon: Icons.widgets_rounded,
+              iconColor: Colors.deepOrangeAccent,
+              title: 'Homescreen Widgets & Standby',
+              subtitle: '4×1, 4×2 Hero Vinyl, 2×2, 4×3 Karaoke & OLED Bedside',
+              badge: 'INTERACTIVE',
+              onTap: () => context.push(AppRoutes.widgets),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+
             // 5. Playback & Controls
             _buildCategoryCard(
               context,

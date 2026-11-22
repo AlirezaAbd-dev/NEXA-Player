@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/theme/dynamic_palette_providers.dart';
 import '../../../../core/theme/theme_controller.dart';
 import '../../../../core/theme/theme_preset.dart';
 import '../../../../core/theme/theme_state.dart';
@@ -55,7 +56,73 @@ class ThemePickerScreen extends ConsumerWidget {
         _buildModeSelector(context, ref, themeState),
         const SizedBox(height: 24),
         _buildPresetSection(context, ref, themeState),
+        _buildDynamicPaletteSection(context, ref),
       ],
+    );
+  }
+
+  Widget _buildDynamicPaletteSection(BuildContext context, WidgetRef ref) {
+    final isDynamicEnabled = ref.watch(dynamicThemeEnabledProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
+    return Container(
+      margin: const EdgeInsets.only(top: 24, bottom: 24),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF131826),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDynamicEnabled
+              ? primaryColor.withOpacity(0.4)
+              : Colors.white10,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: primaryColor.withOpacity(0.18),
+            ),
+            child: Icon(
+              Icons.auto_awesome_rounded,
+              color: primaryColor,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Dynamic Album Art Palette',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                ),
+                Text(
+                  'Extract Monet colors from active track artwork',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.white.withOpacity(0.60),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: isDynamicEnabled,
+            activeColor: primaryColor,
+            onChanged: (val) {
+              ref.read(dynamicThemeEnabledProvider.notifier).setEnabled(val);
+            },
+          ),
+        ],
+      ),
     );
   }
 

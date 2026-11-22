@@ -22,9 +22,11 @@ import 'package:nexa_player/features/lyrics/lyrics.dart';
 import 'package:nexa_player/features/playlists/presentation/screens/playlist_detail_screen.dart';
 import 'package:nexa_player/features/playlists/presentation/screens/ringtone_trimmer_screen.dart';
 import 'package:nexa_player/features/player/presentation/providers/player_providers.dart';
+import 'package:nexa_player/features/player/presentation/screens/standby_mode_screen.dart';
 import 'package:nexa_player/features/search/search.dart';
 import 'package:nexa_player/features/settings/settings.dart';
 import 'package:nexa_player/features/visualizer/visualizer.dart';
+import 'package:nexa_player/features/widgets/widgets.dart';
 import 'package:nexa_player/shared/models/album.dart';
 import 'package:nexa_player/shared/models/artist.dart';
 import 'package:nexa_player/shared/models/playlist.dart';
@@ -467,6 +469,32 @@ void main() {
         ),
       ),
       filename: '24_visualizer_spectrum.png',
+    );
+
+    // 3.15 Homescreen Widgets Showcase & Customizer (Phase 12)
+    await _captureWidget(
+      tester: tester,
+      widget: ProviderScope(
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: darkTheme,
+          home: const WidgetShowcaseScreen(),
+        ),
+      ),
+      filename: '25_homescreen_widgets.png',
+    );
+
+    // 3.16 Ambient Bedside Standby Turntable & Clock Mode (Phase 12)
+    await _captureWidget(
+      tester: tester,
+      widget: ProviderScope(
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: darkTheme,
+          home: const StandbyModeScreen(),
+        ),
+      ),
+      filename: '26_standby_bedside_mode.png',
     );
 
     // =========================================================================

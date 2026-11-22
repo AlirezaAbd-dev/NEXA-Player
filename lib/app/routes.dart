@@ -27,4 +27,7 @@ abstract final class AppRoutes {
   static const String ringtoneTrimmer = '/ringtone-trimmer';
   static const String lyrics = '/lyrics';
   static const String search = '/search';
+  static const String nowPlaying = '/player';
+  static const String widgets = '/widgets';
+  static const String standby = '/standby';
 }

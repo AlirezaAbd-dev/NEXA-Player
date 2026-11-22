@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/routes.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/di/service_providers.dart';
+import '../../../../core/theme/dynamic_palette_providers.dart';
 import '../../../../shared/widgets/glass/app_ambient_background.dart';
 import '../../../visualizer/visualizer.dart';
 import '../../domain/entities/playback_state.dart';
@@ -93,7 +94,9 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    final primary = colorScheme.primary;
+    final isDynamicEnabled = ref.watch(dynamicThemeEnabledProvider);
+    final dynamicPalette = ref.watch(activeDynamicPaletteProvider);
+    final primary = isDynamicEnabled ? dynamicPalette.primary : colorScheme.primary;
 
     final playerState = ref.watch(playerNotifierProvider);
     final currentTrack = playerState.currentTrack;
@@ -115,7 +118,11 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
         fit: StackFit.expand,
         children: [
           // 1. Ambient Background Glow
-          const AppAmbientBackground(),
+          AppAmbientBackground(
+            primaryColor: isDynamicEnabled ? dynamicPalette.primary : null,
+            secondaryColor: isDynamicEnabled ? dynamicPalette.secondary : null,
+            tertiaryColor: isDynamicEnabled ? dynamicPalette.darkVibrant : null,
+          ),
 
           // 2. Main Content
           SafeArea(
@@ -207,6 +214,13 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                             icon: const Icon(Icons.equalizer_rounded, size: 22),
                             onPressed: () => context.push(AppRoutes.equalizer),
                             tooltip: 'Equalizer & DSP',
+                            padding: const EdgeInsets.all(6),
+                            constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.nightlight_round, size: 22),
+                            onPressed: () => context.push(AppRoutes.standby),
+                            tooltip: 'Bedside Standby Mode',
                             padding: const EdgeInsets.all(6),
                             constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
                           ),

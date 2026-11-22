@@ -6,6 +6,7 @@ import '../features/library/presentation/screens/artists_tab_screen.dart';
 import '../features/library/presentation/screens/songs_tab_screen.dart';
 import '../features/lyrics/lyrics.dart';
 import '../features/player/presentation/screens/now_playing_screen.dart';
+import '../features/player/presentation/screens/standby_mode_screen.dart';
 import '../features/playlists/presentation/screens/playlists_tab_screen.dart';
 import '../features/playlists/presentation/screens/ringtone_trimmer_screen.dart';
 import '../features/search/search.dart';
@@ -13,6 +14,7 @@ import '../features/settings/settings.dart';
 import '../features/themes/presentation/screens/custom_theme_editor_screen.dart';
 import '../features/themes/presentation/screens/theme_picker_screen.dart';
 import '../features/visualizer/visualizer.dart';
+import '../features/widgets/widgets.dart';
 import '../shared/models/track.dart';
 import 'routes.dart';
 import 'shell/scaffold_with_nav_bar.dart';
@@ -195,6 +197,20 @@ final appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       path: AppRoutes.search,
       builder: (context, state) => const SearchScreen(),
+    ),
+
+    // 7. Full-Screen Homescreen Widgets Showcase & Customizer
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: AppRoutes.widgets,
+      builder: (context, state) => const WidgetShowcaseScreen(),
+    ),
+
+    // 8. Full-Screen Ambient Standby Bedside Turntable Mode
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: AppRoutes.standby,
+      builder: (context, state) => const StandbyModeScreen(),
     ),
   ],
 );

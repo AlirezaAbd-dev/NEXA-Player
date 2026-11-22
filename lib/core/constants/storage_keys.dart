@@ -155,4 +155,13 @@ abstract final class StorageKeys {
   static const String visualizerFpsCap = 'nexa_visualizer_fps_cap';
   static const String visualizerFftSize = 'nexa_visualizer_fft_size';
   static const String visualizerShowOnLockscreen = 'nexa_visualizer_show_lockscreen';
+
+  // Dynamic Theme & Widgets (Phase 12)
+  static const String dynamicAlbumArtTheme = 'nexa_dynamic_album_art_theme';
+  static const String widgetThemeMode = 'nexa_widget_theme_mode';
+  static const String widgetShowVinyl = 'nexa_widget_show_vinyl';
+  static const String widgetBackgroundOpacity = 'nexa_widget_bg_opacity';
+  static const String widgetCornerRadius = 'nexa_widget_corner_radius';
+  static const String widgetShowGlow = 'nexa_widget_show_glow';
+  static const String widgetAdaptiveColors = 'nexa_widget_adaptive_colors';
 }

@@ -677,6 +677,22 @@ class SettingsServiceImpl implements ISettingsService {
       keywords: ['fps', 'framerate', 'smoothness', '120hz', '60fps'],
     ),
 
+    // Homescreen Widgets & Bedside Mode (Phase 12)
+    SettingSearchItem(
+      title: 'Homescreen Widgets',
+      subtitle: 'Customize 4x1, 4x2 Hero Vinyl, 2x2 Square, and 4x3 Karaoke cards',
+      category: 'Widgets & Standby',
+      route: AppRoutes.widgets,
+      keywords: ['widget', 'homescreen', 'desktop', 'dock', 'compact', 'vinyl', 'hero', 'karaoke'],
+    ),
+    SettingSearchItem(
+      title: 'Bedside Standby Turntable Mode',
+      subtitle: 'AMOLED nightstand clock, spinning vinyl platter, and audio visualizer',
+      category: 'Widgets & Standby',
+      route: AppRoutes.standby,
+      keywords: ['standby', 'bedside', 'clock', 'nightstand', 'turntable', 'oled', 'burn-in', 'dim'],
+    ),
+
     // About
     SettingSearchItem(
       title: 'About NEXA Player',
