@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" fill="none">
+  <defs>
+    <linearGradient id="nexaCyanBlue" x1="88" y1="376" x2="278" y2="152" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00E5FF"/>
+      <stop offset="55%" stop-color="#00C4FF"/>
+      <stop offset="100%" stop-color="#2979FF"/>
+    </linearGradient>
+    <linearGradient id="nexaFoldShadow" x1="100" y1="372" x2="262" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#7C4DFF"/>
+      <stop offset="55%" stop-color="#3B6BFF"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="nexaVioletBlue" x1="252" y1="340" x2="368" y2="134" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1E64FF"/>
+      <stop offset="58%" stop-color="#4F6BFF"/>
+      <stop offset="100%" stop-color="#7C4DFF"/>
+    </linearGradient>
+    <linearGradient id="nexaPlayCyan" x1="340" y1="210" x2="428" y2="264" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00E5FF"/>
+      <stop offset="100%" stop-color="#00C8FF"/>
+    </linearGradient>
+    <linearGradient id="nexaWaveGrad" x1="138" y1="320" x2="432" y2="320" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00E5FF"/>
+      <stop offset="52%" stop-color="#2979FF"/>
+      <stop offset="100%" stop-color="#7C4DFF"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(256 256) scale(0.74) translate(-256 -256)">
+    <!-- 1. Continuous acoustic soundwave ribbon -->
+    <path d="M138 330 C162 330 172 274 194 274 C216 274 214 344 256 344 C284 344 294 316 306 316 C318 316 320 366 332 366 C344 366 348 296 368 284 L408 260" stroke="url(#nexaWaveGrad)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M356 316 C362 354 374 358 380 334 C386 310 396 296 406 312 C414 324 422 328 432 328" stroke="url(#nexaWaveGrad)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- 2. Play chevron lower shaded fold (tucked seamlessly under top arm) -->
+    <path d="M396 248 L422 262 L364 296 C352 303 346 316 342 330 L334 304 C338 286 348 274 364 265 Z" fill="url(#nexaFoldShadow)"/>
+    <!-- 3. Play chevron top bright cyan arm -->
+    <path d="M348 206 L422 248 C430 253 430 263 422 268 L394 282 C400 269 396 259 384 252 L338 228 Z" fill="url(#nexaPlayCyan)"/>
+    <!-- 4. Left N inner violet-cobalt depth ribbon (solid backing behind outer cyan arch, zero gaps) -->
+    <path d="M84 380 L138 352 L176 226 C182 210 194 212 202 226 L256 338 L272 326 L210 196 C192 164 164 166 152 198 L84 380 Z" fill="url(#nexaFoldShadow)"/>
+    <!-- 5. Left N outer cyan arch sweeping smoothly over the inner fold -->
+    <path d="M84 380 L150 178 C162 146 200 144 218 174 L282 280 L256 336 L198 222 C188 202 166 204 158 224 L110 364 Z" fill="url(#nexaCyanBlue)"/>
+    <!-- 6. Right N diagonal violet-to-cobalt blade -->
+    <path d="M236 302 L288 184 C296 166 310 154 328 146 L368 134 L292 322 C284 340 264 346 250 338 Z" fill="url(#nexaVioletBlue)"/>
+  </g>
+</svg>

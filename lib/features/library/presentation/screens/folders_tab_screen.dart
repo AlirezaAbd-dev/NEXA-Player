@@ -12,6 +12,7 @@ import '../../../../core/utils/storage_path_formatter.dart';
 import '../../../player/presentation/providers/player_providers.dart';
 import '../../../scanner/presentation/providers/scanner_providers.dart';
 import '../../../../shared/models/track.dart';
+import '../../../../shared/widgets/branding/nexa_animated_logo.dart';
 import '../../../../shared/widgets/glass/app_ambient_background.dart';
 import '../../../../shared/widgets/glass/glass_app_bar.dart';
 import '../../../../shared/widgets/glass/glass_button.dart';
@@ -84,18 +85,9 @@ class FoldersTabScreen extends ConsumerWidget {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Container(
-                                width: 72,
-                                height: 72,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: colorScheme.primary.withOpacity(0.15),
-                                ),
-                                child: Icon(
-                                  Icons.folder_open_rounded,
-                                  size: 36,
-                                  color: colorScheme.primary,
-                                ),
+                              const NexaAnimatedLogo(
+                                size: 88,
+                                mode: NexaLogoAnimationMode.splash,
                               ),
                               const SizedBox(height: AppSpacing.md),
                               Text(

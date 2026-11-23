@@ -221,7 +221,9 @@ class DesktopStudioDock extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: List.generate(10, (i) {
-                        final gain = eqState.bandGains[i];
+                        final gain = i < eqState.bandGains.length
+                            ? eqState.bandGains[i]
+                            : 0.0;
                         final normalizedHeight =
                             (((gain + 12.0) / 24.0) * 24.0).clamp(4.0, 24.0);
                         return Container(

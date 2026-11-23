@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/player/presentation/providers/player_providers.dart';
 import '../../features/player/presentation/screens/desktop_studio_dock.dart';
+import '../../shared/widgets/branding/nexa_animated_logo.dart';
 import '../../shared/widgets/glass/app_ambient_background.dart';
 import '../../shared/widgets/glass/glass_bottom_nav.dart';
 import 'mini_player_slot.dart';
@@ -149,10 +150,23 @@ class ScaffoldWithNavBar extends ConsumerWidget {
                           theme.colorScheme.surface.withOpacity(0.35),
                       leading: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 16.0),
-                        child: Icon(
-                          Icons.graphic_eq_rounded,
-                          color: theme.colorScheme.primary,
-                          size: 32.0,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const NexaAnimatedLogo(
+                              size: 28,
+                              mode: NexaLogoAnimationMode.static,
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'NEXA',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.5,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       destinations: const [

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
 import 'package:nexa_player/core/design_system/glass_tokens.dart';
+import 'package:nexa_player/shared/widgets/branding/nexa_animated_logo.dart';
 import 'package:nexa_player/shared/widgets/feedback/app_dialog.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_card.dart';
@@ -76,34 +77,9 @@ class AboutSettingsScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(GlassTokens.radiusMedium),
             child: Column(
               children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        colorScheme.primary,
-                        Colors.purpleAccent,
-                      ],
-                    ),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: colorScheme.primary.withOpacity(0.4),
-                        blurRadius: 24,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.music_note_rounded,
-                      size: 44,
-                      color: Colors.white,
-                    ),
-                  ),
+                const NexaAnimatedLogo(
+                  size: 72,
+                  mode: NexaLogoAnimationMode.playing,
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Text(

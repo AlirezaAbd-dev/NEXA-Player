@@ -12,6 +12,7 @@ import 'package:nexa_player/features/library/presentation/providers/library_prov
 import 'package:nexa_player/features/player/player.dart';
 import 'package:nexa_player/features/scanner/presentation/providers/scanner_providers.dart';
 import 'package:nexa_player/shared/models/track.dart';
+import 'package:nexa_player/shared/widgets/branding/nexa_animated_logo.dart';
 import 'package:nexa_player/shared/widgets/cards/track_tile.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_button.dart';
@@ -181,18 +182,9 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Container(
-                                  width: 72,
-                                  height: 72,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: colorScheme.primary.withOpacity(0.15),
-                                  ),
-                                  child: Icon(
-                                    Icons.library_music_rounded,
-                                    size: 36,
-                                    color: colorScheme.primary,
-                                  ),
+                                const NexaAnimatedLogo(
+                                  size: 88,
+                                  mode: NexaLogoAnimationMode.splash,
                                 ),
                                 const SizedBox(height: AppSpacing.md),
                                 Text(

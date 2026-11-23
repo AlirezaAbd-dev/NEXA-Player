@@ -107,7 +107,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         expect(tester.takeException(), isNull);
         expect(find.text('Media Scanner'), findsOneWidget);
@@ -133,7 +134,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         expect(tester.takeException(), isNull);
         expect(find.text('NEXA PLAYER'), findsOneWidget);
@@ -159,7 +161,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         expect(tester.takeException(), isNull);
         expect(find.text('Audio Settings'), findsOneWidget);
@@ -185,7 +188,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         expect(tester.takeException(), isNull);
         expect(find.text('Privacy & Storage'), findsOneWidget);

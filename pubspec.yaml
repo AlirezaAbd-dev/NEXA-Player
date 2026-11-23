@@ -55,6 +55,7 @@ dependencies:
   audio_session: ^0.1.25
   rxdart: ^0.28.0
   fftea: ^1.5.0+1
+  flutter_svg: ^2.1.0
 
 dev_dependencies:
   flutter_test:
@@ -102,9 +103,9 @@ flutter_launcher_icons:
     image_path: "assets/branding/app_icon.png"
 
 flutter_native_splash:
-  color: "#0A0D14"
+  color: "#050507"
   image: assets/branding/splash_logo.png
   android_12:
     image: assets/branding/splash_logo.png
-    color: "#0A0D14"
+    color: "#050507"
   web: false
