@@ -57,7 +57,8 @@ class CloudStreamingHubScreen extends ConsumerWidget {
       body: AppAmbientBackground(
         child: SafeArea(
           child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+            padding: nexaScrollPadding(context,
+                horizontal: AppSpacing.md, top: AppSpacing.sm),
             children: [
               // 1. Casting Target Card
               GlassCard(

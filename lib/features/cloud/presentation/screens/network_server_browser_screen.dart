@@ -284,9 +284,10 @@ class _NetworkServerBrowserScreenState
                     final audioTracks = items.where((i) => !i.isDirectory).toList();
 
                     return ListView.builder(
-                      padding: const EdgeInsets.symmetric(
+                      padding: nexaScrollPadding(
+                        context,
                         horizontal: AppSpacing.md,
-                        vertical: AppSpacing.sm,
+                        top: AppSpacing.sm,
                       ),
                       itemCount: items.length + (audioTracks.isNotEmpty ? 1 : 0),
                       itemBuilder: (context, index) {
