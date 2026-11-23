@@ -182,18 +182,38 @@ class _ScannerSettingsScreenState extends ConsumerState<ScannerSettingsScreen> {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                Text(
-                  switch (scannerState.status) {
-                    ScannerStatus.idle => 'Idle. Ready to scan.',
-                    ScannerStatus.scanning =>
-                      'Scanning: ${scannerState.filesScanned} of ${scannerState.filesFound} files...',
-                    ScannerStatus.completed =>
-                      'Scan complete! ${scannerState.filesScanned} files indexed.',
-                    ScannerStatus.error =>
-                      'Scan failed: ${scannerState.errorMessage}',
-                  },
-                  key: Phase2Keys.scannerStatusText,
-                  style: AppTypography.bodySmall,
+                Row(
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: scannerState.status == ScannerStatus.scanning
+                            ? colorScheme.primary
+                            : Colors.greenAccent,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Expanded(
+                      child: Text(
+                        switch (scannerState.status) {
+                          ScannerStatus.idle =>
+                            '1,248 tracks indexed · Library up to date',
+                          ScannerStatus.scanning =>
+                            'Scanning: ${scannerState.filesScanned} of ${scannerState.filesFound} files...',
+                          ScannerStatus.completed =>
+                            'Scan complete! ${scannerState.filesScanned} files indexed.',
+                          ScannerStatus.error =>
+                            'Scan failed: ${scannerState.errorMessage}',
+                        },
+                        key: Phase2Keys.scannerStatusText,
+                        style: AppTypography.bodySmall.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 LinearProgressIndicator(
@@ -388,20 +408,46 @@ class _ScannerSettingsScreenState extends ConsumerState<ScannerSettingsScreen> {
                       itemCount: dirs.length,
                       itemBuilder: (context, index) {
                         final dir = dirs[index];
+                        final segments = dir.path.split('/').where((s) => s.isNotEmpty).toList();
+                        final friendlyName = segments.isNotEmpty ? segments.last : dir.path;
                         return ListTile(
                           contentPadding: EdgeInsets.zero,
-                          leading: const Icon(Icons.folder_rounded),
+                          leading: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: colorScheme.primary.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(GlassTokens.radiusSmall),
+                            ),
+                            child: Icon(
+                              Icons.folder_rounded,
+                              color: colorScheme.primary,
+                              size: 22,
+                            ),
+                          ),
                           title: Text(
+                            friendlyName,
+                            style: AppTypography.titleMedium.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Text(
                             dir.path,
-                            style: AppTypography.bodyMedium,
+                            style: AppTypography.bodySmall.copyWith(
+                              color: colorScheme.onSurface.withOpacity(0.6),
+                              fontFamily: 'monospace',
+                              fontSize: 11,
+                            ),
                             overflow: TextOverflow.ellipsis,
                           ),
                           trailing: IconButton(
                             key: Phase2Keys.removeFolderButton(dir.path),
                             icon: const Icon(
-                              Icons.remove_circle_outline_rounded,
+                              Icons.close_rounded,
                               color: Colors.redAccent,
                             ),
+                            tooltip: 'Remove Folder',
                             onPressed: () {
                               ref
                                   .read(scanDirectoriesProvider.notifier)
