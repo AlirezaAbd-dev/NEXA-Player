@@ -1,17 +1,16 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../core/design_system/glass_tokens.dart';
+import '../../../core/design_system/nexa_surface_tokens.dart';
+import '../surfaces/nexa_surface.dart';
 
-/// Reusable frosted glass container with configurable blur, opacity,
-/// border, gradient, elevation shadow, and tactile interaction support.
+export '../surfaces/nexa_surface.dart' show SurfaceBorderReason;
+
+/// Frosted container delegating to [NexaSurface] under the Tactile Studio Instrument standard.
 ///
-/// Features:
-/// - Optical backdrop diffusion via [BackdropFilter].
-/// - Specular dual-stop surface gradient by default.
-/// - Inner specular top-edge gloss reflection.
-/// - Tactile micro-scale feedback on tap.
-/// - Strict bounds clipping via [ClipRRect].
-class GlassCard extends StatefulWidget {
+/// In compliance with the borderless design language, default borders are strictly eliminated
+/// (`border: null`). Visible borders may only appear when explicitly justified by an approved
+/// [SurfaceBorderReason] (e.g. keyboard focus rings, active control contrast, or secondary destructive actions).
+class GlassCard extends StatelessWidget {
   const GlassCard({
     required this.child,
     super.key,
@@ -21,6 +20,8 @@ class GlassCard extends StatefulWidget {
     this.opacity = GlassTokens.opacityStandard,
     this.borderWidth = GlassTokens.borderWidth,
     this.borderColor,
+    this.borderReason,
+    this.tier = NexaSurfaceTier.l2,
     this.backgroundColor,
     this.gradient,
     this.boxShadow = GlassTokens.elevationStandard,
@@ -36,170 +37,91 @@ class GlassCard extends StatefulWidget {
     this.clipBehavior = Clip.antiAlias,
   });
 
+  /// The child content.
   final Widget child;
+
+  /// Corner radius.
   final BorderRadius borderRadius;
+
+  /// Backdrop blur radius.
   final double blur;
+
+  /// Legacy opacity parameter (retained for backward compatibility).
   final double opacity;
+
+  /// Outline width, used only when [borderReason] is non-null.
   final double borderWidth;
+
+  /// Custom outline color override, used only when [borderReason] is non-null.
   final Color? borderColor;
+
+  /// Explicit architectural reason for applying a border. When null, border is strictly omitted.
+  final SurfaceBorderReason? borderReason;
+
+  /// Tonal elevation tier ($L_0$ to $L_4$). Defaults to [NexaSurfaceTier.l2].
+  final NexaSurfaceTier tier;
+
+  /// Background color override.
   final Color? backgroundColor;
+
+  /// Optional surface gradient.
   final Gradient? gradient;
+
+  /// Box shadows.
   final List<BoxShadow>? boxShadow;
+
+  /// Inner padding.
   final EdgeInsetsGeometry? padding;
+
+  /// Outer margin.
   final EdgeInsetsGeometry? margin;
+
+  /// Explicit width.
   final double? width;
+
+  /// Explicit height.
   final double? height;
+
+  /// Box constraints.
   final BoxConstraints? constraints;
+
+  /// Inner alignment.
   final AlignmentGeometry? alignment;
+
+  /// Tap callback.
   final VoidCallback? onTap;
+
+  /// Long press callback.
   final VoidCallback? onLongPress;
+
+  /// Whether backdrop blur is enabled.
   final bool enableBlur;
+
+  /// Content clip behavior.
   final Clip clipBehavior;
 
   @override
-  State<GlassCard> createState() => _GlassCardState();
-}
-
-class _GlassCardState extends State<GlassCard>
-    with SingleTickerProviderStateMixin {
-  bool _isPressed = false;
-
-  void _handleTapDown(TapDownDetails _) {
-    if (widget.onTap != null || widget.onLongPress != null) {
-      setState(() => _isPressed = true);
-    }
-  }
-
-  void _handleTapUp(TapUpDetails _) {
-    if (_isPressed) {
-      setState(() => _isPressed = false);
-    }
-  }
-
-  void _handleTapCancel() {
-    if (_isPressed) {
-      setState(() => _isPressed = false);
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    final resolvedBorderColor = GlassTokens.resolveBorderColor(
-      context,
-      customColor: widget.borderColor,
+    return NexaSurface(
+      tier: tier,
+      borderRadius: borderRadius,
+      padding: padding,
+      margin: margin,
+      width: width,
+      height: height,
+      constraints: constraints,
+      alignment: alignment,
+      onTap: onTap,
+      onLongPress: onLongPress,
+      blurSigma: enableBlur && blur > 0 ? blur : 0.0,
+      borderReason: borderReason,
+      customBorderColor: borderColor,
+      borderWidth: borderWidth,
+      backgroundColor: backgroundColor,
+      gradient: gradient,
+      boxShadow: boxShadow,
+      clipBehavior: clipBehavior,
+      child: child,
     );
-
-    final border = widget.borderWidth > 0
-        ? Border.all(color: resolvedBorderColor, width: widget.borderWidth)
-        : null;
-
-    final effectiveGradient = widget.gradient ??
-        GlassTokens.glassSurfaceGradient(
-          context,
-          surfaceColor: widget.backgroundColor,
-          opacity: widget.opacity,
-        );
-
-    final decoration = BoxDecoration(
-      gradient: effectiveGradient,
-      borderRadius: widget.borderRadius,
-      border: border,
-      boxShadow: widget.boxShadow,
-    );
-
-    Widget innerContent = Container(
-      padding: widget.padding,
-      alignment: widget.alignment,
-      child: widget.child,
-    );
-
-    if (widget.onTap != null || widget.onLongPress != null) {
-      innerContent = Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: widget.borderRadius,
-          onTap: widget.onTap,
-          onLongPress: widget.onLongPress,
-          child: innerContent,
-        ),
-      );
-    }
-
-    // Stack with inner specular top highlight
-    final bodyStack = Stack(
-      children: [
-        Positioned.fill(
-          child: IgnorePointer(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: widget.borderRadius,
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    (isDark ? Colors.white : Colors.white).withOpacity(isDark ? 0.14 : 0.40),
-                    Colors.transparent,
-                  ],
-                  stops: const [0.0, 0.22],
-                ),
-              ),
-            ),
-          ),
-        ),
-        innerContent,
-      ],
-    );
-
-    Widget glassBody = Container(
-      width: widget.width,
-      height: widget.height,
-      constraints: widget.constraints,
-      decoration: decoration,
-      child: bodyStack,
-    );
-
-    if (widget.enableBlur && widget.blur > 0) {
-      glassBody = ClipRRect(
-        borderRadius: widget.borderRadius,
-        clipBehavior: widget.clipBehavior,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: widget.blur, sigmaY: widget.blur),
-          child: glassBody,
-        ),
-      );
-    } else {
-      glassBody = ClipRRect(
-        borderRadius: widget.borderRadius,
-        clipBehavior: widget.clipBehavior,
-        child: glassBody,
-      );
-    }
-
-    if (widget.onTap != null || widget.onLongPress != null) {
-      glassBody = GestureDetector(
-        onTapDown: _handleTapDown,
-        onTapUp: _handleTapUp,
-        onTapCancel: _handleTapCancel,
-        behavior: HitTestBehavior.translucent,
-        child: AnimatedScale(
-          scale: _isPressed ? 0.98 : 1.0,
-          duration: const Duration(milliseconds: 140),
-          curve: Curves.easeOutCubic,
-          child: glassBody,
-        ),
-      );
-    }
-
-    if (widget.margin != null) {
-      glassBody = Padding(
-        padding: widget.margin!,
-        child: glassBody,
-      );
-    }
-
-    return glassBody;
   }
 }
