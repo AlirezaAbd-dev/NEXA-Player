@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../routes.dart';
 import '../../features/player/presentation/providers/player_providers.dart';
 import '../../features/player/presentation/screens/desktop_studio_dock.dart';
 import '../../shared/widgets/branding/nexa_animated_logo.dart';
@@ -94,6 +95,62 @@ class ScaffoldWithNavBar extends ConsumerWidget {
     final width = MediaQuery.of(context).size.width;
     final isDesktop = width >= 800;
     final isWideStudio = width >= 1200;
+
+    // Check whether a track is actively loaded
+    final playerState = ref.watch(playerNotifierProvider);
+    final hasActiveTrack = playerState.currentTrack != null;
+
+    // Sub-Screen Route Honesty: hide bottom navigation on pushed subroutes
+    String currentPath = '';
+    try {
+      currentPath = GoRouterState.of(context).uri.path;
+    } catch (_) {}
+
+    const rootTabPaths = {
+      AppRoutes.songs,
+      AppRoutes.albums,
+      AppRoutes.artists,
+      AppRoutes.folders,
+      AppRoutes.playlists,
+      AppRoutes.search,
+      AppRoutes.settings,
+    };
+
+    final isSubScreen =
+        currentPath.isNotEmpty && !rootTabPaths.contains(currentPath);
+    final showBottomNav = !isDesktop && !isSubScreen;
+
+    // Dynamic Bottom Inset Calculation:
+    // Floating Nav Pill height: 68.0 + 8.0 bottom padding = 76.0dp
+    // Mini-player height: 66.0dp
+    // Inter-gap between nav pill and mini-player: 4.0dp
+    const double navBarTotalHeight = 76.0;
+    const double miniPlayerTotalHeight = 66.0;
+    const double interGap = 4.0;
+
+    double bottomChromeInset = 0.0;
+    if (!isDesktop) {
+      if (showBottomNav && hasActiveTrack) {
+        bottomChromeInset =
+            navBarTotalHeight + miniPlayerTotalHeight + interGap;
+      } else if (showBottomNav && !hasActiveTrack) {
+        bottomChromeInset = navBarTotalHeight;
+      } else if (!showBottomNav && hasActiveTrack) {
+        bottomChromeInset = miniPlayerTotalHeight;
+      } else {
+        bottomChromeInset = 0.0;
+      }
+    }
+
+    final mq = MediaQuery.of(context);
+    final wrappedNavigationShell = MediaQuery(
+      data: mq.copyWith(
+        padding: mq.padding.copyWith(
+          bottom: mq.padding.bottom + bottomChromeInset,
+        ),
+      ),
+      child: navigationShell,
+    );
 
     // 4-Tab Balanced Bottom Navigation
     final navItems = [
@@ -212,8 +269,8 @@ class ScaffoldWithNavBar extends ConsumerWidget {
                     Expanded(
                       child: Column(
                         children: [
-                          Expanded(child: navigationShell),
-                          const MiniPlayerSlot(),
+                          Expanded(child: wrappedNavigationShell),
+                          if (hasActiveTrack) const MiniPlayerSlot(),
                         ],
                       ),
                     ),
@@ -228,34 +285,36 @@ class ScaffoldWithNavBar extends ConsumerWidget {
         : Scaffold(
             key: _ShellKeys.shellScaffold,
             backgroundColor: Colors.transparent,
-            extendBody: true,
             body: Stack(
               fit: StackFit.expand,
               children: [
                 const AppAmbientBackground(),
-                navigationShell,
-              ],
-            ),
-            bottomNavigationBar: SafeArea(
-              top: false,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Persistent Mini-Player Slot
-                  const MiniPlayerSlot(),
-
-                  // Persistent Glass Bottom Nav
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12.0, 0, 12.0, 8.0),
-                    child: GlassBottomNav(
-                      key: _ShellKeys.bottomNav,
-                      currentIndex: bottomNavIndex,
-                      onTap: _onBottomNavTap,
-                      items: navItems,
+                wrappedNavigationShell,
+                // Floating bottom chrome overlay with tight hit test box
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: SafeArea(
+                    top: false,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (hasActiveTrack) const MiniPlayerSlot(),
+                        if (showBottomNav)
+                          Padding(
+                            padding:
+                                const EdgeInsets.fromLTRB(12.0, 0, 12.0, 8.0),
+                            child: GlassBottomNav(
+                              key: _ShellKeys.bottomNav,
+                              currentIndex: bottomNavIndex,
+                              onTap: _onBottomNavTap,
+                              items: navItems,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           );
 

@@ -212,10 +212,14 @@ class _MiniPlayerSlotState extends ConsumerState<MiniPlayerSlot>
     final playerState = ref.watch(playerNotifierProvider);
     final currentTrack = playerState.currentTrack;
 
-    final title = widget.title ?? (currentTrack?.title ?? 'Starboy');
-    final artist = widget.artist ?? (currentTrack?.artistAndAlbum ?? 'The Weeknd • Daft Punk');
-    final isPlaying = widget.isPlaying ?? (currentTrack != null ? playerState.isPlaying : _isPlaying);
-    final progress = (widget.progress ?? (currentTrack != null ? playerState.progress : 0.35)).clamp(0.0, 1.0);
+    if (currentTrack == null && widget.title == null) {
+      return const SizedBox.shrink();
+    }
+
+    final title = widget.title ?? (currentTrack?.title ?? '');
+    final artist = widget.artist ?? (currentTrack?.artistAndAlbum ?? '');
+    final isPlaying = widget.isPlaying ?? playerState.isPlaying;
+    final progress = (widget.progress ?? playerState.progress).clamp(0.0, 1.0);
 
     _syncRotation(isPlaying);
 

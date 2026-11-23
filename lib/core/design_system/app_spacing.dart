@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+export '../../shared/widgets/layout/nexa_scroll_padding.dart';
+
 /// Centralized 8-step spacing scale tokens for consistent margins, paddings, and gaps.
 ///
 /// Follows the standard 4, 8, 12, 16, 24, 32, 48, 64 dp hierarchy.
