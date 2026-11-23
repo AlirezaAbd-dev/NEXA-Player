@@ -382,7 +382,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget _buildAllResultsView(SearchResult result, String? currentPlayingTrackId) {
     return ListView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+      padding: nexaScrollPadding(context, horizontal: 16, top: 8),
       children: [
         // 1. Songs Section
         if (result.tracks.isNotEmpty) ...[
@@ -567,7 +567,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget _buildTracksList(List<Track> tracks, String? currentPlayingTrackId) {
     return ListView.builder(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+      padding: nexaScrollPadding(context, horizontal: 16, top: 8),
       itemCount: tracks.length,
       itemBuilder: (context, index) {
         final track = tracks[index];
@@ -594,7 +594,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
         return GridView.builder(
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+          padding: nexaScrollPadding(context, horizontal: 16, top: 8),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
             childAspectRatio: 0.72,
@@ -617,7 +617,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget _buildArtistsList(List<Artist> artists) {
     return ListView.builder(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+      padding: nexaScrollPadding(context, horizontal: 16, top: 8),
       itemCount: artists.length,
       itemBuilder: (context, index) {
         final artist = artists[index];
@@ -635,7 +635,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget _buildPlaylistsList(List<Playlist> playlists) {
     return ListView.builder(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+      padding: nexaScrollPadding(context, horizontal: 16, top: 8),
       itemCount: playlists.length,
       itemBuilder: (context, index) {
         final playlist = playlists[index];
@@ -658,7 +658,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
         return GridView.builder(
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+          padding: nexaScrollPadding(context, horizontal: 16, top: 8),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
             childAspectRatio: 2.2,

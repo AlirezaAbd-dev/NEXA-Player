@@ -311,7 +311,8 @@ class PlaylistDetailScreen extends ConsumerWidget {
                       }
 
                       return ReorderableListView.builder(
-                        padding: EdgeInsets.zero,
+                        padding: nexaScrollPadding(context,
+                            horizontal: 0.0, top: 0.0),
                         itemCount: tracks.length,
                         onReorder: (oldIndex, newIndex) {
                           int effectiveNew = newIndex;

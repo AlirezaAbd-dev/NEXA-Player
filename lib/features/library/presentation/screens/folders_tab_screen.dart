@@ -70,7 +70,7 @@ class FoldersTabScreen extends ConsumerWidget {
         children: [
           const AppAmbientBackground(),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16.0, 148.0, 16.0, 130.0),
+            padding: const EdgeInsets.fromLTRB(16.0, 148.0, 16.0, 0.0),
             child: foldersAsync.when(
               data: (folders) {
                 if (folders.isEmpty) {
@@ -155,7 +155,8 @@ class FoldersTabScreen extends ConsumerWidget {
 
                 return ListView.builder(
                   key: Phase2Keys.foldersTreeView,
-                  padding: EdgeInsets.zero,
+                  padding:
+                      nexaScrollPadding(context, horizontal: 0.0, top: 0.0),
                   itemCount: folders.length,
                   itemBuilder: (context, index) {
                     final folder = folders[index];

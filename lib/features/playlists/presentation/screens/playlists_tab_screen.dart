@@ -138,7 +138,8 @@ class PlaylistsTabScreen extends ConsumerWidget {
         ],
       ),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 70.0),
+        padding: EdgeInsets.only(
+            bottom: MediaQuery.paddingOf(context).bottom + AppSpacing.md),
         child: GlassFAB(
           key: Phase2Keys.createPlaylistFab,
           icon: const Icon(Icons.add_rounded),
@@ -147,7 +148,7 @@ class PlaylistsTabScreen extends ConsumerWidget {
         ),
       ),
       body: Padding(
-        padding: const EdgeInsets.fromLTRB(16.0, 100.0, 16.0, 130.0),
+        padding: const EdgeInsets.fromLTRB(16.0, 100.0, 16.0, 0.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -261,7 +262,8 @@ class PlaylistsTabScreen extends ConsumerWidget {
 
                   return ListView.builder(
                     key: Phase2Keys.playlistsList,
-                    padding: const EdgeInsets.only(bottom: 80.0),
+                    padding:
+                        nexaScrollPadding(context, horizontal: 0.0, top: 0.0),
                     itemCount: playlists.length,
                     itemBuilder: (context, index) {
                       final playlist = playlists[index];
