@@ -105,6 +105,8 @@ class PlaylistDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tracksAsync = ref.watch(playlistTracksProvider(playlist.id));
+    final playerState = ref.watch(playerNotifierProvider);
+    final currentTrackId = playerState.currentTrack?.id;
     final theme = Theme.of(context);
     final accent = theme.colorScheme.primary;
     final surfaceTokens = NexaSurfaceTokens.of(context);
@@ -192,6 +194,44 @@ class PlaylistDetailScreen extends ConsumerWidget {
                               style: AppTypography.bodySmall,
                             ),
                           ),
+                          if (playlist.isSmart) ...[
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: surfaceTokens.level2,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.star_rounded, size: 14, color: Colors.amber),
+                                      const SizedBox(width: 4),
+                                      Text('≥ 4.5', style: AppTypography.labelSmall.copyWith(color: Colors.amber)),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: surfaceTokens.level2,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.play_arrow_rounded, size: 14, color: accent),
+                                      const SizedBox(width: 4),
+                                      Text('> 10 plays', style: AppTypography.labelSmall.copyWith(color: accent)),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -308,6 +348,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
                                   child: TrackTile.fromTrack(
                                     key: Phase2Keys.trackTile(track.id),
                                     track: track,
+                                    isPlaying: track.id == currentTrackId,
                                     onTap: () {
                                       ref.read(playbackQueueProvider).setQueue(
                                             tracks,
