@@ -57,7 +57,7 @@ class ThemePickerScreen extends ConsumerWidget {
     ThemeState themeState,
   ) {
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: nexaScrollPadding(context, horizontal: 16, top: 12),
       children: [
         _buildModeSelector(context, ref, themeState),
         const SizedBox(height: 20),

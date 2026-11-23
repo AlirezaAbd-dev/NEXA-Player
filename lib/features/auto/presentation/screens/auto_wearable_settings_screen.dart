@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes.dart';
+import '../../../../core/design_system/app_spacing.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../providers/auto_providers.dart';
 
@@ -23,7 +24,7 @@ class AutoWearableSettingsScreen extends ConsumerWidget {
         elevation: 0,
       ),
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        padding: nexaScrollPadding(context, horizontal: 16.0, top: 12.0),
         children: [
           // 1. In-App Car Mode Banner & Launcher
           InkWell(

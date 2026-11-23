@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/design_system/app_spacing.dart';
 import '../../../../core/theme/custom_theme_data.dart';
 import '../../../../core/theme/theme_controller.dart';
 import '../../../../core/utils/contrast_validator.dart';
@@ -111,7 +112,7 @@ class _CustomThemeEditorScreenState
           title: const Text('Custom HSL Theme Editor'),
         ),
         body: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          padding: nexaScrollPadding(context, horizontal: 16, top: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
