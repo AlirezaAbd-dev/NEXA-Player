@@ -34,12 +34,12 @@ class _AlbumsTabScreenState extends ConsumerState<AlbumsTabScreen> {
       case 1:
         return 1.15;
       case 2:
-        return 0.74;
+        return 0.67;
       case 3:
-        return 0.70;
+        return 0.64;
       case 4:
       default:
-        return 0.66;
+        return 0.60;
     }
   }
 
@@ -77,7 +77,25 @@ class _AlbumsTabScreenState extends ConsumerState<AlbumsTabScreen> {
           backgroundColor: Colors.transparent,
           extendBodyBehindAppBar: true,
           appBar: GlassAppBar(
-            titleText: 'Albums',
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Albums', style: AppTypography.titleLarge),
+                albumsAsync.maybeWhen(
+                  data: (albums) => Text(
+                    '${albums.length} ALBUMS · HI-RES VERIFIED',
+                    style: AppTypography.labelSmall.copyWith(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.85),
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                      fontSize: 10.5,
+                    ),
+                  ),
+                  orElse: () => const SizedBox.shrink(),
+                ),
+              ],
+            ),
             automaticallyImplyLeading: false,
             actions: [
               IconButton(

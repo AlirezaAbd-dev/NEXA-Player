@@ -108,7 +108,14 @@ class _AlbumCardState extends State<AlbumCard> {
     final cardRadius = BorderRadius.circular(16.0);
     final artworkRadius = BorderRadius.circular(16.0);
 
-    // 1:1 Album Artwork Sleeve with vinyl detailing
+    // Deterministic palette generation for procedural sleeve
+    final hash = (widget.title.hashCode ^ widget.artist.hashCode).abs();
+    final hue = (hash % 360).toDouble();
+    final sleeveBgStart = HSLColor.fromAHSL(1.0, hue, 0.35, isDark ? 0.18 : 0.92).toColor();
+    final sleeveBgEnd = HSLColor.fromAHSL(1.0, (hue + 40) % 360, 0.45, isDark ? 0.08 : 0.82).toColor();
+    final sleeveAccent = HSLColor.fromAHSL(1.0, hue, 0.70, isDark ? 0.65 : 0.45).toColor();
+
+    // 1:1 Album Artwork Sleeve with rich generative detailing
     Widget artworkPlaceholder = ClipRRect(
       borderRadius: artworkRadius,
       child: Container(
@@ -118,8 +125,8 @@ class _AlbumCardState extends State<AlbumCard> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              primary.withOpacity(isDark ? 0.35 : 0.25),
-              isDark ? const Color(0xFF1E2433) : const Color(0xFFE2E8F0),
+              sleeveBgStart,
+              sleeveBgEnd,
             ],
           ),
           boxShadow: [
@@ -155,7 +162,7 @@ class _AlbumCardState extends State<AlbumCard> {
               margin: const EdgeInsets.all(22.0),
             ),
 
-            // Center album badge
+            // Center album badge with sleeve accent
             Container(
               width: widget.mode == AlbumCardMode.grid ? 46.0 : 36.0,
               height: widget.mode == AlbumCardMode.grid ? 46.0 : 36.0,
@@ -164,7 +171,7 @@ class _AlbumCardState extends State<AlbumCard> {
                 color: surface.withOpacity(isDark ? 0.85 : 0.95),
                 boxShadow: [
                   BoxShadow(
-                    color: primary.withOpacity(0.25),
+                    color: sleeveAccent.withOpacity(0.35),
                     blurRadius: 10.0,
                   ),
                 ],
@@ -172,7 +179,7 @@ class _AlbumCardState extends State<AlbumCard> {
               child: Icon(
                 Icons.album,
                 size: widget.mode == AlbumCardMode.grid ? 28.0 : 22.0,
-                color: primary,
+                color: sleeveAccent,
               ),
             ),
           ],
@@ -210,12 +217,12 @@ class _AlbumCardState extends State<AlbumCard> {
                 color: onSurface,
                 letterSpacing: -0.2,
               ),
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 2.0),
+            const SizedBox(height: 3.0),
             Text(
-              _resolvedSubtitle,
+              widget.artist,
               style: AppTypography.bodySmall.copyWith(
                 color: onSurfaceVariant,
                 fontSize: 12.0,
@@ -224,26 +231,16 @@ class _AlbumCardState extends State<AlbumCard> {
               overflow: TextOverflow.ellipsis,
             ),
             if (widget.trackCount != null && widget.trackCount! > 0) ...[
-              const SizedBox(height: 6.0),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 7.0,
-                  vertical: 2.5,
+              const SizedBox(height: 4.0),
+              Text(
+                '${widget.year != null ? '${widget.year} • ' : ''}${widget.trackCount == 1 ? '1 track' : '${widget.trackCount} tracks'} • FLAC',
+                style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
+                  color: onSurfaceVariant.withOpacity(0.65),
+                  fontWeight: FontWeight.w500,
+                  fontSize: 10.5,
                 ),
-                decoration: BoxDecoration(
-                  color: surfaceTokens.level2,
-                  borderRadius: BorderRadius.circular(6.0),
-                ),
-                child: Text(
-                  widget.trackCount == 1 ? '1 Track' : '${widget.trackCount} Tracks',
-                  style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
-                    color: primary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 10.5,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ],
