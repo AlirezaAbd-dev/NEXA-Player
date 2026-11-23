@@ -41,6 +41,15 @@ jobs:
       - name: Run Test Suite
         run: flutter test test/unit/library test/unit/cloud test/unit/equalizer test/unit/lyrics test/unit/player test/unit/playlists test/unit/search test/unit/database test/benchmark/
 
+      - name: Verify Release Keystore
+        run: |
+          if [ ! -f android/app/release-keystore.jks ]; then
+            echo "Generating release keystore on runner..."
+            keytool -genkeypair -v -keystore android/app/release-keystore.jks -alias nexa -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=NEXA Player, OU=Audio, O=NEXA, L=Tehran, ST=Tehran, C=IR" -storepass nexaplayer2026 -keypass nexaplayer2026
+          else
+            echo "Release keystore found in repository."
+          fi
+
       - name: Build Release APKs (Universal & Split-per-ABI)
         run: |
           flutter build apk --release

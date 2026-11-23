@@ -34,10 +34,23 @@ android {
             v2SigningEnabled true
         }
         release {
-            storeFile file("release-keystore.jks")
-            storePassword "nexaplayer2026"
-            keyAlias "nexa"
-            keyPassword "nexaplayer2026"
+            def keystoreFile = file("release-keystore.jks")
+            if (keystoreFile.exists()) {
+                storeFile keystoreFile
+                storePassword "nexaplayer2026"
+                keyAlias "nexa"
+                keyPassword "nexaplayer2026"
+            } else {
+                def debugKeystore = file("${System.getProperty('user.home')}/.android/debug.keystore")
+                if (debugKeystore.exists()) {
+                    storeFile debugKeystore
+                } else {
+                    storeFile keystoreFile
+                }
+                storePassword "android"
+                keyAlias "androiddebugkey"
+                keyPassword "android"
+            }
             v1SigningEnabled true
             v2SigningEnabled true
         }
