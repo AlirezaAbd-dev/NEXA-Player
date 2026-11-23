@@ -1,14 +1,17 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../../core/design_system/app_spacing.dart';
-import '../../../../core/design_system/app_typography.dart';
-import '../../../../core/extensions/duration_x.dart';
-import '../../../../shared/models/track.dart';
+import 'package:nexa_player/core/design_system/app_spacing.dart';
+import 'package:nexa_player/core/design_system/app_typography.dart';
+import 'package:nexa_player/core/design_system/nexa_surface_tokens.dart';
+import 'package:nexa_player/core/extensions/duration_x.dart';
+import 'package:nexa_player/shared/models/track.dart';
+import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
 
 /// Hero artwork card featuring:
 /// - Swipe left / right spring gesture navigation (skip next / previous).
-/// - 3D Perspective Y-axis flip on long-press to reveal extended technical audio tags.
+/// - Double-tap left/right for quick +/- 10s seek.
+/// - 3D Perspective Y-axis flip on long-press revealing the 3D Signal Chain & studio telemetry.
 /// - Concentric vinyl grooves and center rotating record when playing.
 class HeroArtworkCard extends StatefulWidget {
   const HeroArtworkCard({
@@ -17,6 +20,8 @@ class HeroArtworkCard extends StatefulWidget {
     this.isPlaying = false,
     this.onSwipeLeft,
     this.onSwipeRight,
+    this.onDoubleTapSeekForward,
+    this.onDoubleTapSeekBackward,
     this.size = 280.0,
   });
 
@@ -24,6 +29,8 @@ class HeroArtworkCard extends StatefulWidget {
   final bool isPlaying;
   final VoidCallback? onSwipeLeft;
   final VoidCallback? onSwipeRight;
+  final VoidCallback? onDoubleTapSeekForward;
+  final VoidCallback? onDoubleTapSeekBackward;
   final double size;
 
   @override
@@ -38,6 +45,7 @@ class _HeroArtworkCardState extends State<HeroArtworkCard>
 
   bool _isFlipped = false;
   double _swipeDragDelta = 0.0;
+  TapDownDetails? _lastTapDown;
 
   bool get _isTest =>
       WidgetsBinding.instance.runtimeType.toString().contains('Test');
@@ -122,6 +130,18 @@ class _HeroArtworkCardState extends State<HeroArtworkCard>
     });
   }
 
+  void _handleDoubleTap() {
+    if (_lastTapDown == null) return;
+    final isRightHalf = _lastTapDown!.localPosition.dx > widget.size / 2;
+    if (isRightHalf && widget.onDoubleTapSeekForward != null) {
+      HapticFeedback.lightImpact();
+      widget.onDoubleTapSeekForward!();
+    } else if (!isRightHalf && widget.onDoubleTapSeekBackward != null) {
+      HapticFeedback.lightImpact();
+      widget.onDoubleTapSeekBackward!();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -130,6 +150,8 @@ class _HeroArtworkCardState extends State<HeroArtworkCard>
     final primary = colorScheme.primary;
 
     return GestureDetector(
+      onTapDown: (details) => _lastTapDown = details,
+      onDoubleTap: _handleDoubleTap,
       onLongPress: _handleFlip,
       onTap: _isFlipped ? _handleFlip : null,
       onHorizontalDragUpdate: _handleHorizontalDragUpdate,
@@ -271,98 +293,142 @@ class _HeroArtworkCardState extends State<HeroArtworkCard>
     Color primary,
   ) {
     final track = widget.track;
-    final bitrateStr = track?.bitrate != null ? '${track!.bitrate! ~/ 1000} kbps' : '320 kbps MP3';
+    final surfaceTokens = NexaSurfaceTokens.of(context);
+    final bitrateStr = track?.bitrate != null
+        ? '${track!.bitrate! ~/ 1000} kbps'
+        : '320 kbps MP3';
     final durationStr = track != null ? track.duration.toMinutesSeconds() : '3:50';
     final yearStr = track?.year != null ? '${track!.year}' : '2016';
     final genreStr = track?.genre ?? 'Synthpop / R&B';
     final pathStr = track?.filePath ?? '/Music/Starboy.mp3';
 
-    return Container(
-      width: widget.size,
-      height: widget.size,
-      padding: const EdgeInsets.all(20.0),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF141923) : Colors.white,
-        borderRadius: BorderRadius.circular(24.0),
-        border: Border.all(
-          color: primary.withOpacity(0.35),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: primary.withOpacity(0.25),
-            blurRadius: 32.0,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
+    return NexaSurface(
+      level: NexaSurfaceLevel.l2,
+      borderRadius: BorderRadius.circular(24.0),
+      child: SizedBox(
+        width: widget.size,
+        height: widget.size,
+        child: Padding(
+          padding: const EdgeInsets.all(18.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              // Top Header with 3D Signal Chain Badge
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 3.0),
+                    decoration: BoxDecoration(
+                      color: primary.withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                    child: Text(
+                      '3D SIGNAL CHAIN',
+                      style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
+                        color: primary,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.8,
+                        fontSize: 10.0,
+                      ),
+                    ),
+                  ),
+                  Icon(Icons.flip_to_front_rounded, size: 18, color: colorScheme.onSurface.withOpacity(0.6)),
+                ],
+              ),
+
+              // Interactive Signal Route Flow Strip
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
+                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 5.0),
                 decoration: BoxDecoration(
-                  color: primary.withOpacity(0.18),
+                  color: surfaceTokens.level3,
                   borderRadius: BorderRadius.circular(8.0),
                 ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _chainNode('SOURCE', primary, surfaceTokens),
+                    _chainArrow(primary),
+                    _chainNode('DSP', primary, surfaceTokens),
+                    _chainArrow(primary),
+                    _chainNode('DVC', primary, surfaceTokens),
+                    _chainArrow(primary),
+                    _chainNode('OUTPUT', primary, surfaceTokens),
+                  ],
+                ),
+              ),
+
+              // Telemetry Specs
+              _detailRow('Format / Bitrate', bitrateStr, colorScheme, surfaceTokens),
+              _detailRow('Sample Precision', '44.1 kHz / 16-bit', colorScheme, surfaceTokens),
+              _detailRow('Duration', durationStr, colorScheme, surfaceTokens),
+              _detailRow('ReplayGain', '+0.0 dB (Radio)', colorScheme, surfaceTokens),
+              _detailRow('Genre', genreStr, colorScheme, surfaceTokens),
+              _detailRow('Path', pathStr, colorScheme, surfaceTokens, isPath: true),
+
+              Center(
                 child: Text(
-                  'TECHNICAL DETAILS',
-                  style: AppTypography.labelSmall.copyWith(
-                    color: primary,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.0,
+                  'Tap anywhere to flip back',
+                  style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
+                    color: colorScheme.onSurface.withOpacity(0.40),
+                    fontStyle: FontStyle.italic,
+                    fontSize: 10.0,
                   ),
                 ),
               ),
-              Icon(Icons.flip_to_front_rounded, size: 20, color: colorScheme.onSurface.withOpacity(0.6)),
             ],
           ),
-          const SizedBox(height: 6.0),
-          _detailRow('Format / Bitrate', bitrateStr, colorScheme),
-          _detailRow('Duration', durationStr, colorScheme),
-          _detailRow('Year', yearStr, colorScheme),
-          _detailRow('Genre', genreStr, colorScheme),
-          _detailRow('Path', pathStr, colorScheme, isPath: true),
-          const SizedBox(height: 4.0),
-          Center(
-            child: Text(
-              'Tap anywhere to flip back',
-              style: AppTypography.labelSmall.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.40),
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _detailRow(String label, String value, ColorScheme colorScheme, {bool isPath = false}) {
+  Widget _chainNode(String name, Color primary, NexaSurfaceTokens surfaceTokens) {
+    return Text(
+      name,
+      style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
+        color: primary,
+        fontWeight: FontWeight.bold,
+        fontSize: 9.0,
+        letterSpacing: 0.5,
+      ),
+    );
+  }
+
+  Widget _chainArrow(Color primary) {
+    return Icon(Icons.arrow_forward_ios_rounded, size: 8.0, color: primary.withOpacity(0.5));
+  }
+
+  Widget _detailRow(
+    String label,
+    String value,
+    ColorScheme colorScheme,
+    NexaSurfaceTokens surfaceTokens, {
+    bool isPath = false,
+  }) {
     return Row(
       crossAxisAlignment: isPath ? CrossAxisAlignment.start : CrossAxisAlignment.center,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: AppTypography.labelSmall.copyWith(
+          style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
             color: colorScheme.onSurface.withOpacity(0.55),
             fontWeight: FontWeight.w600,
+            fontSize: 11.0,
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
         Flexible(
           child: Text(
             value,
-            style: AppTypography.bodySmall.copyWith(
+            style: (surfaceTokens.telemetryTextStyle ?? AppTypography.bodySmall).copyWith(
               color: colorScheme.onSurface,
               fontWeight: FontWeight.w500,
+              fontSize: 11.0,
             ),
-            maxLines: isPath ? 1 : 1,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.end,
           ),
