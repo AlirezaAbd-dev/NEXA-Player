@@ -56,6 +56,7 @@ class TrackTile extends StatefulWidget {
     Key? key,
     required Track track,
     bool isPlaying = false,
+    bool showTrackNumber = false,
     VoidCallback? onTap,
     VoidCallback? onLongPress,
     VoidCallback? onMorePressed,
@@ -73,7 +74,7 @@ class TrackTile extends StatefulWidget {
       album: track.album,
       duration: track.duration,
       artworkUri: track.artworkUri,
-      trackNumber: track.trackNumber,
+      trackNumber: showTrackNumber ? track.trackNumber : null,
       isPlaying: isPlaying,
       isFavorite: track.isFavorite,
       onTap: onTap,
@@ -142,19 +143,40 @@ class _TrackTileState extends State<TrackTile> {
         ? Color.alphaBlend(primary.withOpacity(0.08), tokens.l2)
         : Colors.transparent;
 
-    // Left Artwork Thumbnail
+    // Left Artwork Thumbnail: 44x44dp, 10dp radius rounded album art thumbnail
     Widget artworkWidget;
     if (widget.leading != null) {
       artworkWidget = widget.leading!;
     } else {
+      final hasTrackNumber = widget.trackNumber != null;
+      Widget thumbnailContent;
+
+      if (widget.artworkUri != null && widget.artworkUri!.isNotEmpty) {
+        thumbnailContent = Image.network(
+          widget.artworkUri!,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildArtworkFallback(primary, tokens),
+        );
+      } else if (hasTrackNumber && !widget.isPlaying) {
+        thumbnailContent = Text(
+          '${widget.trackNumber}',
+          style: AppTypography.titleMedium.copyWith(
+            color: primary,
+            fontWeight: FontWeight.bold,
+          ),
+        );
+      } else {
+        thumbnailContent = _buildArtworkFallback(primary, tokens);
+      }
+
       artworkWidget = Container(
-        width: 48.0,
-        height: 48.0,
+        width: 44.0,
+        height: 44.0,
         decoration: BoxDecoration(
           color: widget.isPlaying
               ? primary.withOpacity(0.18)
               : (isDark ? tokens.l1 : primary.withOpacity(0.08)),
-          borderRadius: BorderRadius.circular(12.0),
+          borderRadius: BorderRadius.circular(10.0),
           boxShadow: widget.isPlaying
               ? [
                   BoxShadow(
@@ -165,18 +187,23 @@ class _TrackTileState extends State<TrackTile> {
                 ]
               : null,
         ),
-        child: Center(
-          child: widget.isPlaying
-              ? AnimatedEqualizerGlyph(color: primary, width: 20.0, height: 20.0)
-              : (widget.trackNumber != null
-                  ? Text(
-                      '${widget.trackNumber}',
-                      style: AppTypography.titleMedium.copyWith(
-                        color: primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    )
-                  : Icon(Icons.music_note_rounded, color: primary, size: 22.0)),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            thumbnailContent,
+            if (widget.isPlaying) ...[
+              Container(
+                color: Colors.black.withOpacity(0.42),
+                alignment: Alignment.center,
+                child: AnimatedEqualizerGlyph(color: primary, width: 20.0, height: 20.0),
+              ),
+              const Opacity(
+                opacity: 0.0,
+                child: Icon(Icons.volume_up_rounded, size: 0.0),
+              ),
+            ],
+          ],
         ),
       );
     }
@@ -409,6 +436,29 @@ class _TrackTileState extends State<TrackTile> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildArtworkFallback(Color primary, NexaSurfaceTokens tokens) {
+    return Container(
+      decoration: BoxDecoration(
+        color: tokens.l2,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            tokens.l2,
+            tokens.l1,
+          ],
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          Icons.music_note_rounded,
+          color: primary.withOpacity(0.85),
+          size: 20.0,
         ),
       ),
     );

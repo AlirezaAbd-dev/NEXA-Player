@@ -219,26 +219,24 @@ class _MiniPlayerSlotState extends ConsumerState<MiniPlayerSlot>
 
     _syncRotation(isPlaying);
 
-    // Subtle left-to-right tonal wash across the pill background
+    // Soft subtle feathered ambient background gradient without harsh vertical split
     final progressGradient = LinearGradient(
       begin: Alignment.centerLeft,
       end: Alignment.centerRight,
       colors: [
-        primary.withOpacity(0.18),
-        primary.withOpacity(0.08),
-        tokens.l3,
+        primary.withOpacity(0.09),
+        primary.withOpacity(0.03),
         tokens.l3,
       ],
-      stops: [
+      stops: const [
         0.0,
-        progress,
-        (progress + 0.02).clamp(0.0, 1.0),
+        0.7,
         1.0,
       ],
     );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
+      padding: const EdgeInsets.fromLTRB(10.0, 4.0, 10.0, 8.0),
       child: GestureDetector(
         onHorizontalDragUpdate: _onHorizontalDragUpdate,
         onHorizontalDragEnd: _onHorizontalDragEnd,
@@ -270,109 +268,138 @@ class _MiniPlayerSlotState extends ConsumerState<MiniPlayerSlot>
                         horizontal: AppSpacing.sm,
                         vertical: 8.0,
                       ),
-                      child: Row(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          // 1. Hero Artwork Rotating Vinyl Thumbnail
-                          Hero(
-                            tag: 'now_playing_art',
-                            child: RotationTransition(
-                              turns: _rotationController,
-                              child: Container(
-                                width: 42.0,
-                                height: 42.0,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      primary,
-                                      colorScheme.secondary,
-                                    ],
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: primary.withOpacity(0.28),
-                                      blurRadius: 8.0,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Center(
+                          Row(
+                            children: [
+                              // 1. Hero Artwork Rotating Vinyl Thumbnail
+                              Hero(
+                                tag: 'now_playing_art',
+                                child: RotationTransition(
+                                  turns: _rotationController,
                                   child: Container(
-                                    width: 14.0,
-                                    height: 14.0,
+                                    width: 42.0,
+                                    height: 42.0,
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: tokens.l1,
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          primary,
+                                          colorScheme.secondary,
+                                        ],
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: primary.withOpacity(0.28),
+                                          blurRadius: 8.0,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Center(
+                                      child: Container(
+                                        width: 14.0,
+                                        height: 14.0,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: tokens.l1,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
+                              const SizedBox(width: AppSpacing.sm),
 
-                          // 2. Track Title & Artist (Responsive flex with ellipsis)
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  title,
-                                  style: AppTypography.titleMedium.copyWith(
-                                    color: tokens.onL3,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                              // 2. Track Title & Artist (Responsive flex with ellipsis)
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      title,
+                                      style: AppTypography.titleMedium.copyWith(
+                                        color: tokens.onL3,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2.0),
+                                    Text(
+                                      artist,
+                                      style: AppTypography.bodySmall.copyWith(
+                                        color: tokens.onL3.withOpacity(0.68),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 2.0),
-                                Text(
-                                  artist,
-                                  style: AppTypography.bodySmall.copyWith(
-                                    color: tokens.onL3.withOpacity(0.68),
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                              ),
+
+                              // 3. Play / Pause Button with refined tactile circular backing
+                              Container(
+                                width: 38.0,
+                                height: 38.0,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: primary.withOpacity(0.16),
                                 ),
-                              ],
-                            ),
-                          ),
+                                child: IconButton(
+                                  key: MiniPlayerKeys.miniPlayerPlayPause,
+                                  icon: Icon(
+                                    isPlaying
+                                        ? Icons.pause_rounded
+                                        : Icons.play_arrow_rounded,
+                                    size: 24.0,
+                                    color: primary,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(
+                                    minWidth: 38.0,
+                                    minHeight: 38.0,
+                                  ),
+                                  onPressed: _handlePlayPause,
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.xs),
 
-                          // 3. Play / Pause Button
-                          IconButton(
-                            key: MiniPlayerKeys.miniPlayerPlayPause,
-                            icon: Icon(
-                              isPlaying
-                                  ? Icons.pause_circle_filled_rounded
-                                  : Icons.play_circle_fill_rounded,
-                              size: 36.0,
-                              color: primary,
-                            ),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(
-                              minWidth: 38.0,
-                              minHeight: 38.0,
-                            ),
-                            onPressed: _handlePlayPause,
+                              // 4. Skip Next Button
+                              IconButton(
+                                key: MiniPlayerKeys.miniPlayerSkipNext,
+                                icon: Icon(
+                                  Icons.skip_next_rounded,
+                                  size: 26.0,
+                                  color: tokens.onL3.withOpacity(0.75),
+                                ),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 34.0,
+                                  minHeight: 34.0,
+                                ),
+                                onPressed: _handleNext,
+                              ),
+                            ],
                           ),
-
-                          // 4. Skip Next Button
-                          IconButton(
-                            key: MiniPlayerKeys.miniPlayerSkipNext,
-                            icon: Icon(
-                              Icons.skip_next_rounded,
-                              size: 26.0,
-                              color: tokens.onL3.withOpacity(0.75),
+                          const SizedBox(height: 6.0),
+                          // Sleek 2.5dp inset rounded progress track
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(1.5),
+                            child: SizedBox(
+                              height: 2.5,
+                              child: LinearProgressIndicator(
+                                value: progress,
+                                backgroundColor: tokens.l2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  primary.withOpacity(0.85),
+                                ),
+                              ),
                             ),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(
-                              minWidth: 34.0,
-                              minHeight: 34.0,
-                            ),
-                            onPressed: _handleNext,
                           ),
                         ],
                       ),

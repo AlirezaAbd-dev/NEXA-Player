@@ -73,11 +73,6 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
         titleText: 'Songs',
         automaticallyImplyLeading: false,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.search_rounded),
-            tooltip: 'Search library',
-            onPressed: () => context.push(AppRoutes.search),
-          ),
           PopupMenuButton<TrackSortBy>(
             key: Phase2Keys.sortButton,
             icon: const Icon(Icons.sort_rounded),
@@ -232,6 +227,48 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
                                   ),
                                   const SizedBox(width: AppSpacing.xs),
                                 ],
+                                PopupMenuButton<TrackTileMenuAction>(
+                                  icon: const Icon(
+                                    Icons.more_vert_rounded,
+                                    size: 20.0,
+                                  ),
+                                  tooltip: 'Track actions',
+                                  padding: EdgeInsets.zero,
+                                  onSelected: (action) {
+                                    switch (action) {
+                                      case TrackTileMenuAction.playNext:
+                                        ref.read(playerNotifierProvider.notifier).addNext(track);
+                                        break;
+                                      case TrackTileMenuAction.addToQueue:
+                                        ref.read(playerNotifierProvider.notifier).addTrack(track);
+                                        break;
+                                      default:
+                                        break;
+                                    }
+                                  },
+                                  itemBuilder: (context) => const [
+                                    PopupMenuItem(
+                                      value: TrackTileMenuAction.playNext,
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.playlist_play_rounded),
+                                          SizedBox(width: 8),
+                                          Text('Play next'),
+                                        ],
+                                      ),
+                                    ),
+                                    PopupMenuItem(
+                                      value: TrackTileMenuAction.addToQueue,
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.queue_music_rounded),
+                                          SizedBox(width: 8),
+                                          Text('Add to queue'),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ],
                             ),
                           ),
