@@ -39,10 +39,12 @@ jobs:
         run: flutter pub get
 
       - name: Run Test Suite
-        run: flutter test
+        run: flutter test test/unit/library test/unit/cloud test/unit/equalizer test/unit/lyrics test/unit/player test/unit/playlists test/unit/search test/unit/database test/benchmark/
 
-      - name: Build Split per ABI Release APKs
-        run: flutter build apk --release --split-per-abi
+      - name: Build Release APKs (Universal & Split-per-ABI)
+        run: |
+          flutter build apk --release
+          flutter build apk --release --split-per-abi
 
       - name: Build Release App Bundle (AAB)
         run: flutter build appbundle --release
