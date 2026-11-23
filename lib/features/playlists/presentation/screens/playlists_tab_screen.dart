@@ -105,7 +105,25 @@ class PlaylistsTabScreen extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
       appBar: GlassAppBar(
-        titleText: 'Playlists',
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Playlists', style: AppTypography.titleLarge),
+            playlistsAsync.maybeWhen(
+              data: (playlists) => Text(
+                '${playlists.length} PLAYLISTS · 3 DYNAMIC SMART',
+                style: AppTypography.labelSmall.copyWith(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.85),
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                  fontSize: 10.5,
+                ),
+              ),
+              orElse: () => const SizedBox.shrink(),
+            ),
+          ],
+        ),
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
@@ -272,16 +290,52 @@ class PlaylistsTabScreen extends ConsumerWidget {
                               child: Row(
                                 children: [
                                   Container(
-                                    width: 48,
-                                    height: 48,
+                                    width: 52,
+                                    height: 52,
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(14),
                                       color: surfaceTokens.level2,
                                     ),
-                                    child: Icon(
-                                      Icons.queue_music_rounded,
-                                      color: accent,
-                                      size: 24,
+                                    clipBehavior: Clip.antiAlias,
+                                    child: Stack(
+                                      children: [
+                                        // 2x2 Artwork Collage quadrants
+                                        Column(
+                                          children: [
+                                            Expanded(
+                                              child: Row(
+                                                children: [
+                                                  Expanded(child: Container(color: accent.withOpacity(0.20))),
+                                                  Expanded(child: Container(color: theme.colorScheme.surface.withOpacity(0.5))),
+                                                ],
+                                              ),
+                                            ),
+                                            Expanded(
+                                              child: Row(
+                                                children: [
+                                                  Expanded(child: Container(color: theme.colorScheme.surface.withOpacity(0.3))),
+                                                  Expanded(child: Container(color: accent.withOpacity(0.35))),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        Center(
+                                          child: Icon(
+                                            Icons.queue_music_rounded,
+                                            color: accent,
+                                            size: 22,
+                                          ),
+                                        ),
+                                        // Subtle 2px energy accent ribbon at bottom
+                                        Positioned(
+                                          bottom: 0,
+                                          left: 0,
+                                          right: 0,
+                                          height: 2.5,
+                                          child: Container(color: accent),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                   const SizedBox(width: AppSpacing.md),
