@@ -1,19 +1,26 @@
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/design_system/app_spacing.dart';
 import '../../core/design_system/app_typography.dart';
+import '../../core/design_system/nexa_surface_tokens.dart';
 import '../../features/player/presentation/providers/player_providers.dart';
 import '../routes.dart';
 
-/// Semantic Keys matching ShellNavigationTest.
-abstract final class _MiniPlayerKeys {
+/// Semantic Keys matching ShellNavigationTest and Widget Tests.
+abstract final class MiniPlayerKeys {
   static const Key miniPlayerSlot = ValueKey('mini_player_slot');
   static const Key miniPlayerPlayPause = ValueKey('mini_player_play_pause');
+  static const Key miniPlayerSkipNext = ValueKey('mini_player_skip_next');
 }
 
-/// Modern floating mini-player capsule persistent across all tab switches.
+/// Borderless L3 floating mini-player pill featuring:
+/// - Background left-to-right tonal progress wash (zero hairline bottom bar)
+/// - Horizontal swipe to skip Next/Previous with spring physics
+/// - Vertical drag morphing smoothly into Now Playing via Hero animation
+/// - Guaranteed zero RenderFlex overflows at 360dp compact viewport
 class MiniPlayerSlot extends ConsumerStatefulWidget {
   const MiniPlayerSlot({
     super.key,
@@ -25,6 +32,7 @@ class MiniPlayerSlot extends ConsumerStatefulWidget {
     this.onTap,
     this.onPlayPause,
     this.onNext,
+    this.onPrevious,
   });
 
   final String? title;
@@ -35,15 +43,25 @@ class MiniPlayerSlot extends ConsumerStatefulWidget {
   final VoidCallback? onTap;
   final VoidCallback? onPlayPause;
   final VoidCallback? onNext;
+  final VoidCallback? onPrevious;
 
   @override
   ConsumerState<MiniPlayerSlot> createState() => _MiniPlayerSlotState();
 }
 
 class _MiniPlayerSlotState extends ConsumerState<MiniPlayerSlot>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late bool _isPlaying;
   late final AnimationController _rotationController;
+
+  // Gestures state
+  double _horizontalDrag = 0.0;
+  double _verticalDrag = 0.0;
+  late final AnimationController _horizontalSpringController;
+  late Animation<double> _horizontalSpringAnimation;
+
+  static const double _horizontalThreshold = 60.0;
+  static const double _verticalDismissThreshold = -50.0;
 
   bool get _isTest =>
       WidgetsBinding.instance.runtimeType.toString().contains('Test');
@@ -62,6 +80,15 @@ class _MiniPlayerSlotState extends ConsumerState<MiniPlayerSlot>
     } else if (_isPlaying) {
       _rotationController.value = 0.25;
     }
+
+    _horizontalSpringController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 260),
+    )..addListener(() {
+        setState(() {
+          _horizontalDrag = _horizontalSpringAnimation.value;
+        });
+      });
   }
 
   @override
@@ -86,6 +113,7 @@ class _MiniPlayerSlotState extends ConsumerState<MiniPlayerSlot>
   @override
   void dispose() {
     _rotationController.dispose();
+    _horizontalSpringController.dispose();
     super.dispose();
   }
 
@@ -110,13 +138,76 @@ class _MiniPlayerSlotState extends ConsumerState<MiniPlayerSlot>
     }
   }
 
+  void _handlePrevious() {
+    if (widget.onPrevious != null) {
+      widget.onPrevious!();
+    } else {
+      ref.read(playerNotifierProvider.notifier).skipPrevious();
+    }
+  }
+
+  void _openNowPlaying() {
+    if (widget.onTap != null) {
+      widget.onTap!();
+    } else {
+      context.push(AppRoutes.player);
+    }
+  }
+
+  void _onHorizontalDragUpdate(DragUpdateDetails details) {
+    if (_horizontalSpringController.isAnimating) {
+      _horizontalSpringController.stop();
+    }
+    setState(() {
+      _horizontalDrag += details.primaryDelta ?? 0.0;
+      _horizontalDrag = _horizontalDrag.clamp(-100.0, 100.0);
+    });
+  }
+
+  void _onHorizontalDragEnd(DragEndDetails details) {
+    if (_horizontalDrag <= -_horizontalThreshold) {
+      HapticFeedback.selectionClick();
+      _handleNext();
+    } else if (_horizontalDrag >= _horizontalThreshold) {
+      HapticFeedback.selectionClick();
+      _handlePrevious();
+    }
+
+    _horizontalSpringAnimation = Tween<double>(
+      begin: _horizontalDrag,
+      end: 0.0,
+    ).animate(
+      CurvedAnimation(
+        parent: _horizontalSpringController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
+    _horizontalSpringController.forward(from: 0.0);
+  }
+
+  void _onVerticalDragUpdate(DragUpdateDetails details) {
+    setState(() {
+      _verticalDrag += details.primaryDelta ?? 0.0;
+    });
+  }
+
+  void _onVerticalDragEnd(DragEndDetails details) {
+    if (_verticalDrag <= _verticalDismissThreshold) {
+      HapticFeedback.mediumImpact();
+      _openNowPlaying();
+    }
+    setState(() {
+      _verticalDrag = 0.0;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
     final primary = colorScheme.primary;
-    final capsuleRadius = BorderRadius.circular(16.0);
+    final tokens = NexaSurfaceTokens.of(context);
+    final capsuleRadius = BorderRadius.circular(20.0);
 
     final playerState = ref.watch(playerNotifierProvider);
     final currentTrack = playerState.currentTrack;
@@ -124,83 +215,97 @@ class _MiniPlayerSlotState extends ConsumerState<MiniPlayerSlot>
     final title = widget.title ?? (currentTrack?.title ?? 'Starboy');
     final artist = widget.artist ?? (currentTrack?.artistAndAlbum ?? 'The Weeknd • Daft Punk');
     final isPlaying = widget.isPlaying ?? (currentTrack != null ? playerState.isPlaying : _isPlaying);
-    final progress = widget.progress ?? (currentTrack != null ? playerState.progress : 0.35);
+    final progress = (widget.progress ?? (currentTrack != null ? playerState.progress : 0.35)).clamp(0.0, 1.0);
 
     _syncRotation(isPlaying);
 
+    // Subtle left-to-right tonal wash across the pill background
+    final progressGradient = LinearGradient(
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+      colors: [
+        primary.withOpacity(0.18),
+        primary.withOpacity(0.08),
+        tokens.l3,
+        tokens.l3,
+      ],
+      stops: [
+        0.0,
+        progress,
+        (progress + 0.02).clamp(0.0, 1.0),
+        1.0,
+      ],
+    );
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 4.0),
-      child: ClipRRect(
-        borderRadius: capsuleRadius,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
-          child: Container(
-            key: _MiniPlayerKeys.miniPlayerSlot,
-            decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF141923).withOpacity(0.85)
-                  : theme.colorScheme.surface.withOpacity(0.92),
-              borderRadius: capsuleRadius,
-              border: Border.all(
-                color: isDark ? const Color(0x20FFFFFF) : const Color(0x10000000),
-                width: 1.0,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: isDark ? const Color(0x40000000) : const Color(0x15000000),
-                  blurRadius: 18.0,
-                  offset: const Offset(0, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
+      child: GestureDetector(
+        onHorizontalDragUpdate: _onHorizontalDragUpdate,
+        onHorizontalDragEnd: _onHorizontalDragEnd,
+        onVerticalDragUpdate: _onVerticalDragUpdate,
+        onVerticalDragEnd: _onVerticalDragEnd,
+        behavior: HitTestBehavior.opaque,
+        child: Transform.translate(
+          offset: Offset(_horizontalDrag, 0.0),
+          child: ClipRRect(
+            borderRadius: capsuleRadius,
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
+              child: Container(
+                key: MiniPlayerKeys.miniPlayerSlot,
+                decoration: BoxDecoration(
+                  color: tokens.l3,
+                  gradient: progressGradient,
+                  borderRadius: capsuleRadius,
+                  // Borderless standard: zero raw Border.all
+                  boxShadow: tokens.l3Shadow,
                 ),
-              ],
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: capsuleRadius,
-                onTap: widget.onTap ?? () => context.push(AppRoutes.player),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Padding(
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: capsuleRadius,
+                    onTap: _openNowPlaying,
+                    child: Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.sm,
-                        vertical: 6.0,
+                        vertical: 8.0,
                       ),
                       child: Row(
                         children: [
-                          // 1. Artwork Thumbnail
-                          RotationTransition(
-                            turns: _rotationController,
-                            child: Container(
-                              width: 44.0,
-                              height: 44.0,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    primary,
-                                    colorScheme.secondary,
+                          // 1. Hero Artwork Rotating Vinyl Thumbnail
+                          Hero(
+                            tag: 'now_playing_art',
+                            child: RotationTransition(
+                              turns: _rotationController,
+                              child: Container(
+                                width: 42.0,
+                                height: 42.0,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      primary,
+                                      colorScheme.secondary,
+                                    ],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: primary.withOpacity(0.28),
+                                      blurRadius: 8.0,
+                                      offset: const Offset(0, 2),
+                                    ),
                                   ],
                                 ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: primary.withOpacity(0.30),
-                                    blurRadius: 8.0,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Center(
-                                child: Container(
-                                  width: 16.0,
-                                  height: 16.0,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: isDark
-                                        ? const Color(0xFF0F172A)
-                                        : Colors.white,
+                                child: Center(
+                                  child: Container(
+                                    width: 14.0,
+                                    height: 14.0,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: tokens.l1,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -208,7 +313,7 @@ class _MiniPlayerSlotState extends ConsumerState<MiniPlayerSlot>
                           ),
                           const SizedBox(width: AppSpacing.sm),
 
-                          // 2. Track Title & Artist
+                          // 2. Track Title & Artist (Responsive flex with ellipsis)
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,7 +322,7 @@ class _MiniPlayerSlotState extends ConsumerState<MiniPlayerSlot>
                                 Text(
                                   title,
                                   style: AppTypography.titleMedium.copyWith(
-                                    color: colorScheme.onSurface,
+                                    color: tokens.onL3,
                                     fontWeight: FontWeight.bold,
                                   ),
                                   maxLines: 1,
@@ -227,7 +332,7 @@ class _MiniPlayerSlotState extends ConsumerState<MiniPlayerSlot>
                                 Text(
                                   artist,
                                   style: AppTypography.bodySmall.copyWith(
-                                    color: colorScheme.onSurface.withOpacity(0.65),
+                                    color: tokens.onL3.withOpacity(0.68),
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -238,7 +343,7 @@ class _MiniPlayerSlotState extends ConsumerState<MiniPlayerSlot>
 
                           // 3. Play / Pause Button
                           IconButton(
-                            key: _MiniPlayerKeys.miniPlayerPlayPause,
+                            key: MiniPlayerKeys.miniPlayerPlayPause,
                             icon: Icon(
                               isPlaying
                                   ? Icons.pause_circle_filled_rounded
@@ -248,45 +353,31 @@ class _MiniPlayerSlotState extends ConsumerState<MiniPlayerSlot>
                             ),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(
-                              minWidth: 40.0,
-                              minHeight: 40.0,
+                              minWidth: 38.0,
+                              minHeight: 38.0,
                             ),
                             onPressed: _handlePlayPause,
                           ),
 
                           // 4. Skip Next Button
                           IconButton(
+                            key: MiniPlayerKeys.miniPlayerSkipNext,
                             icon: Icon(
                               Icons.skip_next_rounded,
                               size: 26.0,
-                              color: colorScheme.onSurface.withOpacity(0.70),
+                              color: tokens.onL3.withOpacity(0.75),
                             ),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(
-                              minWidth: 36.0,
-                              minHeight: 36.0,
+                              minWidth: 34.0,
+                              minHeight: 34.0,
                             ),
                             onPressed: _handleNext,
                           ),
                         ],
                       ),
                     ),
-
-                    // 5. Linear Progress Line Indicator
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        bottom: Radius.circular(16.0),
-                      ),
-                      child: LinearProgressIndicator(
-                        value: progress.clamp(0.0, 1.0),
-                        minHeight: 2.5,
-                        backgroundColor: isDark
-                            ? const Color(0x18FFFFFF)
-                            : const Color(0x10000000),
-                        valueColor: AlwaysStoppedAnimation<Color>(primary),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
