@@ -1,10 +1,12 @@
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_constants.dart';
-import '../../../core/design_system/app_spacing.dart';
-import '../../../core/design_system/app_typography.dart';
-import '../../../core/design_system/glass_tokens.dart';
-import '../../models/artist.dart';
+import 'package:nexa_player/core/constants/app_constants.dart';
+import 'package:nexa_player/core/design_system/app_spacing.dart';
+import 'package:nexa_player/core/design_system/app_typography.dart';
+import 'package:nexa_player/core/design_system/glass_tokens.dart';
+import 'package:nexa_player/core/design_system/nexa_surface_tokens.dart';
+import 'package:nexa_player/shared/models/artist.dart';
+import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
 
 /// Layout orientation mode for [ArtistCard].
 enum ArtistCardMode {
@@ -15,8 +17,8 @@ enum ArtistCardMode {
   list,
 }
 
-/// Modern artist card with circular avatar,
-/// subtle accent ring, tactile spring feedback, and crisp typography.
+/// Borderless artist card with circular avatar,
+/// subtle accent elevation, tactile spring feedback, and crisp typography.
 class ArtistCard extends StatefulWidget {
   const ArtistCard({
     super.key,
@@ -92,31 +94,25 @@ class _ArtistCardState extends State<ArtistCard> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final primary = theme.colorScheme.primary;
-    final surface = theme.colorScheme.surface;
     final onSurface = theme.colorScheme.onSurface;
     final onSurfaceVariant = theme.colorScheme.onSurfaceVariant;
+    final surfaceTokens = NexaSurfaceTokens.of(context);
     final borderRadius = BorderRadius.circular(16.0);
 
-    final resolvedBorderColor = isDark
-        ? const Color(0x18FFFFFF)
-        : const Color(0x0F000000);
-
-    // Glowing Circular Avatar
+    // Borderless Circular Avatar with tonal elevation
     Widget avatar = Container(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(
-          color: primary.withOpacity(0.40),
-          width: 1.5,
-        ),
+        color: surfaceTokens.level2,
         boxShadow: [
           BoxShadow(
-            color: primary.withOpacity(0.20),
+            color: primary.withOpacity(0.18),
             blurRadius: 10.0,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
-      padding: const EdgeInsets.all(2.0),
+      padding: const EdgeInsets.all(3.0),
       child: CircleAvatar(
         radius: widget.avatarRadius,
         backgroundColor: isDark ? const Color(0xFF1E2433) : primary.withOpacity(0.12),
@@ -138,106 +134,84 @@ class _ArtistCardState extends State<ArtistCard> {
     Widget content;
 
     if (widget.mode == ArtistCardMode.list) {
-      content = Container(
-        constraints: const BoxConstraints(minHeight: AppConstants.trackTileHeight),
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF141923).withOpacity(0.65) : surface.withOpacity(0.75),
-          borderRadius: borderRadius,
-          border: Border.all(
-            color: resolvedBorderColor,
-            width: 1.0,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: isDark ? const Color(0x35000000) : const Color(0x10000000),
-              blurRadius: 10.0,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            avatar,
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.name,
-                    style: AppTypography.titleMedium.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: onSurface,
+      content = NexaSurface(
+        level: NexaSurfaceLevel.l1,
+        borderRadius: borderRadius,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: AppConstants.trackTileHeight),
+          padding: const EdgeInsets.all(AppSpacing.sm),
+          child: Row(
+            children: [
+              avatar,
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.name,
+                      style: AppTypography.titleMedium.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: onSurface,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2.0),
-                  Text(
-                    _subtitle,
-                    style: AppTypography.bodySmall.copyWith(
-                      color: onSurfaceVariant,
+                    const SizedBox(height: 2.0),
+                    Text(
+                      _subtitle,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: onSurfaceVariant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: onSurfaceVariant.withOpacity(0.7),
-            ),
-          ],
+              Icon(
+                Icons.chevron_right_rounded,
+                color: onSurfaceVariant.withOpacity(0.7),
+              ),
+            ],
+          ),
         ),
       );
     } else {
       // Grid Mode
-      content = Container(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF141923).withOpacity(0.65) : surface.withOpacity(0.75),
-          borderRadius: borderRadius,
-          border: Border.all(
-            color: resolvedBorderColor,
-            width: 1.0,
+      content = NexaSurface(
+        level: NexaSurfaceLevel.l1,
+        borderRadius: borderRadius,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              avatar,
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                widget.name,
+                style: AppTypography.titleMedium.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 2.0),
+              Text(
+                _subtitle,
+                style: AppTypography.bodySmall.copyWith(
+                  color: onSurfaceVariant,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-          boxShadow: [
-            BoxShadow(
-              color: isDark ? const Color(0x35000000) : const Color(0x10000000),
-              blurRadius: 12.0,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            avatar,
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              widget.name,
-              style: AppTypography.titleMedium.copyWith(
-                fontWeight: FontWeight.bold,
-                color: onSurface,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 2.0),
-            Text(
-              _subtitle,
-              style: AppTypography.bodySmall.copyWith(
-                color: onSurfaceVariant,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-            ),
-          ],
         ),
       );
     }
@@ -252,11 +226,6 @@ class _ArtistCardState extends State<ArtistCard> {
           ),
           child: content,
         ),
-      );
-    } else {
-      content = ClipRRect(
-        borderRadius: borderRadius,
-        child: content,
       );
     }
 
