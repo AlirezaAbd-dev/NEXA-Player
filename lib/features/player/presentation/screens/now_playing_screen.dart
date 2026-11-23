@@ -45,10 +45,17 @@ class NowPlayingScreen extends ConsumerStatefulWidget {
   ConsumerState<NowPlayingScreen> createState() => _NowPlayingScreenState();
 }
 
-class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
+class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
+    with SingleTickerProviderStateMixin {
   NowPlayingLayoutMode _layoutMode = NowPlayingLayoutMode.standard;
   bool _showSpectrumVisualizer = false;
   List<double>? _cachedWaveform;
+
+  // Interactive pull-down dismiss gesture state
+  double _dragY = 0.0;
+  bool _isDismissing = false;
+  late final AnimationController _snapBackController;
+  Animation<double>? _snapBackAnimation;
 
   // Edge HUD gesture state
   String? _edgeHudText;
@@ -136,9 +143,80 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
     });
   }
 
+  void _handlePullDownDragStart(DragStartDetails details) {
+    if (_isDismissing) return;
+    if (_snapBackController.isAnimating) {
+      _snapBackController.stop();
+    }
+  }
+
+  void _handlePullDownDragUpdate(DragUpdateDetails details) {
+    if (_isDismissing) return;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final delta = details.primaryDelta ?? 0.0;
+    setState(() {
+      _dragY = (_dragY + delta).clamp(0.0, screenHeight);
+    });
+  }
+
+  void _handlePullDownDragEnd(DragEndDetails details) {
+    if (_isDismissing) return;
+    final velocity = details.primaryVelocity ?? 0.0;
+    final shouldDismiss = _dragY > 150.0 || velocity > 800.0;
+
+    if (shouldDismiss) {
+      _isDismissing = true;
+      HapticFeedback.lightImpact();
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      } else {
+        context.pop();
+      }
+    } else {
+      _animateSnapBack();
+    }
+  }
+
+  void _handlePullDownDragCancel() {
+    if (_isDismissing) return;
+    _animateSnapBack();
+  }
+
+  void _animateSnapBack() {
+    if (!mounted || _dragY == 0.0) return;
+    if (MediaQuery.of(context).disableAnimations) {
+      setState(() {
+        _dragY = 0.0;
+      });
+      return;
+    }
+    _snapBackAnimation = Tween<double>(
+      begin: _dragY,
+      end: 0.0,
+    ).animate(
+      CurvedAnimation(
+        parent: _snapBackController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
+    _snapBackController.forward(from: 0.0);
+  }
+
   @override
   void initState() {
     super.initState();
+    _snapBackController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 260),
+    );
+    _snapBackController.addListener(() {
+      if (_snapBackAnimation != null && mounted) {
+        setState(() {
+          _dragY = _snapBackAnimation!.value;
+        });
+      }
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final currentTrack = ref.read(playerNotifierProvider).currentTrack;
       if (currentTrack != null) {
@@ -149,6 +227,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
 
   @override
   void dispose() {
+    _snapBackController.dispose();
     _edgeHudTimer?.cancel();
     super.dispose();
   }
@@ -178,178 +257,195 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
     final playbackMode = playerState.playbackMode;
     final isCasting = ref.watch(isCastingActiveProvider);
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          // 1. Ambient Background Glow
-          AppAmbientBackground(
-            primaryColor: isDynamicEnabled ? dynamicPalette.primary : null,
-            secondaryColor: isDynamicEnabled ? dynamicPalette.secondary : null,
-            tertiaryColor: isDynamicEnabled ? dynamicPalette.darkVibrant : null,
-          ),
+    final screenHeight = MediaQuery.of(context).size.height;
+    final progress = (screenHeight > 0 ? (_dragY / screenHeight) : 0.0).clamp(0.0, 1.0);
+    final scale = (1.0 - progress * 0.04).clamp(0.90, 1.0);
 
-          // 2. Edge Gesture Touch Zones (Left = Speed, Right = Volume)
-          Positioned(
-            left: 0,
-            top: 120,
-            bottom: 120,
-            width: 32.0,
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onVerticalDragUpdate: _handleLeftEdgeDrag,
-            ),
-          ),
-          Positioned(
-            right: 0,
-            top: 120,
-            bottom: 120,
-            width: 32.0,
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onVerticalDragUpdate: _handleRightEdgeDrag,
-            ),
-          ),
-
-          // 3. Floating Edge HUD Toast
-          if (_edgeHudText != null)
-            Positioned(
-              top: 100,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: NexaSurface(
-                  level: NexaSurfaceLevel.l3,
-                  borderRadius: BorderRadius.circular(20.0),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (_edgeHudIcon != null) ...[
-                          Icon(_edgeHudIcon, color: primary, size: 18),
-                          const SizedBox(width: 8),
-                        ],
-                        Text(
-                          _edgeHudText!,
-                          style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelMedium)
-                              .copyWith(
-                            color: primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+    return Stack(
+      children: [
+        // Backdrop dimming scrim modulating over the route barrier
+        Positioned.fill(
+          child: IgnorePointer(
+            child: Container(
+              color: Colors.black.withOpacity(
+                (0.20 * (1.0 - progress)).clamp(0.0, 0.20),
               ),
             ),
+          ),
+        ),
 
-          // 4. Main Sculptural Content
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 6.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Top Navigation Bar
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 28),
-                        onPressed: () => context.pop(),
-                        tooltip: 'Minimize',
-                        padding: const EdgeInsets.all(6),
-                        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                      ),
-                      Expanded(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'PLAYING FROM ALBUM',
-                              style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
-                                letterSpacing: 1.2,
-                                color: colorScheme.onSurface.withOpacity(0.6),
-                                fontWeight: FontWeight.w600,
-                                fontSize: 10.0,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              albumHeader,
-                              style: AppTypography.titleSmall.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: Icon(
-                              _layoutMode == NowPlayingLayoutMode.standard
-                                  ? Icons.view_carousel_rounded
-                                  : _layoutMode == NowPlayingLayoutMode.vinyl
-                                      ? Icons.album_rounded
-                                      : Icons.image_rounded,
-                              size: 22,
-                            ),
-                            onPressed: _cycleLayoutMode,
-                            tooltip: 'Switch Layout Mode',
-                            padding: const EdgeInsets.all(6),
-                            constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
-                          ),
-                          IconButton(
-                            icon: Icon(
-                              _showSpectrumVisualizer
-                                  ? Icons.graphic_eq_rounded
-                                  : Icons.waterfall_chart_rounded,
-                              size: 22,
-                              color: _showSpectrumVisualizer ? primary : null,
-                            ),
-                            onPressed: () {
-                              HapticFeedback.selectionClick();
-                              setState(() {
-                                _showSpectrumVisualizer = !_showSpectrumVisualizer;
-                              });
-                            },
-                            tooltip: 'Toggle Spectrum Visualizer',
-                            padding: const EdgeInsets.all(6),
-                            constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-
-                  // Center Hero Artwork (with 3D Signal Chain Flip & Double-Tap Seek)
-                  Center(
-                    child: Hero(
-                      tag: 'now_playing_art',
-                      child: HeroArtworkCard(
-                        track: currentTrack,
-                        isPlaying: isPlaying,
-                        size: _layoutMode == NowPlayingLayoutMode.art ? 300.0 : 260.0,
-                        onSwipeLeft: () {
-                          ref.read(playerNotifierProvider.notifier).skipNext();
-                        },
-                        onSwipeRight: () {
-                          ref.read(playerNotifierProvider.notifier).skipPrevious();
-                        },
-                        onDoubleTapSeekForward: () => _seekRelative(const Duration(seconds: 10)),
-                        onDoubleTapSeekBackward: () => _seekRelative(const Duration(seconds: -10)),
-                      ),
+        // Sliding and scaling player sheet
+        Transform.translate(
+          offset: Offset(0.0, _dragY),
+          child: Transform.scale(
+            scale: scale,
+            alignment: Alignment.topCenter,
+            child: ClipRRect(
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(progress > 0 ? 24.0 : 0.0),
+              ),
+              child: Scaffold(
+                backgroundColor: theme.scaffoldBackgroundColor,
+                body: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // 1. Ambient Background Glow
+                    AppAmbientBackground(
+                      primaryColor: isDynamicEnabled ? dynamicPalette.primary : null,
+                      secondaryColor: isDynamicEnabled ? dynamicPalette.secondary : null,
+                      tertiaryColor: isDynamicEnabled ? dynamicPalette.darkVibrant : null,
                     ),
-                  ),
+
+                    // 2. Main Sculptural Content
+                    SafeArea(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final availableHeight = constraints.maxHeight;
+                          final double baseArtSize = _layoutMode == NowPlayingLayoutMode.art ? 300.0 : 260.0;
+                          final double artworkSize = availableHeight < 640.0
+                              ? (availableHeight < 560.0 ? 180.0 : 210.0)
+                              : baseArtSize;
+
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 6.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                // Top Header Region (Grabber Handle Pill + Navigation Bar)
+                                GestureDetector(
+                                  key: const ValueKey('now_playing_pull_down_header'),
+                                  behavior: HitTestBehavior.translucent,
+                                  onVerticalDragStart: _handlePullDownDragStart,
+                                  onVerticalDragUpdate: _handlePullDownDragUpdate,
+                                  onVerticalDragEnd: _handlePullDownDragEnd,
+                                  onVerticalDragCancel: _handlePullDownDragCancel,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // Top Grabber Handle Pill (36x4dp, borderless L3)
+                                      Center(
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(top: 0.0, bottom: 4.0),
+                                          child: Container(
+                                            key: const ValueKey('now_playing_grabber_pill'),
+                                            width: 36.0,
+                                            height: 4.0,
+                                            decoration: BoxDecoration(
+                                              color: colorScheme.onSurface.withOpacity(0.35),
+                                              borderRadius: BorderRadius.circular(2.0),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+
+                                  // Top Navigation Bar
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 28),
+                                        onPressed: () => context.pop(),
+                                        tooltip: 'Minimize',
+                                        padding: const EdgeInsets.all(6),
+                                        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                                      ),
+                                      Expanded(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              'PLAYING FROM ALBUM',
+                                              style: surfaceTokens.telemetryTextStyle.copyWith(
+                                                letterSpacing: 1.2,
+                                                color: colorScheme.onSurface.withOpacity(0.6),
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 10.0,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              albumHeader,
+                                              style: AppTypography.titleSmall.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          IconButton(
+                                            icon: Icon(
+                                              _layoutMode == NowPlayingLayoutMode.standard
+                                                  ? Icons.view_carousel_rounded
+                                                  : _layoutMode == NowPlayingLayoutMode.vinyl
+                                                      ? Icons.album_rounded
+                                                      : Icons.image_rounded,
+                                              size: 22,
+                                            ),
+                                            onPressed: _cycleLayoutMode,
+                                            tooltip: 'Switch Layout Mode',
+                                            padding: const EdgeInsets.all(6),
+                                            constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+                                          ),
+                                          IconButton(
+                                            icon: Icon(
+                                              _showSpectrumVisualizer
+                                                  ? Icons.graphic_eq_rounded
+                                                  : Icons.waterfall_chart_rounded,
+                                              size: 22,
+                                              color: _showSpectrumVisualizer ? primary : null,
+                                            ),
+                                            onPressed: () {
+                                              HapticFeedback.selectionClick();
+                                              setState(() {
+                                                _showSpectrumVisualizer = !_showSpectrumVisualizer;
+                                              });
+                                            },
+                                            tooltip: 'Toggle Spectrum Visualizer',
+                                            padding: const EdgeInsets.all(6),
+                                            constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            // Center Hero Artwork (with 3D Signal Chain Flip, Double-Tap Seek & Pull-Down Dismiss)
+                            Center(
+                              child: GestureDetector(
+                                key: const ValueKey('now_playing_pull_down_artwork'),
+                                behavior: HitTestBehavior.translucent,
+                                onVerticalDragStart: _handlePullDownDragStart,
+                                onVerticalDragUpdate: _handlePullDownDragUpdate,
+                                onVerticalDragEnd: _handlePullDownDragEnd,
+                                onVerticalDragCancel: _handlePullDownDragCancel,
+                                child: Hero(
+                                  tag: 'now_playing_art',
+                                  child: HeroArtworkCard(
+                                    track: currentTrack,
+                                    isPlaying: isPlaying,
+                                    size: artworkSize,
+                                    onSwipeLeft: () {
+                                      ref.read(playerNotifierProvider.notifier).skipNext();
+                                    },
+                                    onSwipeRight: () {
+                                      ref.read(playerNotifierProvider.notifier).skipPrevious();
+                                    },
+                                    onDoubleTapSeekForward: () => _seekRelative(const Duration(seconds: 10)),
+                                    onDoubleTapSeekBackward: () => _seekRelative(const Duration(seconds: -10)),
+                                  ),
+                                ),
+                              ),
+                            ),
 
                   // Metadata Row
                   Column(
@@ -522,7 +618,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                               currentTrack?.bitrate != null
                                   ? '${currentTrack!.bitrate! ~/ 1000} KBPS • STEREO'
                                   : '320 KBPS • STEREO',
-                              style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
+                              style: surfaceTokens.telemetryTextStyle.copyWith(
                                 color: primary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 10.0,
@@ -594,10 +690,74 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                   ),
                 ],
               ),
+            );
+          },
+        ),
+      ),
+
+          // 3. Edge Gesture Touch Zones (Left = Speed, Right = Volume)
+          Positioned(
+            left: 0,
+            top: 120,
+            bottom: 120,
+            width: 32.0,
+            child: GestureDetector(
+              key: const ValueKey('now_playing_left_edge_rail'),
+              behavior: HitTestBehavior.translucent,
+              onVerticalDragUpdate: _handleLeftEdgeDrag,
             ),
           ),
+          Positioned(
+            right: 0,
+            top: 120,
+            bottom: 120,
+            width: 32.0,
+            child: GestureDetector(
+              key: const ValueKey('now_playing_right_edge_rail'),
+              behavior: HitTestBehavior.translucent,
+              onVerticalDragUpdate: _handleRightEdgeDrag,
+            ),
+          ),
+
+          // 4. Floating Edge HUD Toast
+          if (_edgeHudText != null)
+            Positioned(
+              top: 100,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: NexaSurface(
+                  level: NexaSurfaceLevel.l3,
+                  borderRadius: BorderRadius.circular(20.0),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_edgeHudIcon != null) ...[
+                          Icon(_edgeHudIcon, color: primary, size: 18),
+                          const SizedBox(width: 8),
+                        ],
+                        Text(
+                          _edgeHudText!,
+                          style: surfaceTokens.telemetryTextStyle.copyWith(
+                            color: primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
-    );
+    ),
+  ),
+),
+),
+],
+);
   }
 }

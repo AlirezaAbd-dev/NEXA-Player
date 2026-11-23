@@ -192,11 +192,35 @@ final appRouter = GoRouter(
       ],
     ),
 
-    // 2. Full-Screen Now Playing Route
+    // 2. Full-Screen Now Playing Route (Non-opaque modal transition with gesture dismiss support)
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: AppRoutes.player,
-      builder: (context, state) => const NowPlayingScreen(),
+      pageBuilder: (context, state) => CustomTransitionPage<void>(
+        key: state.pageKey,
+        opaque: false,
+        barrierColor: Colors.black54,
+        transitionDuration: const Duration(milliseconds: 320),
+        reverseTransitionDuration: const Duration(milliseconds: 260),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final curved = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+            reverseCurve: Curves.easeInCubic,
+          );
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.0, 1.0),
+              end: Offset.zero,
+            ).animate(curved),
+            child: FadeTransition(
+              opacity: curved,
+              child: child,
+            ),
+          );
+        },
+        child: const NowPlayingScreen(),
+      ),
     ),
 
     // 3. Full-Screen Equalizer Route
