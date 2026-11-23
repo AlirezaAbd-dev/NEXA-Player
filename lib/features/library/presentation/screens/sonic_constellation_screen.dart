@@ -172,7 +172,7 @@ class _SonicConstellationScreenState
                 Positioned(
                   left: 16,
                   right: 16,
-                  bottom: 30,
+                  bottom: MediaQuery.paddingOf(context).bottom + 12.0,
                   child: NexaSurface(
                     tier: NexaSurfaceTier.l2,
                     padding: const EdgeInsets.all(AppSpacing.md),
@@ -236,7 +236,7 @@ class _SonicConstellationScreenState
                 Positioned(
                   left: 20,
                   right: 20,
-                  bottom: 30,
+                  bottom: MediaQuery.paddingOf(context).bottom + 12.0,
                   child: NexaSurface(
                     tier: NexaSurfaceTier.l3,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

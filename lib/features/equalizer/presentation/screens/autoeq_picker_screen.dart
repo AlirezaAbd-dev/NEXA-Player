@@ -95,7 +95,7 @@ class _AutoEqPickerScreenState extends ConsumerState<AutoEqPickerScreen> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16.0, 100.0, 16.0, 130.0),
+        padding: nexaScrollPadding(context, horizontal: 16.0, top: 100.0),
         children: [
           // Search input
           GlassTextField(
