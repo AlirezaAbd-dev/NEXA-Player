@@ -17,6 +17,7 @@ import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_button.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_text_field.dart';
 import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
+import '../widgets/library_segmented_pill_bar.dart';
 import '../widgets/swipeable_track_tile.dart';
 
 /// Songs tab screen displaying searchable and sortable track library.
@@ -115,9 +116,12 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
             ],
           ),
         ],
+        bottom: const LibrarySegmentedPillBar(
+          selectedTab: LibrarySubTab.songs,
+        ),
       ),
       body: Padding(
-        padding: const EdgeInsets.fromLTRB(16.0, 100.0, 16.0, 130.0),
+        padding: const EdgeInsets.fromLTRB(16.0, 148.0, 16.0, 130.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

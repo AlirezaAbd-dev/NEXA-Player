@@ -13,10 +13,13 @@ abstract final class _ShellKeys {
   static const Key shellScaffold = ValueKey('shell_scaffold');
   static const Key bottomNav = ValueKey('glass_bottom_nav');
   static const Key navigationRail = ValueKey('navigation_rail');
+  static const Key tabLibrary = ValueKey('tab_library');
   static const Key tabSongs = ValueKey('tab_songs');
   static const Key tabAlbums = ValueKey('tab_albums');
   static const Key tabArtists = ValueKey('tab_artists');
+  static const Key tabFolders = ValueKey('tab_folders');
   static const Key tabPlaylists = ValueKey('tab_playlists');
+  static const Key tabSearch = ValueKey('tab_search');
   static const Key tabSettings = ValueKey('tab_settings');
 }
 
@@ -30,7 +33,21 @@ class ScaffoldWithNavBar extends ConsumerWidget {
 
   final StatefulNavigationShell navigationShell;
 
-  void _onTap(BuildContext context, int index) {
+  void _onBottomNavTap(int index) {
+    if (index == 0) {
+      if (navigationShell.currentIndex > 3) {
+        navigationShell.goBranch(0);
+      }
+    } else if (index == 1) {
+      navigationShell.goBranch(4);
+    } else if (index == 2) {
+      navigationShell.goBranch(5);
+    } else if (index == 3) {
+      navigationShell.goBranch(6);
+    }
+  }
+
+  void _onRailTap(int index) {
     navigationShell.goBranch(
       index,
       initialLocation: index == navigationShell.currentIndex,
@@ -77,21 +94,12 @@ class ScaffoldWithNavBar extends ConsumerWidget {
     final isDesktop = width >= 800;
     final isWideStudio = width >= 1200;
 
+    // 4-Tab Balanced Bottom Navigation
     final navItems = [
       const GlassNavItem(
-        icon: Icons.music_note_rounded,
-        label: 'Songs',
-        key: _ShellKeys.tabSongs,
-      ),
-      const GlassNavItem(
-        icon: Icons.album_rounded,
-        label: 'Albums',
-        key: _ShellKeys.tabAlbums,
-      ),
-      const GlassNavItem(
-        icon: Icons.person_rounded,
-        label: 'Artists',
-        key: _ShellKeys.tabArtists,
+        icon: Icons.library_music_rounded,
+        label: 'Library',
+        key: _ShellKeys.tabLibrary,
       ),
       const GlassNavItem(
         icon: Icons.playlist_play_rounded,
@@ -99,11 +107,27 @@ class ScaffoldWithNavBar extends ConsumerWidget {
         key: _ShellKeys.tabPlaylists,
       ),
       const GlassNavItem(
+        icon: Icons.search_rounded,
+        label: 'Search',
+        key: _ShellKeys.tabSearch,
+      ),
+      const GlassNavItem(
         icon: Icons.settings_rounded,
         label: 'Settings',
         key: _ShellKeys.tabSettings,
       ),
     ];
+
+    int bottomNavIndex = 0;
+    if (navigationShell.currentIndex <= 3) {
+      bottomNavIndex = 0;
+    } else if (navigationShell.currentIndex == 4) {
+      bottomNavIndex = 1;
+    } else if (navigationShell.currentIndex == 5) {
+      bottomNavIndex = 2;
+    } else if (navigationShell.currentIndex == 6) {
+      bottomNavIndex = 3;
+    }
 
     final content = isDesktop
         ? Scaffold(
@@ -118,8 +142,8 @@ class ScaffoldWithNavBar extends ConsumerWidget {
                     // Zone 1: Navigation Rail for Desktop/Tablet
                     NavigationRail(
                       key: _ShellKeys.navigationRail,
-                      selectedIndex: navigationShell.currentIndex,
-                      onDestinationSelected: (idx) => _onTap(context, idx),
+                      selectedIndex: navigationShell.currentIndex.clamp(0, 6),
+                      onDestinationSelected: _onRailTap,
                       labelType: NavigationRailLabelType.all,
                       backgroundColor:
                           theme.colorScheme.surface.withOpacity(0.35),
@@ -148,9 +172,19 @@ class ScaffoldWithNavBar extends ConsumerWidget {
                           label: Text('Artists'),
                         ),
                         NavigationRailDestination(
+                          icon: Icon(Icons.folder_rounded,
+                              key: _ShellKeys.tabFolders),
+                          label: Text('Folders'),
+                        ),
+                        NavigationRailDestination(
                           icon: Icon(Icons.playlist_play_rounded,
                               key: _ShellKeys.tabPlaylists),
                           label: Text('Playlists'),
+                        ),
+                        NavigationRailDestination(
+                          icon: Icon(Icons.search_rounded,
+                              key: _ShellKeys.tabSearch),
+                          label: Text('Search'),
                         ),
                         NavigationRailDestination(
                           icon: Icon(Icons.settings_rounded,
@@ -201,8 +235,8 @@ class ScaffoldWithNavBar extends ConsumerWidget {
                     padding: const EdgeInsets.fromLTRB(12.0, 0, 12.0, 8.0),
                     child: GlassBottomNav(
                       key: _ShellKeys.bottomNav,
-                      currentIndex: navigationShell.currentIndex,
-                      onTap: (idx) => _onTap(context, idx),
+                      currentIndex: bottomNavIndex,
+                      onTap: _onBottomNavTap,
                       items: navItems,
                     ),
                   ),

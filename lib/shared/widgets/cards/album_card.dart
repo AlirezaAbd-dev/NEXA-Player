@@ -197,52 +197,68 @@ class _AlbumCardState extends State<AlbumCard> {
 
     if (widget.mode == AlbumCardMode.grid) {
       // Borderless L0 Canvas Grid Item: Artwork sleeve sits cleanly on canvas
-      content = SizedBox(
-        width: widget.width,
-        height: widget.height,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AspectRatio(
-              aspectRatio: 1.0,
-              child: artworkPlaceholder,
+      final textSection = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.title,
+            style: AppTypography.titleSmall.copyWith(
+              fontWeight: FontWeight.w700,
+              color: onSurface,
+              letterSpacing: -0.2,
             ),
-            const SizedBox(height: 10.0),
-            Text(
-              widget.title,
-              style: AppTypography.titleSmall.copyWith(
-                fontWeight: FontWeight.w700,
-                color: onSurface,
-                letterSpacing: -0.2,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 3.0),
+          Text(
+            widget.artist,
+            style: AppTypography.bodySmall.copyWith(
+              color: onSurfaceVariant,
+              fontSize: 12.0,
             ),
-            const SizedBox(height: 3.0),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (widget.trackCount != null && widget.trackCount! > 0) ...[
+            const SizedBox(height: 4.0),
             Text(
-              widget.artist,
-              style: AppTypography.bodySmall.copyWith(
-                color: onSurfaceVariant,
-                fontSize: 12.0,
+              '${widget.year != null ? '${widget.year} • ' : ''}${widget.trackCount == 1 ? '1 track' : '${widget.trackCount} tracks'} • FLAC',
+              style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
+                color: onSurfaceVariant.withOpacity(0.65),
+                fontWeight: FontWeight.w500,
+                fontSize: 10.5,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            if (widget.trackCount != null && widget.trackCount! > 0) ...[
-              const SizedBox(height: 4.0),
-              Text(
-                '${widget.year != null ? '${widget.year} • ' : ''}${widget.trackCount == 1 ? '1 track' : '${widget.trackCount} tracks'} • FLAC',
-                style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
-                  color: onSurfaceVariant.withOpacity(0.65),
-                  fontWeight: FontWeight.w500,
-                  fontSize: 10.5,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
           ],
+        ],
+      );
+
+      content = SizedBox(
+        width: widget.width,
+        height: widget.height,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final hasBoundedHeight = constraints.hasBoundedHeight;
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AspectRatio(
+                  aspectRatio: 1.0,
+                  child: artworkPlaceholder,
+                ),
+                const SizedBox(height: 8.0),
+                if (hasBoundedHeight)
+                  Expanded(child: textSection)
+                else
+                  textSection,
+              ],
+            );
+          },
         ),
       );
     } else {

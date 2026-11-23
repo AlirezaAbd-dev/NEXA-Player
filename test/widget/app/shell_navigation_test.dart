@@ -8,7 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
-    await configureDependencies();
+    await configureDependencies(seedDemoData: true);
   });
 
   tearDown(() async {
@@ -72,13 +72,13 @@ void main() {
       expect(playPauseFinder, findsOneWidget);
 
       // Initially playing, so shows pause icon
-      expect(find.byIcon(Icons.pause_circle_filled_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.pause_rounded), findsOneWidget);
 
       // Tap to toggle
       await tester.tap(playPauseFinder);
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.play_circle_fill_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
     });
 
     testWidgets('responsive layout renders navigation rail on wide desktop viewports', (tester) async {

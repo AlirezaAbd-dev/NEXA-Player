@@ -1,27 +1,46 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:nexa_player/core/constants/phase2_keys.dart';
-import 'package:nexa_player/core/design_system/app_spacing.dart';
-import 'package:nexa_player/core/design_system/app_typography.dart';
-import 'package:nexa_player/features/library/domain/repositories/folders_repository.dart';
-import 'package:nexa_player/features/library/presentation/providers/library_providers.dart';
-import 'package:nexa_player/shared/widgets/glass/app_ambient_background.dart';
-import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
-import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
+import 'package:path/path.dart' as p;
+import '../../../../core/constants/phase2_keys.dart';
+import '../../../../core/design_system/app_spacing.dart';
+import '../../../../core/design_system/app_typography.dart';
+import '../../../../core/design_system/glass_tokens.dart';
+import '../../../../core/services/storage_permission_orchestrator.dart';
+import '../../../../core/services/storage_permission_service.dart';
+import '../../../../core/utils/storage_path_formatter.dart';
+import '../../../player/presentation/providers/player_providers.dart';
+import '../../../scanner/presentation/providers/scanner_providers.dart';
+import '../../../../shared/models/track.dart';
+import '../../../../shared/widgets/glass/app_ambient_background.dart';
+import '../../../../shared/widgets/glass/glass_app_bar.dart';
+import '../../../../shared/widgets/glass/glass_button.dart';
+import '../../../../shared/widgets/surfaces/nexa_surface.dart';
+import '../../domain/repositories/folders_repository.dart';
+import '../providers/library_providers.dart';
+import '../widgets/library_segmented_pill_bar.dart';
 
-/// Folders tab screen displaying the local storage folder-tree hierarchy
-/// with borderless L1 cards and tabular metadata badges.
+/// Folders tab screen displaying local storage folder-tree hierarchy
+/// with borderless L1 cards, breadcrumbs, and playable audio tracks.
 class FoldersTabScreen extends ConsumerWidget {
-  const FoldersTabScreen({super.key});
+  const FoldersTabScreen({
+    super.key,
+    this.initialPath,
+  });
+
+  final String? initialPath;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final foldersAsync = ref.watch(foldersTreeProvider(const []));
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
       appBar: GlassAppBar(
+        automaticallyImplyLeading: true,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -31,7 +50,7 @@ class FoldersTabScreen extends ConsumerWidget {
               data: (folders) => Text(
                 '${folders.length} STORAGE FOLDERS INDEXED',
                 style: AppTypography.labelSmall.copyWith(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.85),
+                  color: colorScheme.primary.withOpacity(0.85),
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.5,
                   fontSize: 10.5,
@@ -41,9 +60,8 @@ class FoldersTabScreen extends ConsumerWidget {
             ),
           ],
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => Navigator.of(context).maybePop(),
+        bottom: const LibrarySegmentedPillBar(
+          selectedTab: LibrarySubTab.folders,
         ),
       ),
       body: Stack(
@@ -51,14 +69,94 @@ class FoldersTabScreen extends ConsumerWidget {
         children: [
           const AppAmbientBackground(),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16.0, 100.0, 16.0, 130.0),
+            padding: const EdgeInsets.fromLTRB(16.0, 148.0, 16.0, 130.0),
             child: foldersAsync.when(
               data: (folders) {
                 if (folders.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      'No folders indexed. Add scan folders in Settings!',
-                      style: AppTypography.bodyMedium,
+                  return Center(
+                    child: SingleChildScrollView(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                        child: NexaSurface(
+                          tier: NexaSurfaceTier.l2,
+                          padding: const EdgeInsets.all(AppSpacing.xl),
+                          borderRadius: BorderRadius.circular(GlassTokens.radiusCard),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 72,
+                                height: 72,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: colorScheme.primary.withOpacity(0.15),
+                                ),
+                                child: Icon(
+                                  Icons.folder_open_rounded,
+                                  size: 36,
+                                  color: colorScheme.primary,
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.md),
+                              Text(
+                                'No Audio Folders Found',
+                                style: AppTypography.titleLarge.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: AppSpacing.xs),
+                              Text(
+                                'Grant storage access to discover audio folders and albums on your internal storage and MicroSD card.',
+                                style: AppTypography.bodySmall.copyWith(
+                                  color: colorScheme.onSurface.withOpacity(0.7),
+                                  height: 1.4,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: AppSpacing.lg),
+                              GlassButton(
+                                label: 'Grant Access & Scan Library',
+                                icon: Icons.folder_copy_rounded,
+                                onPressed: () async {
+                                  final hasPerm =
+                                      await StoragePermissionOrchestrator
+                                          .ensureStoragePermission(context);
+                                  if (!hasPerm) return;
+
+                                  final dirs = ref
+                                          .read(scanDirectoriesProvider)
+                                          .valueOrNull ??
+                                      [];
+                                  var paths = dirs
+                                      .where((d) => d.isEnabled)
+                                      .map((d) => d.path)
+                                      .toList();
+                                  if (paths.isEmpty) {
+                                    paths = StoragePermissionService
+                                        .discoverStandardMusicDirectories();
+                                    if (paths.isEmpty) {
+                                      paths = const [
+                                        '/storage/emulated/0/Music',
+                                        '/storage/emulated/0/Download'
+                                      ];
+                                    }
+                                  }
+
+                                  await ref
+                                      .read(scannerStateNotifierProvider.notifier)
+                                      .startScan(paths);
+                                  ref.invalidate(tracksListProvider);
+                                  ref.invalidate(albumsListProvider);
+                                  ref.invalidate(artistsListProvider);
+                                  ref.invalidate(genresListProvider);
+                                  ref.invalidate(foldersTreeProvider);
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   );
                 }
@@ -69,9 +167,15 @@ class FoldersTabScreen extends ConsumerWidget {
                   itemCount: folders.length,
                   itemBuilder: (context, index) {
                     final folder = folders[index];
+                    final isInitiallyExpanded = initialPath == null ||
+                        folder.path.contains(initialPath!);
+
                     return Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                      child: _FolderItem(folder: folder),
+                      child: _FolderItem(
+                        folder: folder,
+                        initiallyExpanded: isInitiallyExpanded,
+                      ),
                     );
                   },
                 );
@@ -91,10 +195,14 @@ class FoldersTabScreen extends ConsumerWidget {
   }
 }
 
-class _FolderItem extends StatelessWidget {
-  const _FolderItem({required this.folder});
+class _FolderItem extends ConsumerWidget {
+  const _FolderItem({
+    required this.folder,
+    this.initiallyExpanded = true,
+  });
 
   final FolderNode folder;
+  final bool initiallyExpanded;
 
   String _extractExtension(String name) {
     final dotIndex = name.lastIndexOf('.');
@@ -105,22 +213,22 @@ class _FolderItem extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final surfaceTokens = NexaSurfaceTokens.of(context);
     final theme = Theme.of(context);
     final primary = theme.colorScheme.primary;
+    final breadcrumb = StoragePathFormatter.formatBreadcrumb(folder.path);
 
     return NexaSurface(
       key: Phase2Keys.folderNode(folder.path),
       level: NexaSurfaceLevel.l1,
       borderRadius: BorderRadius.circular(16.0),
       child: Theme(
-        // Remove default expansion tile dividers
         data: theme.copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           shape: const Border(),
           collapsedShape: const Border(),
-          initiallyExpanded: true,
+          initiallyExpanded: initiallyExpanded,
           leading: Container(
             padding: const EdgeInsets.all(8.0),
             decoration: BoxDecoration(
@@ -133,10 +241,16 @@ class _FolderItem extends StatelessWidget {
             folder.name,
             style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
           ),
-          subtitle: Text(
-            folder.path,
-            style: AppTypography.bodySmall,
-            overflow: TextOverflow.ellipsis,
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 2.0),
+            child: Text(
+              breadcrumb,
+              style: AppTypography.bodySmall.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.65),
+                fontSize: 11.5,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
           trailing: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 3.0),
@@ -146,7 +260,7 @@ class _FolderItem extends StatelessWidget {
             ),
             child: Text(
               '${folder.files.length} items',
-              style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
+              style: surfaceTokens.telemetryTextStyle.copyWith(
                 color: primary,
                 fontWeight: FontWeight.w600,
                 fontSize: 10.5,
@@ -172,13 +286,36 @@ class _FolderItem extends StatelessWidget {
                   ),
                   child: Text(
                     ext,
-                    style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
+                    style: surfaceTokens.telemetryTextStyle.copyWith(
                       color: primary,
                       fontWeight: FontWeight.bold,
                       fontSize: 10.0,
                     ),
                   ),
                 ),
+                onTap: () async {
+                  HapticFeedback.lightImpact();
+                  if (file.trackId != null) {
+                    final tracksRepo = ref.read(tracksRepositoryProvider);
+                    final trackRes = await tracksRepo.getTrackById(file.trackId!);
+                    final track = trackRes.valueOrNull;
+                    if (track != null) {
+                      ref.read(playerNotifierProvider.notifier).playTrack(track);
+                      return;
+                    }
+                  }
+                  // Fallback track from file node
+                  final fallbackTrack = Track(
+                    id: file.trackId ?? file.path,
+                    title: p.basenameWithoutExtension(file.name),
+                    artist: folder.name,
+                    album: folder.name,
+                    duration: Duration.zero,
+                    filePath: file.path,
+                    fileSize: file.fileSize,
+                  );
+                  ref.read(playerNotifierProvider.notifier).playTrack(fallbackTrack);
+                },
               );
             }),
             ...folder.subFolders.map((sub) => Padding(

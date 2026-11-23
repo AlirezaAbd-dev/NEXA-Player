@@ -7,6 +7,7 @@ import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
 import 'package:nexa_player/features/library/presentation/providers/library_providers.dart';
 import 'package:nexa_player/features/library/presentation/screens/artist_detail_screen.dart';
+import 'package:nexa_player/features/library/presentation/widgets/library_segmented_pill_bar.dart';
 import 'package:nexa_player/shared/widgets/cards/artist_card.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
 
@@ -54,9 +55,12 @@ class ArtistsTabScreen extends ConsumerWidget {
             onPressed: () => context.push(AppRoutes.search),
           ),
         ],
+        bottom: const LibrarySegmentedPillBar(
+          selectedTab: LibrarySubTab.artists,
+        ),
       ),
       body: Padding(
-        padding: const EdgeInsets.fromLTRB(16.0, 100.0, 4.0, 130.0),
+        padding: const EdgeInsets.fromLTRB(16.0, 148.0, 4.0, 130.0),
         child: artistsAsync.when(
           data: (artists) {
             if (artists.isEmpty) {

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../features/equalizer/presentation/screens/equalizer_screen.dart';
 import '../features/library/presentation/screens/albums_tab_screen.dart';
 import '../features/library/presentation/screens/artists_tab_screen.dart';
+import '../features/library/presentation/screens/folders_tab_screen.dart';
 import '../features/library/presentation/screens/songs_tab_screen.dart';
 import '../features/lyrics/lyrics.dart';
 import '../features/player/presentation/screens/now_playing_screen.dart';
@@ -65,7 +66,28 @@ final appRouter = GoRouter(
           ],
         ),
 
-        // Tab 3: Playlists
+        // Tab 3: Folders
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: AppRoutes.folders,
+              builder: (context, state) => const FoldersTabScreen(),
+              routes: [
+                GoRoute(
+                  path: ':encodedPath',
+                  builder: (context, state) {
+                    final encoded = state.pathParameters['encodedPath'];
+                    return FoldersTabScreen(
+                      initialPath: encoded != null ? Uri.decodeComponent(encoded) : null,
+                    );
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+
+        // Tab 4: Playlists
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -75,7 +97,17 @@ final appRouter = GoRouter(
           ],
         ),
 
-        // Tab 4: Settings (with subroutes)
+        // Tab 5: Search
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: AppRoutes.search,
+              builder: (context, state) => const SearchScreen(),
+            ),
+          ],
+        ),
+
+        // Tab 6: Settings (with subroutes)
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -197,13 +229,6 @@ final appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       path: AppRoutes.lyrics,
       builder: (context, state) => const LyricsScreen(),
-    ),
-
-    // 6. Full-Screen Search Route
-    GoRoute(
-      parentNavigatorKey: _rootNavigatorKey,
-      path: AppRoutes.search,
-      builder: (context, state) => const SearchScreen(),
     ),
 
     // 7. Full-Screen Homescreen Widgets Showcase & Customizer

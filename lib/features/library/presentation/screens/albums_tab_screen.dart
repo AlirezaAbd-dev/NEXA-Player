@@ -7,6 +7,7 @@ import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
 import 'package:nexa_player/features/library/presentation/providers/library_providers.dart';
 import 'package:nexa_player/features/library/presentation/screens/album_detail_screen.dart';
+import 'package:nexa_player/features/library/presentation/widgets/library_segmented_pill_bar.dart';
 import 'package:nexa_player/shared/widgets/cards/album_card.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
 
@@ -117,12 +118,15 @@ class _AlbumsTabScreenState extends ConsumerState<AlbumsTabScreen> {
                 onPressed: () => context.push(AppRoutes.search),
               ),
             ],
+            bottom: const LibrarySegmentedPillBar(
+              selectedTab: LibrarySubTab.albums,
+            ),
           ),
           body: GestureDetector(
             onScaleUpdate: (details) => _onScaleUpdate(details, columns),
             onScaleEnd: (_) => _isScaling = false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16.0, 100.0, 16.0, 130.0),
+              padding: const EdgeInsets.fromLTRB(16.0, 148.0, 16.0, 130.0),
               child: albumsAsync.when(
                 data: (albums) {
                   if (albums.isEmpty) {

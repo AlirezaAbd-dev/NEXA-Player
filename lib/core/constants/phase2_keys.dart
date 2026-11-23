@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 /// Central semantic widget keys for NEXA Player Phase 2 library & scanner views.
 abstract final class Phase2Keys {
   // Navigation & Shell
+  static const Key tabLibrary = ValueKey('tab_library');
   static const Key tabSongs = ValueKey('tab_songs');
   static const Key tabAlbums = ValueKey('tab_albums');
   static const Key tabArtists = ValueKey('tab_artists');
   static const Key tabPlaylists = ValueKey('tab_playlists');
   static const Key tabFolders = ValueKey('tab_folders');
+  static const Key tabSearch = ValueKey('tab_search');
   static const Key tabSettings = ValueKey('tab_settings');
 
   // All Songs Screen
