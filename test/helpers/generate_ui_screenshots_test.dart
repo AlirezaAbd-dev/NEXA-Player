@@ -17,13 +17,16 @@ import 'package:nexa_player/core/theme/theme_state.dart';
 import 'package:nexa_player/features/auto/auto.dart';
 import 'package:nexa_player/features/cloud/cloud.dart';
 import 'package:nexa_player/features/equalizer/domain/services/equalizer_service.dart';
+import 'package:nexa_player/features/equalizer/presentation/screens/autoeq_picker_screen.dart';
 import 'package:nexa_player/features/library/presentation/screens/album_detail_screen.dart';
 import 'package:nexa_player/features/library/presentation/screens/artist_detail_screen.dart';
 import 'package:nexa_player/features/library/presentation/screens/folders_tab_screen.dart';
+import 'package:nexa_player/features/library/presentation/screens/sonic_constellation_screen.dart';
 import 'package:nexa_player/features/lyrics/lyrics.dart';
 import 'package:nexa_player/features/playlists/presentation/screens/playlist_detail_screen.dart';
 import 'package:nexa_player/features/playlists/presentation/screens/ringtone_trimmer_screen.dart';
 import 'package:nexa_player/features/player/presentation/providers/player_providers.dart';
+import 'package:nexa_player/features/player/presentation/screens/desktop_studio_dock.dart';
 import 'package:nexa_player/features/player/presentation/screens/standby_mode_screen.dart';
 import 'package:nexa_player/features/search/search.dart';
 import 'package:nexa_player/features/settings/settings.dart';
@@ -35,8 +38,7 @@ import 'package:nexa_player/shared/models/playlist.dart';
 import 'package:nexa_player/shared/models/track.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const String _kOutDirPath =
-    '/home/alirezaabd/.gemini/antigravity/brain/9a4e382c-d6b7-45ad-83c1-21f1a8158d7f/screenshots';
+const String _kOutDirPath = 'docs/screenshots';
 
 Future<void> _loadFonts() async {
   final fontLoaderRoboto = FontLoader('Roboto');
@@ -685,6 +687,57 @@ void main() {
       filename: '39_dlna_cast_picker.png',
     );
     await modalDiscovery.dispose();
+
+    // =========================================================================
+    // 3.30 - 3.32 DSP Inventions & Desktop Studio (Phase 4 & Phase 6)
+    // =========================================================================
+
+    // 3.30 Offline Headphone AutoEQ Calibration Profiles (Task 6.5)
+    await _captureWidget(
+      tester: tester,
+      widget: ProviderScope(
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: darkTheme,
+          home: const AutoEqPickerScreen(),
+        ),
+      ),
+      filename: '40_headphone_autoeq_picker.png',
+    );
+
+    // 3.31 Sonic Constellation 2D Mood & BPM Star Map (Task 6.6)
+    await _captureWidget(
+      tester: tester,
+      widget: ProviderScope(
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: darkTheme,
+          home: const SonicConstellationScreen(),
+        ),
+      ),
+      filename: '41_sonic_constellation_map.png',
+    );
+
+    // 3.32 Desktop Studio Dock Inspector (Task 4.4)
+    await _captureWidget(
+      tester: tester,
+      widget: ProviderScope(
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: darkTheme,
+          home: const Scaffold(
+            backgroundColor: Color(0xFF050507),
+            body: SizedBox(
+              width: 320,
+              height: 800,
+              child: DesktopStudioDock(),
+            ),
+          ),
+        ),
+      ),
+      filename: '42_desktop_studio_dock.png',
+      size: const Size(320 * 2.0, 800 * 2.0),
+    );
 
     // =========================================================================
     // 4. Multi-Theme Variations (Daylight Light Mode & Sakura Pink Preset)

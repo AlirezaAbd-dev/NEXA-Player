@@ -12,19 +12,46 @@
 
 ## 📸 Visual Showcase
 
-### Primary Library & Player Experience
-| Songs & Frosted Tiles | 3D Vinyl Albums Grid | Now Playing & Rotating Vinyl |
+### Section 1: Hero Audio & Tactile DSP
+| Now Playing & Gearshift Scrubber | 10-Band Catmull-Rom Spline EQ | Precision Ringtone Trimmer |
 | :---: | :---: | :---: |
-| <img src="docs/screenshots/01_songs_tab.png" width="260" alt="Songs Tab" /> | <img src="docs/screenshots/02_albums_grid.png" width="260" alt="Albums Grid" /> | <img src="docs/screenshots/14_now_playing_screen.png" width="260" alt="Now Playing Screen" /> |
+| <img src="docs/screenshots/14_now_playing_screen.png" width="260" alt="Now Playing Screen" /> | <img src="docs/screenshots/18_equalizer_dsp_screen.png" width="260" alt="Equalizer Screen" /> | <img src="docs/screenshots/19_ringtone_trimmer_screen.png" width="260" alt="Ringtone Trimmer" /> |
 
-| Artists & Glowing Rings | Album Detail & Tracklist | Folders Hierarchy |
+| Kinetic Synced Lyrics | Real-Time FFT Spectrum Visualizer | Bottom-Anchored Smart Search |
 | :---: | :---: | :---: |
-| <img src="docs/screenshots/04_artists_tab.png" width="260" alt="Artists Tab" /> | <img src="docs/screenshots/03_album_detail.png" width="260" alt="Album Detail" /> | <img src="docs/screenshots/08_folders_tab.png" width="260" alt="Folders Tab" /> |
+| <img src="docs/screenshots/20_lyrics_screen.png" width="260" alt="Synced Lyrics Screen" /> | <img src="docs/screenshots/24_visualizer_spectrum.png" width="260" alt="Visualizer Screen" /> | <img src="docs/screenshots/21_search_screen.png" width="260" alt="Search Screen" /> |
 
-### Themes & Adaptive Layout
-| Theme Presets & Dark Mode | Custom HSL Editor & WCAG AA | Responsive Desktop / Tablet |
+### Section 2: Core Library Navigation & Detail Views
+| Borderless Songs & Mini-Player | 3D Vinyl Albums Grid | Album Detail Hero Dissolve |
 | :---: | :---: | :---: |
-| <img src="docs/screenshots/11_theme_picker.png" width="260" alt="Theme Picker" /> | <img src="docs/screenshots/12_custom_theme_editor.png" width="260" alt="Custom HSL Theme Editor" /> | <img src="docs/screenshots/17_desktop_layout.png" width="260" alt="Responsive Desktop Layout" /> |
+| <img src="docs/screenshots/01_songs_tab.png" width="260" alt="Songs Tab" /> | <img src="docs/screenshots/02_albums_grid.png" width="260" alt="Albums Grid" /> | <img src="docs/screenshots/03_album_detail.png" width="260" alt="Album Detail" /> |
+
+| Circular Artist Avatars | Playlists Tab & Energy Ribbon | Folders Storage Browser |
+| :---: | :---: | :---: |
+| <img src="docs/screenshots/04_artists_tab.png" width="260" alt="Artists Tab" /> | <img src="docs/screenshots/06_playlists_tab.png" width="260" alt="Playlists Tab" /> | <img src="docs/screenshots/08_folders_tab.png" width="260" alt="Folders Tab" /> |
+
+### Section 3: Signature Audiophile Inventions & Studio Dock
+| Headphone AutoEQ Calibration | Sonic Constellation 2D Star Map | Desktop Studio Dock Inspector |
+| :---: | :---: | :---: |
+| <img src="docs/screenshots/40_headphone_autoeq_picker.png" width="260" alt="AutoEQ Calibration Profiles" /> | <img src="docs/screenshots/41_sonic_constellation_map.png" width="260" alt="Sonic Constellation Map" /> | <img src="docs/screenshots/42_desktop_studio_dock.png" width="260" alt="Desktop Studio Dock" /> |
+
+### Section 4: Themes, Customization & Ergonomics
+| Live Theme Swatch Previews | Custom HSL / OKLCH Editor | High-Contrast Daylight Mode |
+| :---: | :---: | :---: |
+| <img src="docs/screenshots/11_theme_picker.png" width="260" alt="Theme Picker" /> | <img src="docs/screenshots/12_custom_theme_editor.png" width="260" alt="Custom HSL Theme Editor" /> | <img src="docs/screenshots/15_daylight_theme_songs.png" width="260" alt="Daylight Theme Mode" /> |
+
+### Section 5: Multi-Device Ecosystem, Auto & Wearables
+| AMOLED Blind Swipe Car Mode | Bedside Standby Turntable & Clock | Wear OS Smartwatch Remote |
+| :---: | :---: | :---: |
+| <img src="docs/screenshots/27_car_mode_dashboard.png" width="260" alt="Car Mode Dashboard" /> | <img src="docs/screenshots/26_standby_bedside_mode.png" width="260" alt="Standby Bedside Mode" /> | <img src="docs/screenshots/28_wear_os_companion.png" width="260" alt="Wear OS Companion" /> |
+
+### Section 6: Settings Hub & Cloud Streaming
+| 3-Tier Settings Hub & Status Strip | Audiophile Audio & Direct DVC | Cloud & Network Streaming Hub |
+| :---: | :---: | :---: |
+| <img src="docs/screenshots/09_settings_hub.png" width="260" alt="Settings Hub Screen" /> | <img src="docs/screenshots/23_audio_settings.png" width="260" alt="Audio Settings Screen" /> | <img src="docs/screenshots/37_cloud_streaming_hub.png" width="260" alt="Cloud Streaming Hub" /> |
+
+### Section 7: Responsive 3-Zone Desktop Studio Layout
+<img src="docs/screenshots/17_desktop_layout.png" width="800" alt="Responsive Desktop Studio Layout" />
 
 ---
 
