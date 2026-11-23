@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../../../core/design_system/app_typography.dart';
+import '../../../../core/design_system/glass_tokens.dart';
+import '../../../../core/utils/contrast_validator.dart';
+import '../../../../shared/widgets/surfaces/nexa_surface.dart';
 
-/// Reusable preset card displaying theme name, color swatches, and active selection indicator.
+/// Reusable preset card displaying theme name, color swatches, active selection indicator,
+/// and live player artwork preview.
 class ThemePresetCard extends StatelessWidget {
   const ThemePresetCard({
     required this.title,
@@ -31,8 +36,14 @@ class ThemePresetCard extends StatelessWidget {
     // Calculate contrast against card's surfaceColor
     final cardIsDark =
         ThemeData.estimateBrightnessForColor(surfaceColor) == Brightness.dark;
-    final titleColor = cardIsDark ? Colors.white : const Color(0xFF0F172A);
-    final subtitleColor = cardIsDark ? const Color(0x99FFFFFF) : const Color(0x99000000);
+    final rawTitleColor = cardIsDark ? Colors.white : const Color(0xFF0F172A);
+    final rawSubtitleColor =
+        cardIsDark ? const Color(0x99FFFFFF) : const Color(0x99000000);
+
+    // Enforce WCAG AA contrast against card surface
+    final titleColor = ensureContrast(rawTitleColor, surfaceColor, minRatio: 4.5);
+    final subtitleColor =
+        ensureContrast(rawSubtitleColor, surfaceColor, minRatio: 3.0);
 
     return Semantics(
       selected: isSelected,
@@ -42,21 +53,20 @@ class ThemePresetCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(GlassTokens.radiusCard),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: surfaceColor.withOpacity(isDark ? 0.70 : 0.85),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isSelected
-                    ? primaryColor
-                    : (isDark
-                        ? const Color(0x33FFFFFF)
-                        : const Color(0x1F000000)),
-                width: isSelected ? 2.0 : 1.0,
-              ),
+              color: surfaceColor.withOpacity(isDark ? 0.75 : 0.90),
+              borderRadius: BorderRadius.circular(GlassTokens.radiusCard),
+              // Borderless by default: only border for active selection contrast
+              border: isSelected
+                  ? Border.all(
+                      color: primaryColor,
+                      width: 2.0,
+                    )
+                  : null,
               boxShadow: isSelected
                   ? [
                       BoxShadow(
@@ -69,7 +79,7 @@ class ThemePresetCard extends StatelessWidget {
                       BoxShadow(
                         color: isDark
                             ? const Color(0x30000000)
-                            : const Color(0x10000000),
+                            : const Color(0x0D000000),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -79,25 +89,23 @@ class ThemePresetCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Color swatches row
+                // Top row: Color swatches & Selection indicator
                 Row(
                   children: [
+                    // Background swatch
                     Container(
-                      width: 24,
-                      height: 24,
+                      width: 18,
+                      height: 18,
                       decoration: BoxDecoration(
                         color: backgroundColor,
                         shape: BoxShape.circle,
-                        border: Border.all(
-                          color: cardIsDark ? Colors.white30 : Colors.black12,
-                          width: 1,
-                        ),
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 5),
+                    // Primary accent swatch
                     Container(
-                      width: 24,
-                      height: 24,
+                      width: 18,
+                      height: 18,
                       decoration: BoxDecoration(
                         color: primaryColor,
                         shape: BoxShape.circle,
@@ -105,15 +113,106 @@ class ThemePresetCard extends StatelessWidget {
                     ),
                     const Spacer(),
                     if (isSelected)
-                      Icon(Icons.check_circle, color: primaryColor, size: 20)
+                      Icon(Icons.check_circle_rounded, color: primaryColor, size: 20)
                     else if (trailingIcon != null)
                       trailingIcon!,
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
+
+                // Miniature Live Player / Artwork Preview Card
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: backgroundColor.withOpacity(0.40),
+                    borderRadius: BorderRadius.circular(GlassTokens.radiusSmall),
+                  ),
+                  child: Row(
+                    children: [
+                      // Mini artwork vinyl tile
+                      Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          color: primaryColor.withOpacity(0.20),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Icon(
+                          Icons.music_note_rounded,
+                          size: 13,
+                          color: primaryColor,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      // Mini live track title & equalizer wave bars
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              height: 3,
+                              width: 38,
+                              decoration: BoxDecoration(
+                                color: titleColor.withOpacity(0.7),
+                                borderRadius: BorderRadius.circular(1.5),
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Container(
+                              height: 2.5,
+                              width: 22,
+                              decoration: BoxDecoration(
+                                color: subtitleColor.withOpacity(0.5),
+                                borderRadius: BorderRadius.circular(1.5),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Mini animated-style EQ bars
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Container(
+                            width: 2,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: primaryColor,
+                              borderRadius: BorderRadius.circular(1),
+                            ),
+                          ),
+                          const SizedBox(width: 1.5),
+                          Container(
+                            width: 2,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: primaryColor,
+                              borderRadius: BorderRadius.circular(1),
+                            ),
+                          ),
+                          const SizedBox(width: 1.5),
+                          Container(
+                            width: 2,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: primaryColor,
+                              borderRadius: BorderRadius.circular(1),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                const Spacer(),
+
+                // Title and subtitle
                 Text(
                   title,
-                  style: theme.textTheme.titleMedium?.copyWith(
+                  style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                     color: titleColor,
                   ),
@@ -121,11 +220,12 @@ class ThemePresetCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (subtitle != null) ...[
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 1),
                   Text(
                     subtitle!,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: subtitleColor,
+                      fontSize: 10,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

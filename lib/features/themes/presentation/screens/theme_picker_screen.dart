@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/design_system/app_spacing.dart';
+import '../../../../core/design_system/app_typography.dart';
+import '../../../../core/design_system/glass_tokens.dart';
 import '../../../../core/theme/dynamic_palette_providers.dart';
 import '../../../../core/theme/theme_controller.dart';
 import '../../../../core/theme/theme_preset.dart';
 import '../../../../core/theme/theme_state.dart';
+import '../../../../shared/widgets/surfaces/nexa_surface.dart';
 import '../widgets/theme_preset_card.dart';
 import 'custom_theme_editor_screen.dart';
 
@@ -40,6 +44,8 @@ class ThemePickerScreen extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Theme & Appearance'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
       body: _buildContent(context, ref, themeState),
     );
@@ -54,34 +60,29 @@ class ThemePickerScreen extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       children: [
         _buildModeSelector(context, ref, themeState),
-        const SizedBox(height: 24),
-        _buildPresetSection(context, ref, themeState),
+        const SizedBox(height: 20),
         _buildDynamicPaletteSection(context, ref),
+        const SizedBox(height: 20),
+        _buildPresetSection(context, ref, themeState),
       ],
     );
   }
 
   Widget _buildDynamicPaletteSection(BuildContext context, WidgetRef ref) {
     final isDynamicEnabled = ref.watch(dynamicThemeEnabledProvider);
-    final primaryColor = Theme.of(context).colorScheme.primary;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final primaryColor = colorScheme.primary;
 
-    return Container(
-      margin: const EdgeInsets.only(top: 24, bottom: 24),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF131826),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDynamicEnabled
-              ? primaryColor.withOpacity(0.4)
-              : Colors.white10,
-        ),
-      ),
+    return NexaSurface(
+      tier: NexaSurfaceTier.l1,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      borderRadius: BorderRadius.circular(GlassTokens.radiusCard),
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: primaryColor.withOpacity(0.18),
@@ -92,29 +93,29 @@ class ThemePickerScreen extends ConsumerWidget {
               size: 20,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Dynamic Album Art Palette',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                  style: AppTypography.titleSmall.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
+                const SizedBox(height: 2),
                 Text(
                   'Extract Monet colors from active track artwork',
-                  style: TextStyle(
+                  style: AppTypography.bodySmall.copyWith(
+                    color: colorScheme.onSurface.withOpacity(0.60),
                     fontSize: 11,
-                    color: Colors.white.withOpacity(0.60),
                   ),
                 ),
               ],
             ),
           ),
-          Switch(
+          Switch.adaptive(
             value: isDynamicEnabled,
             activeColor: primaryColor,
             onChanged: (val) {
@@ -132,17 +133,18 @@ class ThemePickerScreen extends ConsumerWidget {
     ThemeState themeState,
   ) {
     final activeMode = themeState.themeMode;
-    final primaryColor = Theme.of(context).colorScheme.primary;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final primaryColor = colorScheme.primary;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Brightness Mode',
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontWeight: FontWeight.bold),
+          style: AppTypography.titleMedium.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 12),
         Row(
@@ -151,7 +153,7 @@ class ThemePickerScreen extends ConsumerWidget {
               child: _buildModeButton(
                 key: _Keys.themeModeDark,
                 label: 'Dark',
-                icon: Icons.dark_mode,
+                icon: Icons.dark_mode_rounded,
                 isSelected: activeMode == ThemeMode.dark,
                 primaryColor: primaryColor,
                 onTap: () => ref
@@ -164,7 +166,7 @@ class ThemePickerScreen extends ConsumerWidget {
               child: _buildModeButton(
                 key: _Keys.themeModeLight,
                 label: 'Light',
-                icon: Icons.light_mode,
+                icon: Icons.light_mode_rounded,
                 isSelected: activeMode == ThemeMode.light,
                 primaryColor: primaryColor,
                 onTap: () => ref
@@ -177,7 +179,7 @@ class ThemePickerScreen extends ConsumerWidget {
               child: _buildModeButton(
                 key: _Keys.themeModeSystem,
                 label: 'System',
-                icon: Icons.brightness_auto,
+                icon: Icons.brightness_auto_rounded,
                 isSelected: activeMode == ThemeMode.system,
                 primaryColor: primaryColor,
                 onTap: () => ref
@@ -208,6 +210,10 @@ class ThemePickerScreen extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(vertical: 12),
         backgroundColor: isSelected ? primaryColor : null,
         foregroundColor: isSelected ? Colors.white : null,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(GlassTokens.radiusSmall),
+        ),
       ),
     );
   }
@@ -224,10 +230,9 @@ class ThemePickerScreen extends ConsumerWidget {
       children: [
         Text(
           'Preset Palettes',
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontWeight: FontWeight.bold),
+          style: AppTypography.titleMedium.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 12),
         LayoutBuilder(
@@ -245,7 +250,7 @@ class ThemePickerScreen extends ConsumerWidget {
                 crossAxisCount: columns,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
-                childAspectRatio: 1.15,
+                childAspectRatio: 0.98,
               ),
               children: [
                 // 1. Midnight Black
@@ -357,7 +362,7 @@ class ThemePickerScreen extends ConsumerWidget {
                       themeState.customTheme?.scaffoldBackgroundColor ??
                           const Color(0xFF0F172A),
                   isSelected: activePreset == ThemePreset.custom,
-                  trailingIcon: const Icon(Icons.tune, size: 18),
+                  trailingIcon: const Icon(Icons.tune_rounded, size: 18),
                   onTap: () {
                     ref
                         .read(themeControllerProvider.notifier)
