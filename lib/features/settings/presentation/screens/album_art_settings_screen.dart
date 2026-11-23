@@ -55,7 +55,7 @@ class AlbumArtSettingsScreen extends ConsumerWidget {
         titleText: 'Album Art Settings',
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16.0, 100.0, 16.0, 130.0),
+        padding: nexaScrollPadding(context, horizontal: 16.0, top: 100.0),
         children: [
           // Online Retrieval
           SettingsGroupCard(

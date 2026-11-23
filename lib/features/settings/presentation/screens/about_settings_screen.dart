@@ -66,7 +66,7 @@ class AboutSettingsScreen extends StatelessWidget {
         titleText: 'About NEXA',
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16.0, 100.0, 16.0, 130.0),
+        padding: nexaScrollPadding(context, horizontal: 16.0, top: 100.0),
         children: [
           // Branding Hero Card
           GlassCard(
