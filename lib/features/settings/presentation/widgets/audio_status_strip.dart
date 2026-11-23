@@ -216,7 +216,7 @@ class AudioStatusStrip extends ConsumerWidget {
                     },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
                         color: isSelected
                             ? colorScheme.primary.withOpacity(0.24)
