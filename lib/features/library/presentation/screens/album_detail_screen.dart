@@ -30,6 +30,8 @@ class AlbumDetailScreen extends ConsumerWidget {
     final onSurfaceVariant = theme.colorScheme.onSurfaceVariant;
     final surfaceTokens = NexaSurfaceTokens.of(context);
     final tracksAsync = ref.watch(albumDetailTracksProvider(album.id));
+    final playerState = ref.watch(playerNotifierProvider);
+    final currentTrackId = playerState.currentTrack?.id;
 
     return Scaffold(
       key: Phase2Keys.albumDetailScreen,
@@ -125,34 +127,33 @@ class AlbumDetailScreen extends ConsumerWidget {
                 // Metadata Pill & Action Buttons Row
                 Row(
                   children: [
-                    if (album.trackCount != null && album.trackCount! > 0)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8.0,
-                          vertical: 4.0,
-                        ),
-                        decoration: BoxDecoration(
-                          color: surfaceTokens.level2,
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                        child: Text(
-                          album.trackCountLabel,
-                          style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
-                            color: primary,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 11.0,
-                          ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12.0,
+                        vertical: 5.0,
+                      ),
+                      decoration: BoxDecoration(
+                        color: surfaceTokens.level2,
+                        borderRadius: BorderRadius.circular(12.0),
+                      ),
+                      child: Text(
+                        '${album.year != null ? '${album.year} • ' : ''}${album.trackCountLabel} • FLAC 96/24',
+                        style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
+                          color: primary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 11.0,
                         ),
                       ),
+                    ),
                     const Spacer(),
                     // Play All button
                     FilledButton.icon(
                       style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                        padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 10.0),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
                       ),
                       icon: const Icon(Icons.play_arrow_rounded, size: 20.0),
-                      label: const Text('Play'),
+                      label: const Text('Play All'),
                       onPressed: () {
                         final tracks = tracksAsync.valueOrNull;
                         if (tracks != null && tracks.isNotEmpty) {
@@ -205,6 +206,7 @@ class AlbumDetailScreen extends ConsumerWidget {
                             child: TrackTile.fromTrack(
                               key: Phase2Keys.trackTile(track.id),
                               track: track,
+                              isPlaying: track.id == currentTrackId,
                             ),
                           );
                         },
