@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 
 /// Centralized Material 3 Typography tokens for NEXA Player.
@@ -110,6 +111,15 @@ abstract final class AppTypography {
     fontWeight: FontWeight.w600,
     letterSpacing: 0.6,
     height: 1.2,
+  );
+
+  /// Tabular numeric style for telemetry data: timestamps, dB readouts,
+  /// sample-rate / bit-depth badges, and BPM.
+  static const TextStyle telemetry = TextStyle(
+    fontSize: 12.0,
+    fontWeight: FontWeight.w600,
+    letterSpacing: -0.2,
+    fontFeatures: [FontFeature.tabularFigures()],
   );
 
   /// Generates a comprehensive Material 3 [TextTheme] based on these tokens.

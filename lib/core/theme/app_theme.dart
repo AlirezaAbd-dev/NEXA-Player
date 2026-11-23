@@ -1,5 +1,6 @@
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
+import '../design_system/nexa_surface_tokens.dart';
 import 'color_palettes.dart';
 import 'theme_preset.dart';
 
@@ -62,6 +63,10 @@ abstract final class AppTheme {
     }
 
     final palette = AppColorPalettes.getPalette(preset);
+    final surfaceTokens = NexaSurfaceTokens.light(
+      accent: palette.lightScheme.primary,
+      seedTint: customPrimary,
+    );
 
     return FlexThemeData.light(
       colors: palette.lightScheme,
@@ -75,6 +80,7 @@ abstract final class AppTheme {
     ).copyWith(
       cardColor: palette.lightCard,
       scaffoldBackgroundColor: palette.lightScaffold,
+      extensions: [surfaceTokens],
     );
   }
 
@@ -97,6 +103,12 @@ abstract final class AppTheme {
     }
 
     final palette = AppColorPalettes.getPalette(preset);
+    final surfaceTokens = palette.isOledBlack
+        ? NexaSurfaceTokens.pureBlack(accent: palette.darkScheme.primary)
+        : NexaSurfaceTokens.dark(
+            accent: palette.darkScheme.primary,
+            seedTint: customPrimary,
+          );
 
     return FlexThemeData.dark(
       colors: palette.darkScheme,
@@ -111,6 +123,7 @@ abstract final class AppTheme {
     ).copyWith(
       cardColor: palette.darkCard,
       scaffoldBackgroundColor: palette.darkScaffold,
+      extensions: [surfaceTokens],
     );
   }
 
@@ -146,6 +159,9 @@ abstract final class AppTheme {
       primary: primary,
       brightness: brightness,
     );
+    final surfaceTokens = isDark
+        ? NexaSurfaceTokens.dark(accent: primary, seedTint: primary)
+        : NexaSurfaceTokens.light(accent: primary, seedTint: primary);
 
     return isDark
         ? FlexThemeData.dark(
@@ -160,6 +176,7 @@ abstract final class AppTheme {
           ).copyWith(
             scaffoldBackgroundColor: background,
             cardColor: surface,
+            extensions: [surfaceTokens],
           )
         : FlexThemeData.light(
             colors: scheme,
@@ -173,6 +190,7 @@ abstract final class AppTheme {
           ).copyWith(
             scaffoldBackgroundColor: background,
             cardColor: surface,
+            extensions: [surfaceTokens],
           );
   }
 }
