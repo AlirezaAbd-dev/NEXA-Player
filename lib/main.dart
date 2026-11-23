@@ -7,7 +7,8 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize service locator (SharedPreferences, TalkerLoggingService, etc.)
-  await configureDependencies();
+  // Explicitly ensure demo seeding is disabled in production so the user's library reflects real storage.
+  await configureDependencies(seedDemoData: false);
 
   runApp(
     const ProviderScope(

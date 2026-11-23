@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:nexa_player/core/constants/phase2_keys.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
 import 'package:nexa_player/core/design_system/glass_tokens.dart';
 import 'package:nexa_player/core/di/service_providers.dart';
+import 'package:nexa_player/core/services/storage_permission_orchestrator.dart';
+import 'package:nexa_player/core/services/storage_permission_service.dart';
 import 'package:nexa_player/features/library/presentation/providers/library_providers.dart';
 import 'package:nexa_player/features/scanner/domain/media_scanner_service.dart';
 import 'package:nexa_player/features/scanner/presentation/providers/scanner_providers.dart';
@@ -115,8 +118,27 @@ class _ScannerSettingsScreenState extends ConsumerState<ScannerSettingsScreen> {
   }
 
   Future<void> _startRescan(List<ScanDirectory> dirs) async {
-    final activePaths =
+    final hasPerm = await StoragePermissionOrchestrator.ensureStoragePermission(context);
+    if (!hasPerm) {
+      ref.read(scannerStateNotifierProvider.notifier).setPermissionDenied();
+      return;
+    }
+
+    var activePaths =
         dirs.where((d) => d.isEnabled).map((d) => d.path).toList();
+
+    if (activePaths.isEmpty) {
+      final discovered = StoragePermissionService.discoverStandardMusicDirectories();
+      if (discovered.isNotEmpty) {
+        for (final p in discovered) {
+          await ref.read(scanDirectoriesProvider.notifier).addDirectory(p);
+        }
+        activePaths = discovered;
+      } else {
+        activePaths = const ['/storage/emulated/0/Music', '/storage/emulated/0/Download'];
+      }
+    }
+
     final config = ScannerConfig(
       skipShortAudio: _skipShortFiles,
       minDurationSeconds: _minDuration.round(),
@@ -156,6 +178,7 @@ class _ScannerSettingsScreenState extends ConsumerState<ScannerSettingsScreen> {
         children: [
           // Section 1: Scan Actions & Status
           GlassCard(
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -189,9 +212,14 @@ class _ScannerSettingsScreenState extends ConsumerState<ScannerSettingsScreen> {
                       height: 10,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: scannerState.status == ScannerStatus.scanning
-                            ? colorScheme.primary
-                            : Colors.greenAccent,
+                        color: switch (scannerState.status) {
+                          ScannerStatus.scanning => colorScheme.primary,
+                          ScannerStatus.completed => Colors.greenAccent,
+                          ScannerStatus.error ||
+                          ScannerStatus.permissionDenied =>
+                            Colors.redAccent,
+                          ScannerStatus.idle => Colors.greenAccent,
+                        },
                       ),
                     ),
                     const SizedBox(width: AppSpacing.xs),
@@ -199,20 +227,33 @@ class _ScannerSettingsScreenState extends ConsumerState<ScannerSettingsScreen> {
                       child: Text(
                         switch (scannerState.status) {
                           ScannerStatus.idle =>
-                            '1,248 tracks indexed · Library up to date',
+                            'Scanner ready · Tap Scan Now to index library',
                           ScannerStatus.scanning =>
                             'Scanning: ${scannerState.filesScanned} of ${scannerState.filesFound} files...',
                           ScannerStatus.completed =>
                             'Scan complete! ${scannerState.filesScanned} files indexed.',
                           ScannerStatus.error =>
                             'Scan failed: ${scannerState.errorMessage}',
+                          ScannerStatus.permissionDenied =>
+                            'Storage permission required. Tap here to open App Settings.',
                         },
                         key: Phase2Keys.scannerStatusText,
                         style: AppTypography.bodySmall.copyWith(
                           fontWeight: FontWeight.w500,
+                          color: scannerState.status ==
+                                  ScannerStatus.permissionDenied
+                              ? Colors.redAccent
+                              : null,
                         ),
                       ),
                     ),
+                    if (scannerState.status == ScannerStatus.permissionDenied) ...[
+                      const SizedBox(width: 8),
+                      TextButton(
+                        onPressed: () => openAppSettings(),
+                        child: const Text('Settings'),
+                      ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: AppSpacing.sm),

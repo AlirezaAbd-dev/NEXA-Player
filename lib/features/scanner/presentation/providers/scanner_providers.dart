@@ -41,6 +41,13 @@ class ScannerStateNotifier extends StateNotifier<ScannerState> {
     _scannerService.stopScan();
   }
 
+  void setPermissionDenied([String? message]) {
+    state = state.copyWith(
+      status: ScannerStatus.permissionDenied,
+      errorMessage: message ?? 'Storage permission denied. Grant access in App Settings.',
+    );
+  }
+
   @override
   void dispose() {
     _subscription?.cancel();

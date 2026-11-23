@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 import 'package:nexa_player/core/utils/result.dart';
 import 'package:nexa_player/features/scanner/domain/audio_metadata_reader.dart';
@@ -63,16 +65,94 @@ class MediaScannerServiceImpl implements IMediaScannerService {
     final errors = <String>[];
 
     try {
-      // 1. Recursive Directory Traversal with .nomedia pruning & whitelist filtering
+      // 1. Android MediaStore Fast Indexer (discovering both internal storage & MicroSD)
+      if (!kIsWeb && Platform.isAndroid) {
+        try {
+          final List<dynamic>? mediaStoreResults = await const MethodChannel('com.nexa.player/media_store')
+              .invokeMethod<List<dynamic>>('queryMediaStoreAudio');
+          if (mediaStoreResults != null && mediaStoreResults.isNotEmpty) {
+            database.transaction(() {
+              for (final item in mediaStoreResults) {
+                if (item is Map) {
+                  final filePath = item['file_path'] as String? ?? '';
+                  if (filePath.isEmpty) continue;
+                  final title = item['title'] as String? ?? 'Unknown Title';
+                  final artist = item['artist'] as String? ?? 'Unknown Artist';
+                  final album = item['album'] as String? ?? 'Unknown Album';
+                  final durationMs = (item['duration_ms'] as num?)?.toInt() ?? 0;
+                  final trackNumber = (item['track_number'] as num?)?.toInt() ?? 0;
+                  final year = (item['year'] as num?)?.toInt() ?? 0;
+                  final fileSize = (item['file_size'] as num?)?.toInt() ?? 0;
+                  final trackId = 'trk_${filePath.hashCode.abs()}';
+                  final artistId = 'art_${artist.hashCode.abs()}';
+                  final albumKey = '${album}__$artist';
+                  final albumId = 'alb_${albumKey.hashCode.abs()}';
+                  final nowMs = DateTime.now().millisecondsSinceEpoch;
+
+                  database.execute('''
+                    INSERT INTO ${DatabaseSchema.tableArtists} (
+                      ${DatabaseSchema.colId}, ${DatabaseSchema.colName}, ${DatabaseSchema.colTrackCount}, ${DatabaseSchema.colAlbumCount}
+                    ) VALUES (?, ?, 1, 1)
+                    ON CONFLICT(${DatabaseSchema.colName}) DO UPDATE SET
+                      ${DatabaseSchema.colTrackCount} = ${DatabaseSchema.colTrackCount} + 1;
+                  ''', [artistId, artist]);
+
+                  database.execute('''
+                    INSERT INTO ${DatabaseSchema.tableAlbums} (
+                      ${DatabaseSchema.colId}, ${DatabaseSchema.colTitle}, ${DatabaseSchema.colAlbumArtist},
+                      ${DatabaseSchema.colAlbumYear}, ${DatabaseSchema.colTrackCount}
+                    ) VALUES (?, ?, ?, ?, 1)
+                    ON CONFLICT(${DatabaseSchema.colTitle}, ${DatabaseSchema.colAlbumArtist}) DO UPDATE SET
+                      ${DatabaseSchema.colTrackCount} = ${DatabaseSchema.colTrackCount} + 1;
+                  ''', [albumId, album, artist, year]);
+
+                  database.execute('''
+                    INSERT INTO ${DatabaseSchema.tableTracks} (
+                      ${DatabaseSchema.colId}, ${DatabaseSchema.colTitle}, ${DatabaseSchema.colTrackArtist},
+                      ${DatabaseSchema.colTrackAlbum}, ${DatabaseSchema.colDurationMs}, ${DatabaseSchema.colTrackFilePath},
+                      ${DatabaseSchema.colTrackNumber}, ${DatabaseSchema.colTrackYear}, ${DatabaseSchema.colFileSize},
+                      ${DatabaseSchema.colDateAdded}
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(${DatabaseSchema.colTrackFilePath}) DO UPDATE SET
+                      ${DatabaseSchema.colTitle} = excluded.${DatabaseSchema.colTitle},
+                      ${DatabaseSchema.colDurationMs} = excluded.${DatabaseSchema.colDurationMs};
+                  ''', [
+                    trackId, title, artist, album, durationMs, filePath, trackNumber, year, fileSize, nowMs
+                  ]);
+                }
+              }
+            });
+          }
+        } catch (e) {
+          debugPrint('[MediaScanner] MediaStore query failed or not supported: $e');
+        }
+      }
+
+      // 2. Non-blocking Asynchronous Directory Traversal with .nomedia pruning & whitelist filtering
       for (final dirPath in directoryPaths) {
         if (_stopped) break;
         final dir = Directory(dirPath);
-        if (!dir.existsSync()) continue;
+        if (!dir.existsSync()) {
+          errors.add('Directory not accessible: $dirPath');
+          continue;
+        }
 
-        _traverseDirectory(dir, effectiveConfig, discoveredFiles, skippedFiles);
+        await _traverseDirectoryAsync(dir, effectiveConfig, discoveredFiles, skippedFiles, errors);
       }
 
       final totalFound = discoveredFiles.length;
+      if (totalFound == 0 && errors.isNotEmpty) {
+        final isPermission = errors.any((e) => e.toLowerCase().contains('permission'));
+        final status = isPermission ? ScannerStatus.permissionDenied : ScannerStatus.error;
+        _updateState(_state.copyWith(
+          status: status,
+          errorMessage: errors.first,
+        ));
+        return Result.failure(ScannerFailure(
+          errors.join('; '),
+          errors,
+        ));
+      }
       _updateState(_state.copyWith(filesFound: totalFound));
 
       var insertedCount = 0;
@@ -259,25 +339,26 @@ class MediaScannerServiceImpl implements IMediaScannerService {
     }
   }
 
-  void _traverseDirectory(
+  Future<void> _traverseDirectoryAsync(
     Directory dir,
     ScannerConfig config,
     List<File> discovered,
     List<String> skipped,
-  ) {
+    List<String> errors,
+  ) async {
     if (config.skipNoMedia) {
       final noMedia = File('${dir.path}/.nomedia');
-      if (noMedia.existsSync()) {
+      if (await noMedia.exists()) {
         skipped.add(dir.path);
         return; // Skip entire folder and descendants
       }
     }
 
     try {
-      final entities = dir.listSync(followLinks: false);
-      for (final entity in entities) {
+      await for (final entity in dir.list(followLinks: false)) {
+        if (_stopped) break;
         if (entity is Directory) {
-          _traverseDirectory(entity, config, discovered, skipped);
+          await _traverseDirectoryAsync(entity, config, discovered, skipped, errors);
         } else if (entity is File) {
           final ext = entity.path.split('.').last.toLowerCase();
           if (config.isExtensionSupported(ext)) {
@@ -287,8 +368,14 @@ class MediaScannerServiceImpl implements IMediaScannerService {
           }
         }
       }
-    } catch (_) {
+    } catch (e) {
       // Unreadable or permission restricted directory
+      if (e is FileSystemException &&
+          (e.osError?.errorCode == 13 || e.message.toLowerCase().contains('permission'))) {
+        errors.add('Permission denied accessing ${dir.path}: $e');
+      } else {
+        errors.add('Access restricted for ${dir.path}: $e');
+      }
     }
   }
 

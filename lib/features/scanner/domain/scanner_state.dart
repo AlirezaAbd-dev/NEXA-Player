@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 /// Execution lifecycle states of the media scanner.
-enum ScannerStatus { idle, scanning, completed, error }
+enum ScannerStatus { idle, scanning, completed, error, permissionDenied }
 
 /// Immutable snapshot representing live progress and diagnostics of an active scan.
 class ScannerState extends Equatable {

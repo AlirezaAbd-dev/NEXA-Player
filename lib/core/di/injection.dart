@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:get_it/get_it.dart';
 import 'package:nexa_player/features/equalizer/data/services/pure_dart_equalizer_service.dart';
 import 'package:nexa_player/features/equalizer/domain/services/equalizer_service.dart';
@@ -82,7 +83,7 @@ Future<void> configureDependencies({
   IWaveformPreProcessor? waveformPreProcessor,
   ISearchRepository? searchRepository,
   ISettingsService? settingsService,
-  bool seedDemoData = true,
+  bool seedDemoData = false,
 }) async {
   // 1. SharedPreferences instance
   final prefs = sharedPreferences ?? await SharedPreferences.getInstance();
@@ -320,9 +321,56 @@ Future<void> configureDependencies({
     );
   }
 
-  // 15. Seed demo library if database is freshly opened and empty
-  if (seedDemoData && !db.isClosed) {
-    _seedDemoData(db);
+  // 15. Seed demo library if database is freshly opened and empty (or purge fake demo data if disabled)
+  if (!db.isClosed) {
+    if (seedDemoData) {
+      _seedDemoData(db);
+    } else {
+      _purgeMockDataIfPresent(db, getIt<SharedPreferences>());
+    }
+  }
+}
+
+void _purgeMockDataIfPresent(IAppDatabase db, SharedPreferences prefs) {
+  try {
+    const key = 'demo_purged_v1';
+    if (prefs.getBool(key) == true) return;
+
+    db.transaction(() {
+      final rows = db.select(
+        "SELECT id, file_path FROM tracks WHERE id LIKE 'trk-%' OR file_path LIKE '/storage/emulated/0/Music/Pop/%'",
+      );
+      final tracksToDelete = <String>[];
+      for (final row in rows) {
+        final path = row['file_path'] as String?;
+        final id = row['id'] as String;
+        if (path == null || !File(path).existsSync()) {
+          tracksToDelete.add(id);
+        }
+      }
+
+      if (tracksToDelete.isNotEmpty) {
+        final inClause = tracksToDelete.map((id) => "'$id'").join(',');
+        db.execute('DELETE FROM playlist_tracks WHERE track_id IN ($inClause);');
+        db.execute('DELETE FROM tracks WHERE id IN ($inClause);');
+      }
+
+      // Sweep orphaned demo albums
+      db.execute('''
+        DELETE FROM albums WHERE id IN ('alb-ram', 'alb-starboy', 'alb-currents', 'alb-hurry-up', 'alb-after-hours')
+        AND title NOT IN (SELECT DISTINCT album FROM tracks WHERE album IS NOT NULL);
+      ''');
+
+      // Sweep orphaned demo artists
+      db.execute('''
+        DELETE FROM artists WHERE id IN ('art-daft-punk', 'art-the-weeknd', 'art-tame-impala', 'art-m83')
+        AND name NOT IN (SELECT DISTINCT artist FROM tracks WHERE artist IS NOT NULL);
+      ''');
+    });
+
+    prefs.setBool(key, true);
+  } catch (_) {
+    // Gracefully ignore if tables are not initialized
   }
 }
 

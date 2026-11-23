@@ -4,13 +4,19 @@ import '../../../../core/extensions/duration_x.dart';
 import 'package:nexa_player/core/constants/phase2_keys.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
+import 'package:nexa_player/core/design_system/glass_tokens.dart';
+import 'package:nexa_player/core/services/storage_permission_orchestrator.dart';
+import 'package:nexa_player/core/services/storage_permission_service.dart';
 import 'package:nexa_player/features/library/domain/repositories/tracks_repository.dart';
 import 'package:nexa_player/features/library/presentation/providers/library_providers.dart';
 import 'package:nexa_player/features/player/player.dart';
+import 'package:nexa_player/features/scanner/presentation/providers/scanner_providers.dart';
 import 'package:nexa_player/shared/models/track.dart';
 import 'package:nexa_player/shared/widgets/cards/track_tile.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
+import 'package:nexa_player/shared/widgets/glass/glass_button.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_text_field.dart';
+import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
 import '../widgets/swipeable_track_tile.dart';
 
 /// Songs tab screen displaying searchable and sortable track library.
@@ -148,12 +154,103 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
               child: tracksAsync.when(
                 data: (tracks) {
                   if (tracks.isEmpty) {
+                    if (_searchQuery.isNotEmpty) {
+                      return const Center(
+                        child: Text(
+                          'No matching tracks.',
+                          style: AppTypography.bodyMedium,
+                        ),
+                      );
+                    }
+
+                    final theme = Theme.of(context);
+                    final colorScheme = theme.colorScheme;
+
                     return Center(
-                      child: Text(
-                        _searchQuery.isEmpty
-                            ? 'No songs found. Scan your device in Settings!'
-                            : 'No matching tracks.',
-                        style: AppTypography.bodyMedium,
+                      child: SingleChildScrollView(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                          child: NexaSurface(
+                            tier: NexaSurfaceTier.l2,
+                            padding: const EdgeInsets.all(AppSpacing.xl),
+                            borderRadius: BorderRadius.circular(GlassTokens.radiusCard),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 72,
+                                  height: 72,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: colorScheme.primary.withOpacity(0.15),
+                                  ),
+                                  child: Icon(
+                                    Icons.library_music_rounded,
+                                    size: 36,
+                                    color: colorScheme.primary,
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.md),
+                                Text(
+                                  'Your Music Library is Empty',
+                                  style: AppTypography.titleLarge.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: AppSpacing.xs),
+                                Text(
+                                  'Grant storage access to index local audio tracks from internal storage and your MicroSD card.',
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: colorScheme.onSurface.withOpacity(0.7),
+                                    height: 1.4,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: AppSpacing.lg),
+                                GlassButton(
+                                  label: 'Grant Access & Scan Library',
+                                  icon: Icons.document_scanner_rounded,
+                                  onPressed: () async {
+                                    final hasPerm =
+                                        await StoragePermissionOrchestrator
+                                            .ensureStoragePermission(context);
+                                    if (!hasPerm) return;
+
+                                    final dirs = ref
+                                            .read(scanDirectoriesProvider)
+                                            .valueOrNull ??
+                                        [];
+                                    var paths = dirs
+                                        .where((d) => d.isEnabled)
+                                        .map((d) => d.path)
+                                        .toList();
+                                    if (paths.isEmpty) {
+                                      paths = StoragePermissionService
+                                          .discoverStandardMusicDirectories();
+                                      if (paths.isEmpty) {
+                                        paths = const [
+                                          '/storage/emulated/0/Music',
+                                          '/storage/emulated/0/Download'
+                                        ];
+                                      }
+                                    }
+
+                                    await ref
+                                        .read(scannerStateNotifierProvider
+                                            .notifier)
+                                        .startScan(paths);
+                                    ref.invalidate(tracksListProvider);
+                                    ref.invalidate(albumsListProvider);
+                                    ref.invalidate(artistsListProvider);
+                                    ref.invalidate(genresListProvider);
+                                    ref.invalidate(foldersTreeProvider);
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     );
                   }
