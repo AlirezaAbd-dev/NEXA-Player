@@ -25,7 +25,6 @@ class AlbumDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final primary = theme.colorScheme.primary;
-    final onSurface = theme.colorScheme.onSurface;
     final onSurfaceVariant = theme.colorScheme.onSurfaceVariant;
     final surfaceTokens = NexaSurfaceTokens.of(context);
     final tracksAsync = ref.watch(albumDetailTracksProvider(album.id));
@@ -99,7 +98,7 @@ class AlbumDetailScreen extends ConsumerWidget {
 
           // Content Layer: Album Meta + Track List
           Padding(
-            padding: const EdgeInsets.fromLTRB(16.0, 108.0, 16.0, 24.0),
+            padding: const EdgeInsets.fromLTRB(16.0, 108.0, 16.0, 0.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -196,7 +195,8 @@ class AlbumDetailScreen extends ConsumerWidget {
 
                       return ListView.builder(
                         key: Phase2Keys.albumDetailTrackList,
-                        padding: EdgeInsets.zero,
+                        padding: nexaScrollPadding(context,
+                            horizontal: 0.0, top: 0.0),
                         itemCount: tracks.length,
                         itemBuilder: (context, index) {
                           final track = tracks[index];

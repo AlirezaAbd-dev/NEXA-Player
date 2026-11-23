@@ -60,7 +60,7 @@ class ArtistsTabScreen extends ConsumerWidget {
         ),
       ),
       body: Padding(
-        padding: const EdgeInsets.fromLTRB(16.0, 148.0, 4.0, 130.0),
+        padding: const EdgeInsets.fromLTRB(16.0, 148.0, 4.0, 0.0),
         child: artistsAsync.when(
           data: (artists) {
             if (artists.isEmpty) {
@@ -77,7 +77,9 @@ class ArtistsTabScreen extends ConsumerWidget {
                 // Direct-on-L0 Artist List (No repetitive boxed cards)
                 ListView.builder(
                   key: Phase2Keys.artistsList,
-                  padding: const EdgeInsets.fromLTRB(0.0, 8.0, 24.0, 140.0),
+                  padding: nexaScrollPadding(context,
+                          horizontal: 0.0, top: 8.0)
+                      .copyWith(right: 24.0),
                   itemCount: artists.length,
                   itemBuilder: (context, index) {
                     final artist = artists[index];

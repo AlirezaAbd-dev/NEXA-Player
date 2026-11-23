@@ -126,7 +126,7 @@ class _AlbumsTabScreenState extends ConsumerState<AlbumsTabScreen> {
             onScaleUpdate: (details) => _onScaleUpdate(details, columns),
             onScaleEnd: (_) => _isScaling = false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16.0, 148.0, 16.0, 130.0),
+              padding: const EdgeInsets.fromLTRB(16.0, 148.0, 16.0, 0.0),
               child: albumsAsync.when(
                 data: (albums) {
                   if (albums.isEmpty) {
@@ -140,7 +140,8 @@ class _AlbumsTabScreenState extends ConsumerState<AlbumsTabScreen> {
 
                   return GridView.builder(
                     key: Phase2Keys.albumsGrid,
-                    padding: const EdgeInsets.fromLTRB(4.0, 12.0, 4.0, 140.0),
+                    padding:
+                        nexaScrollPadding(context, horizontal: 4.0, top: 12.0),
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: columns,
                       crossAxisSpacing: AppSpacing.md,

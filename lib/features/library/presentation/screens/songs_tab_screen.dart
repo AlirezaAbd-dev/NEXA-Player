@@ -256,7 +256,8 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
 
                   return ListView.builder(
                     key: Phase2Keys.allSongsList,
-                    padding: EdgeInsets.zero,
+                    padding:
+                        nexaScrollPadding(context, horizontal: 0.0, top: 0.0),
                     itemCount: tracks.length,
                     itemBuilder: (context, index) {
                       final track = tracks[index];

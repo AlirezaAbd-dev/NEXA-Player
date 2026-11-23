@@ -98,7 +98,7 @@ class ArtistDetailScreen extends ConsumerWidget {
 
           // Content Layer: Info + Action Bar + Track List
           Padding(
-            padding: const EdgeInsets.fromLTRB(16.0, 108.0, 16.0, 24.0),
+            padding: const EdgeInsets.fromLTRB(16.0, 108.0, 16.0, 0.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -172,7 +172,8 @@ class ArtistDetailScreen extends ConsumerWidget {
 
                       return ListView.builder(
                         key: Phase2Keys.artistDetailTrackList,
-                        padding: EdgeInsets.zero,
+                        padding: nexaScrollPadding(context,
+                            horizontal: 0.0, top: 0.0),
                         itemCount: tracks.length,
                         itemBuilder: (context, index) {
                           final track = tracks[index];
