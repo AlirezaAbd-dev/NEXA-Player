@@ -5,9 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../routes.dart';
 import '../../features/player/presentation/providers/player_providers.dart';
 import '../../features/player/presentation/screens/desktop_studio_dock.dart';
+import '../../core/design_system/nexa_surface_tokens.dart';
 import '../../shared/widgets/branding/nexa_animated_logo.dart';
 import '../../shared/widgets/glass/app_ambient_background.dart';
-import '../../shared/widgets/glass/glass_bottom_nav.dart';
+import '../../shared/widgets/glass/nexa_floating_nav_dock.dart';
 import 'mini_player_slot.dart';
 
 /// Semantic Keys matching E2EKeys.
@@ -92,6 +93,9 @@ class ScaffoldWithNavBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final tokens = NexaSurfaceTokens.of(context);
+    final disableAnimations = MediaQuery.disableAnimationsOf(context);
     final width = MediaQuery.of(context).size.width;
     final isDesktop = width >= 800;
     final isWideStudio = width >= 1200;
@@ -154,23 +158,27 @@ class ScaffoldWithNavBar extends ConsumerWidget {
 
     // 4-Tab Balanced Bottom Navigation
     final navItems = [
-      const GlassNavItem(
-        icon: Icons.library_music_rounded,
+      const NexaNavDestination(
+        icon: Icons.library_music_outlined,
+        selectedIcon: Icons.library_music_rounded,
         label: 'Library',
         key: _ShellKeys.tabLibrary,
       ),
-      const GlassNavItem(
-        icon: Icons.playlist_play_rounded,
+      const NexaNavDestination(
+        icon: Icons.queue_music_outlined,
+        selectedIcon: Icons.queue_music_rounded,
         label: 'Playlists',
         key: _ShellKeys.tabPlaylists,
       ),
-      const GlassNavItem(
-        icon: Icons.search_rounded,
+      const NexaNavDestination(
+        icon: Icons.search_outlined,
+        selectedIcon: Icons.search_rounded,
         label: 'Search',
         key: _ShellKeys.tabSearch,
       ),
-      const GlassNavItem(
-        icon: Icons.settings_rounded,
+      const NexaNavDestination(
+        icon: Icons.tune_outlined,
+        selectedIcon: Icons.tune_rounded,
         label: 'Settings',
         key: _ShellKeys.tabSettings,
       ),
@@ -202,9 +210,19 @@ class ScaffoldWithNavBar extends ConsumerWidget {
                       key: _ShellKeys.navigationRail,
                       selectedIndex: navigationShell.currentIndex.clamp(0, 6),
                       onDestinationSelected: _onRailTap,
-                      labelType: NavigationRailLabelType.all,
-                      backgroundColor:
-                          theme.colorScheme.surface.withOpacity(0.35),
+                      labelType: isWideStudio
+                          ? NavigationRailLabelType.none
+                          : NavigationRailLabelType.all,
+                      extended: isWideStudio,
+                      minWidth: 80.0,
+                      minExtendedWidth: 220.0,
+                      backgroundColor: tokens.l1,
+                      indicatorColor:
+                          theme.colorScheme.primary.withOpacity(isDark ? 0.16 : 0.12),
+                      indicatorShape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16.0),
+                      ),
+                      useIndicator: true,
                       leading: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 16.0),
                         child: Column(
@@ -228,38 +246,45 @@ class ScaffoldWithNavBar extends ConsumerWidget {
                       ),
                       destinations: const [
                         NavigationRailDestination(
-                          icon: Icon(Icons.music_note_rounded,
+                          icon: Icon(Icons.music_note_outlined,
                               key: _ShellKeys.tabSongs),
+                          selectedIcon: Icon(Icons.music_note_rounded),
                           label: Text('Songs'),
                         ),
                         NavigationRailDestination(
-                          icon: Icon(Icons.album_rounded,
+                          icon: Icon(Icons.album_outlined,
                               key: _ShellKeys.tabAlbums),
+                          selectedIcon: Icon(Icons.album_rounded),
                           label: Text('Albums'),
                         ),
                         NavigationRailDestination(
-                          icon: Icon(Icons.person_rounded,
+                          icon: Icon(Icons.person_outline,
                               key: _ShellKeys.tabArtists),
+                          selectedIcon: Icon(Icons.person_rounded),
                           label: Text('Artists'),
                         ),
                         NavigationRailDestination(
-                          icon: Icon(Icons.folder_rounded,
+                          icon: Icon(Icons.folder_outlined,
                               key: _ShellKeys.tabFolders),
+                          selectedIcon: Icon(Icons.folder_rounded),
                           label: Text('Folders'),
                         ),
                         NavigationRailDestination(
-                          icon: Icon(Icons.playlist_play_rounded,
+                          icon: Icon(Icons.queue_music_outlined,
                               key: _ShellKeys.tabPlaylists),
+                          selectedIcon: Icon(Icons.queue_music_rounded),
                           label: Text('Playlists'),
                         ),
                         NavigationRailDestination(
-                          icon: Icon(Icons.search_rounded,
+                          icon: Icon(Icons.search_outlined,
                               key: _ShellKeys.tabSearch),
+                          selectedIcon: Icon(Icons.search_rounded),
                           label: Text('Search'),
                         ),
                         NavigationRailDestination(
-                          icon: Icon(Icons.settings_rounded,
+                          icon: Icon(Icons.tune_outlined,
                               key: _ShellKeys.tabSettings),
+                          selectedIcon: Icon(Icons.tune_rounded),
                           label: Text('Settings'),
                         ),
                       ],
@@ -290,6 +315,28 @@ class ScaffoldWithNavBar extends ConsumerWidget {
               children: [
                 const AppAmbientBackground(),
                 wrappedNavigationShell,
+                // Atmospheric Bottom Scrim
+                if (showBottomNav || hasActiveTrack)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    height: 160.0,
+                    child: IgnorePointer(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              tokens.l0.withOpacity(0.85),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 // Floating bottom chrome overlay with tight hit test box
                 Align(
                   alignment: Alignment.bottomCenter,
@@ -299,17 +346,41 @@ class ScaffoldWithNavBar extends ConsumerWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (hasActiveTrack) const MiniPlayerSlot(),
-                        if (showBottomNav)
-                          Padding(
-                            padding:
-                                const EdgeInsets.fromLTRB(12.0, 0, 12.0, 8.0),
-                            child: GlassBottomNav(
-                              key: _ShellKeys.bottomNav,
-                              currentIndex: bottomNavIndex,
-                              onTap: _onBottomNavTap,
-                              items: navItems,
-                            ),
-                          ),
+                        AnimatedSwitcher(
+                          duration: disableAnimations
+                              ? Duration.zero
+                              : const Duration(milliseconds: 240),
+                          transitionBuilder: (child, animation) {
+                            return SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(0.0, 1.2),
+                                end: Offset.zero,
+                              ).animate(CurvedAnimation(
+                                parent: animation,
+                                curve: Curves.easeOutCubic,
+                              )),
+                              child: FadeTransition(
+                                opacity: animation,
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: showBottomNav
+                              ? Padding(
+                                  key: const ValueKey('dock_visible_container'),
+                                  padding: const EdgeInsets.fromLTRB(
+                                      16.0, 0, 16.0, 16.0),
+                                  child: NexaFloatingNavDock(
+                                    key: _ShellKeys.bottomNav,
+                                    currentIndex: bottomNavIndex,
+                                    onTap: _onBottomNavTap,
+                                    items: navItems,
+                                  ),
+                                )
+                              : const SizedBox.shrink(
+                                  key: ValueKey('dock_hidden_shrink'),
+                                ),
+                        ),
                       ],
                     ),
                   ),
