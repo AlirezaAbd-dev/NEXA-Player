@@ -5,6 +5,7 @@ import 'package:nexa_player/app/routes.dart';
 import 'package:nexa_player/core/constants/phase2_keys.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
+import 'package:nexa_player/core/design_system/nexa_surface_tokens.dart';
 import 'package:nexa_player/features/playlists/presentation/providers/playlists_providers.dart';
 import 'package:nexa_player/features/playlists/presentation/screens/playlist_detail_screen.dart';
 import 'package:nexa_player/features/playlists/presentation/widgets/m3u_import_dialog.dart';
@@ -12,9 +13,9 @@ import 'package:nexa_player/shared/models/playlist.dart';
 import 'package:nexa_player/shared/widgets/feedback/app_dialog.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_button.dart';
-import 'package:nexa_player/shared/widgets/glass/glass_card.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_fab.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_text_field.dart';
+import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
 
 /// Playlists tab screen managing user playlists and smart auto-generated playlists.
 class PlaylistsTabScreen extends ConsumerWidget {
@@ -96,6 +97,9 @@ class PlaylistsTabScreen extends ConsumerWidget {
     final smartPlaylists = ref.watch(smartPlaylistsProvider);
     final theme = Theme.of(context);
     final accent = theme.colorScheme.primary;
+    final surfaceTokens = NexaSurfaceTokens.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+    final onSurfaceVariant = theme.colorScheme.onSurfaceVariant;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -105,12 +109,12 @@ class PlaylistsTabScreen extends ConsumerWidget {
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.search_rounded, color: Colors.white70),
+            icon: const Icon(Icons.search_rounded),
             tooltip: 'Search library',
             onPressed: () => context.push(AppRoutes.search),
           ),
           IconButton(
-            icon: const Icon(Icons.file_download_outlined, color: Colors.white70),
+            icon: const Icon(Icons.file_download_outlined),
             tooltip: 'Import M3U',
             onPressed: () => M3uImportDialog.show(context),
           ),
@@ -133,11 +137,11 @@ class PlaylistsTabScreen extends ConsumerWidget {
             // Smart Playlists Section
             Text(
               'SMART PLAYLISTS',
-              style: TextStyle(
+              style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.8,
-                color: Colors.white.withOpacity(0.5),
+                color: onSurfaceVariant.withOpacity(0.7),
               ),
             ),
             const SizedBox(height: 8),
@@ -151,62 +155,59 @@ class PlaylistsTabScreen extends ConsumerWidget {
                   final sp = smartPlaylists[i];
                   return Padding(
                     padding: const EdgeInsets.only(right: 10),
-                    child: InkWell(
-                      onTap: () {
-                        final simulatedPlaylist = Playlist(
-                          id: 'smart_${sp.type.name}',
-                          name: sp.title,
-                          isSmart: true,
-                          smartCriteria: sp.type.name,
-                          createdAt: DateTime.now(),
-                          updatedAt: DateTime.now(),
-                          trackCount: 0,
-                        );
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) =>
-                                PlaylistDetailScreen(playlist: simulatedPlaylist),
-                          ),
-                        );
-                      },
+                    child: NexaSurface(
+                      level: NexaSurfaceLevel.l2,
                       borderRadius: BorderRadius.circular(14),
-                      child: Container(
-                        width: 140,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF141924),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.06),
+                      child: InkWell(
+                        onTap: () {
+                          final simulatedPlaylist = Playlist(
+                            id: 'smart_${sp.type.name}',
+                            name: sp.title,
+                            isSmart: true,
+                            smartCriteria: sp.type.name,
+                            createdAt: DateTime.now(),
+                            updatedAt: DateTime.now(),
+                            trackCount: 0,
+                          );
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  PlaylistDetailScreen(playlist: simulatedPlaylist),
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(14),
+                        child: Container(
+                          width: 140,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: accent.withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Icon(sp.icon, color: accent, size: 20),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                sp.title,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: accent.withOpacity(0.14),
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
+                                child: Icon(sp.icon, color: accent, size: 20),
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  sp.title,
+                                  style: TextStyle(
+                                    color: onSurface,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -219,11 +220,11 @@ class PlaylistsTabScreen extends ConsumerWidget {
             // User Playlists Header
             Text(
               'MY PLAYLISTS',
-              style: TextStyle(
+              style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.8,
-                color: Colors.white.withOpacity(0.5),
+                color: onSurfaceVariant.withOpacity(0.7),
               ),
             ),
             const SizedBox(height: 8),
@@ -249,63 +250,74 @@ class PlaylistsTabScreen extends ConsumerWidget {
                       final playlist = playlists[index];
                       return Padding(
                         padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                        child: GlassCard(
+                        child: NexaSurface(
                           key: Phase2Keys.playlistItem(playlist.id),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.md,
-                            vertical: AppSpacing.sm,
-                          ),
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) =>
-                                    PlaylistDetailScreen(playlist: playlist),
-                              ),
-                            );
-                          },
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 48,
-                                height: 48,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  color: Colors.white.withOpacity(0.08),
+                          level: NexaSurfaceLevel.l1,
+                          borderRadius: BorderRadius.circular(16.0),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(16.0),
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) =>
+                                      PlaylistDetailScreen(playlist: playlist),
                                 ),
-                                child: const Icon(
-                                  Icons.queue_music_rounded,
-                                  color: Colors.white70,
-                                ),
+                              );
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.md,
+                                vertical: AppSpacing.sm,
                               ),
-                              const SizedBox(width: AppSpacing.md),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      playlist.name,
-                                      style: AppTypography.titleMedium.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 48,
+                                    height: 48,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(14),
+                                      color: surfaceTokens.level2,
                                     ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      playlist.trackCountLabel,
-                                      style: AppTypography.bodySmall,
+                                    child: Icon(
+                                      Icons.queue_music_rounded,
+                                      color: accent,
+                                      size: 24,
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                  const SizedBox(width: AppSpacing.md),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          playlist.name,
+                                          style: AppTypography.titleMedium.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          playlist.trackCountLabel,
+                                          style: (surfaceTokens.telemetryTextStyle ?? AppTypography.bodySmall).copyWith(
+                                            fontSize: 12.0,
+                                            color: onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  IconButton(
+                                    key: Phase2Keys.playlistDeleteButton(playlist.id),
+                                    icon: const Icon(
+                                      Icons.delete_outline_rounded,
+                                      color: Colors.redAccent,
+                                    ),
+                                    onPressed: () =>
+                                        _showDeleteDialog(context, ref, playlist),
+                                  ),
+                                ],
                               ),
-                              IconButton(
-                                key: Phase2Keys.playlistDeleteButton(playlist.id),
-                                icon: const Icon(
-                                  Icons.delete_outline_rounded,
-                                  color: Colors.redAccent,
-                                ),
-                                onPressed: () =>
-                                    _showDeleteDialog(context, ref, playlist),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                       );

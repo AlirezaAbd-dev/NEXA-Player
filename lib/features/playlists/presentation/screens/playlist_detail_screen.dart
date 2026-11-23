@@ -6,6 +6,7 @@ import 'package:nexa_player/app/routes.dart';
 import 'package:nexa_player/core/constants/phase2_keys.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
+import 'package:nexa_player/core/design_system/nexa_surface_tokens.dart';
 import 'package:nexa_player/features/player/domain/entities/playback_state.dart';
 import 'package:nexa_player/features/player/presentation/providers/player_providers.dart';
 import 'package:nexa_player/features/playlists/presentation/providers/playlists_providers.dart';
@@ -15,6 +16,7 @@ import 'package:nexa_player/shared/models/track.dart';
 import 'package:nexa_player/shared/widgets/cards/track_tile.dart';
 import 'package:nexa_player/shared/widgets/glass/app_ambient_background.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
+import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
 
 /// Full-featured Playlist Detail screen with drag-to-reorder, Play All/Shuffle,
 /// M3U export, tag editing, and ringtone trimming.
@@ -105,6 +107,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
     final tracksAsync = ref.watch(playlistTracksProvider(playlist.id));
     final theme = Theme.of(context);
     final accent = theme.colorScheme.primary;
+    final surfaceTokens = NexaSurfaceTokens.of(context);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -140,19 +143,22 @@ class PlaylistDetailScreen extends ConsumerWidget {
                 // Header Info
                 Row(
                   children: [
-                    Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [accent.withOpacity(0.4), Colors.cyanAccent.withOpacity(0.15)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+                    NexaSurface(
+                      level: NexaSurfaceLevel.l2,
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [accent.withOpacity(0.35), surfaceTokens.level2],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: accent.withOpacity(0.3)),
+                        child: Icon(Icons.queue_music_rounded, color: accent, size: 32),
                       ),
-                      child: Icon(Icons.queue_music_rounded, color: accent, size: 32),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -171,8 +177,8 @@ class PlaylistDetailScreen extends ConsumerWidget {
                           tracksAsync.when(
                             data: (tracks) => Text(
                               '${tracks.length} tracks • ${_formatTotalDuration(tracks)}',
-                              style: AppTypography.bodySmall.copyWith(
-                                color: Colors.white60,
+                              style: (surfaceTokens.telemetryTextStyle ?? AppTypography.bodySmall).copyWith(
+                                color: Colors.white70,
                               ),
                             ),
                             loading: () => Text(
@@ -198,11 +204,11 @@ class PlaylistDetailScreen extends ConsumerWidget {
                   data: (tracks) => Row(
                     children: [
                       Expanded(
-                        child: ElevatedButton.icon(
+                        child: FilledButton.icon(
                           onPressed: tracks.isNotEmpty
                               ? () => _handlePlayAll(context, ref, tracks)
                               : null,
-                          style: ElevatedButton.styleFrom(
+                          style: FilledButton.styleFrom(
                             backgroundColor: accent,
                             foregroundColor: Colors.black,
                             shape: RoundedRectangleBorder(
@@ -219,22 +225,28 @@ class PlaylistDetailScreen extends ConsumerWidget {
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: tracks.isNotEmpty
-                              ? () => _handleShuffle(context, ref, tracks)
-                              : null,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            side: BorderSide(color: Colors.white.withOpacity(0.15)),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                        child: NexaSurface(
+                          level: NexaSurfaceLevel.l2,
+                          borderRadius: BorderRadius.circular(14),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(14),
+                            onTap: tracks.isNotEmpty
+                                ? () => _handleShuffle(context, ref, tracks)
+                                : null,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.shuffle_rounded, size: 18, color: accent),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Shuffle',
+                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
                             ),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                          icon: const Icon(Icons.shuffle_rounded, size: 18),
-                          label: const Text(
-                            'Shuffle',
-                            style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
