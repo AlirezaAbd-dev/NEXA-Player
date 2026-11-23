@@ -1,20 +1,22 @@
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
-import '../../../core/design_system/app_spacing.dart';
-import '../../../core/design_system/app_typography.dart';
-import '../../../core/design_system/glass_tokens.dart';
-import '../../models/album.dart';
+import 'package:nexa_player/core/design_system/app_spacing.dart';
+import 'package:nexa_player/core/design_system/app_typography.dart';
+import 'package:nexa_player/core/design_system/glass_tokens.dart';
+import 'package:nexa_player/core/design_system/nexa_surface_tokens.dart';
+import 'package:nexa_player/shared/models/album.dart';
+import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
 
 /// Layout orientation mode for [AlbumCard].
 enum AlbumCardMode {
-  /// Vertical layout tailored for grid collections (childAspectRatio <= 0.65).
+  /// Vertical layout tailored for grid collections (childAspectRatio <= 0.75).
   grid,
 
   /// Horizontal list layout for album lists.
   list,
 }
 
-/// Modern album card with authentic 1:1 artwork sleeve,
+/// Borderless album card with authentic 1:1 artwork sleeve,
 /// rich vinyl disc detailing, tactile spring feedback, and crisp typography.
 class AlbumCard extends StatefulWidget {
   const AlbumCard({
@@ -101,14 +103,12 @@ class _AlbumCardState extends State<AlbumCard> {
     final surface = theme.colorScheme.surface;
     final onSurface = theme.colorScheme.onSurface;
     final onSurfaceVariant = theme.colorScheme.onSurfaceVariant;
+    final surfaceTokens = NexaSurfaceTokens.of(context);
+
     final cardRadius = BorderRadius.circular(16.0);
-    final artworkRadius = BorderRadius.circular(12.0);
+    final artworkRadius = BorderRadius.circular(16.0);
 
-    final resolvedBorderColor = isDark
-        ? const Color(0x18FFFFFF)
-        : const Color(0x0F000000);
-
-    // 1:1 Album Artwork Sleeve
+    // 1:1 Album Artwork Sleeve with vinyl detailing
     Widget artworkPlaceholder = ClipRRect(
       borderRadius: artworkRadius,
       child: Container(
@@ -122,11 +122,11 @@ class _AlbumCardState extends State<AlbumCard> {
               isDark ? const Color(0xFF1E2433) : const Color(0xFFE2E8F0),
             ],
           ),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
-              color: Color(0x25000000),
-              blurRadius: 10.0,
-              offset: Offset(0, 4),
+              color: Colors.black.withOpacity(isDark ? 0.35 : 0.12),
+              blurRadius: 12.0,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
@@ -190,25 +190,10 @@ class _AlbumCardState extends State<AlbumCard> {
     Widget content;
 
     if (widget.mode == AlbumCardMode.grid) {
-      content = Container(
-        width: widget.width ?? 180.0,
+      // Borderless L0 Canvas Grid Item: Artwork sleeve sits cleanly on canvas
+      content = SizedBox(
+        width: widget.width,
         height: widget.height,
-        padding: const EdgeInsets.all(10.0),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF141923).withOpacity(0.65) : surface.withOpacity(0.75),
-          borderRadius: cardRadius,
-          border: Border.all(
-            color: resolvedBorderColor,
-            width: 1.0,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: isDark ? const Color(0x35000000) : const Color(0x10000000),
-              blurRadius: 12.0,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,12 +202,13 @@ class _AlbumCardState extends State<AlbumCard> {
               aspectRatio: 1.0,
               child: artworkPlaceholder,
             ),
-            const SizedBox(height: 8.0),
+            const SizedBox(height: 10.0),
             Text(
               widget.title,
-              style: AppTypography.titleMedium.copyWith(
-                fontWeight: FontWeight.bold,
+              style: AppTypography.titleSmall.copyWith(
+                fontWeight: FontWeight.w700,
                 color: onSurface,
+                letterSpacing: -0.2,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -232,6 +218,7 @@ class _AlbumCardState extends State<AlbumCard> {
               _resolvedSubtitle,
               style: AppTypography.bodySmall.copyWith(
                 color: onSurfaceVariant,
+                fontSize: 12.0,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -241,17 +228,18 @@ class _AlbumCardState extends State<AlbumCard> {
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 7.0,
-                  vertical: 2.0,
+                  vertical: 2.5,
                 ),
                 decoration: BoxDecoration(
-                  color: primary.withOpacity(isDark ? 0.16 : 0.10),
+                  color: surfaceTokens.level2,
                   borderRadius: BorderRadius.circular(6.0),
                 ),
                 child: Text(
                   widget.trackCount == 1 ? '1 Track' : '${widget.trackCount} Tracks',
-                  style: AppTypography.labelSmall.copyWith(
+                  style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
                     color: primary,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 10.5,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -262,97 +250,88 @@ class _AlbumCardState extends State<AlbumCard> {
         ),
       );
     } else {
-      // List Mode
-      content = Container(
-        width: widget.width,
-        height: widget.height ?? 80.0,
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF141923).withOpacity(0.65) : surface.withOpacity(0.75),
-          borderRadius: cardRadius,
-          border: Border.all(
-            color: resolvedBorderColor,
-            width: 1.0,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: isDark ? const Color(0x35000000) : const Color(0x10000000),
-              blurRadius: 10.0,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 56.0,
-              height: 56.0,
-              child: artworkPlaceholder,
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.title,
-                    style: AppTypography.titleMedium.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: onSurface,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+      // Borderless L1 Surface List Item
+      content = NexaSurface(
+        level: NexaSurfaceLevel.l1,
+        borderRadius: cardRadius,
+        child: SizedBox(
+          width: widget.width,
+          height: widget.height ?? 80.0,
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 56.0,
+                  height: 56.0,
+                  child: artworkPlaceholder,
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.title,
+                        style: AppTypography.titleMedium.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: onSurface,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2.0),
+                      Text(
+                        _resolvedSubtitle,
+                        style: AppTypography.bodySmall.copyWith(
+                          color: onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 2.0),
-                  Text(
-                    _resolvedSubtitle,
-                    style: AppTypography.bodySmall.copyWith(
-                      color: onSurfaceVariant,
+                ),
+                if (widget.trackCount != null) ...[
+                  const SizedBox(width: AppSpacing.sm),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8.0,
+                      vertical: 3.0,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    decoration: BoxDecoration(
+                      color: surfaceTokens.level2,
+                      borderRadius: BorderRadius.circular(6.0),
+                    ),
+                    child: Text(
+                      '${widget.trackCount} tracks',
+                      style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
+                        color: primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ],
-              ),
-            ),
-            if (widget.trackCount != null) ...[
-              const SizedBox(width: AppSpacing.sm),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8.0,
-                  vertical: 3.0,
-                ),
-                decoration: BoxDecoration(
-                  color: primary.withOpacity(isDark ? 0.16 : 0.10),
-                  borderRadius: BorderRadius.circular(6.0),
-                ),
-                child: Text(
-                  '${widget.trackCount} tracks',
-                  style: AppTypography.labelSmall.copyWith(
-                    color: primary,
-                    fontWeight: FontWeight.bold,
+                if (widget.onPlayTap != null) ...[
+                  const SizedBox(width: AppSpacing.xs),
+                  IconButton(
+                    icon: Icon(
+                      Icons.play_circle_filled_rounded,
+                      color: primary,
+                      size: 32.0,
+                    ),
+                    onPressed: widget.onPlayTap,
                   ),
-                ),
-              ),
-            ],
-            if (widget.onPlayTap != null) ...[
-              const SizedBox(width: AppSpacing.xs),
-              IconButton(
-                icon: Icon(
-                  Icons.play_circle_filled_rounded,
-                  color: primary,
-                  size: 32.0,
-                ),
-                onPressed: widget.onPlayTap,
-              ),
-            ],
-          ],
+                ],
+              ],
+            ),
+          ),
         ),
       );
     }
 
-    if (widget.enableBlur) {
+    if (widget.enableBlur && widget.mode == AlbumCardMode.list) {
       content = ClipRRect(
         borderRadius: cardRadius,
         child: BackdropFilter(
@@ -362,11 +341,6 @@ class _AlbumCardState extends State<AlbumCard> {
           ),
           child: content,
         ),
-      );
-    } else {
-      content = ClipRRect(
-        borderRadius: cardRadius,
-        child: content,
       );
     }
 

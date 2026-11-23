@@ -3,13 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nexa_player/core/constants/phase2_keys.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
+import 'package:nexa_player/core/design_system/nexa_surface_tokens.dart';
 import 'package:nexa_player/features/library/presentation/providers/library_providers.dart';
+import 'package:nexa_player/features/player/presentation/providers/player_notifier.dart';
 import 'package:nexa_player/shared/models/album.dart';
 import 'package:nexa_player/shared/widgets/cards/track_tile.dart';
 import 'package:nexa_player/shared/widgets/glass/app_ambient_background.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
+import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
 
-/// Album detail screen displaying album metadata and track list.
+/// Album detail screen displaying album hero artwork dissolving into L0 canvas,
+/// comprehensive metadata, playback action bar, and track list.
 class AlbumDetailScreen extends ConsumerWidget {
   const AlbumDetailScreen({
     super.key,
@@ -20,6 +24,11 @@ class AlbumDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+    final onSurface = theme.colorScheme.onSurface;
+    final onSurfaceVariant = theme.colorScheme.onSurfaceVariant;
+    final surfaceTokens = NexaSurfaceTokens.of(context);
     final tracksAsync = ref.watch(albumDetailTracksProvider(album.id));
 
     return Scaffold(
@@ -38,66 +47,185 @@ class AlbumDetailScreen extends ConsumerWidget {
         fit: StackFit.expand,
         children: [
           const AppAmbientBackground(),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16.0, 100.0, 16.0, 24.0),
-            child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              album.title,
-              style: AppTypography.headlineMedium
-                  .copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              album.artistAndYear,
-              style: AppTypography.bodyMedium,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Expanded(
-              child: tracksAsync.when(
-                data: (tracks) {
-                  if (tracks.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        'No tracks in this album.',
-                        style: AppTypography.bodyMedium,
-                      ),
-                    );
-                  }
 
-                  return ListView.builder(
-                    key: Phase2Keys.albumDetailTrackList,
-                    padding: EdgeInsets.zero,
-                    itemCount: tracks.length,
-                    itemBuilder: (context, index) {
-                      final track = tracks[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                        child: TrackTile.fromTrack(
-                          key: Phase2Keys.trackTile(track.id),
-                          track: track,
-                        ),
-                      );
-                    },
-                  );
-                },
-                loading: () => const Center(
-                  child: CircularProgressIndicator(),
-                ),
-                error: (error, _) => Center(
-                  child: Text(
-                    'Error: $error',
-                    style: AppTypography.bodyMedium,
+          // Hero Album Artwork dissolving into L0 canvas via multi-stop cubic gradient ShaderMask
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 340.0,
+            child: ShaderMask(
+              shaderCallback: (rect) {
+                return const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white,
+                    Colors.white,
+                    Color(0x99FFFFFF),
+                    Color(0x22FFFFFF),
+                    Colors.transparent,
+                  ],
+                  stops: [0.0, 0.40, 0.65, 0.85, 1.0],
+                ).createShader(rect);
+              },
+              blendMode: BlendMode.dstIn,
+              child: Hero(
+                tag: 'album_art_${album.id}',
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        primary.withOpacity(0.32),
+                        surfaceTokens.level1,
+                        surfaceTokens.level0,
+                      ],
+                    ),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.album_rounded,
+                      size: 140.0,
+                      color: primary.withOpacity(0.40),
+                    ),
                   ),
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+
+          // Content Layer: Album Meta + Track List
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16.0, 108.0, 16.0, 24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Album Title & Metadata
+                Text(
+                  album.title,
+                  style: AppTypography.headlineMedium.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  album.artistAndYear,
+                  style: AppTypography.titleSmall.copyWith(
+                    color: onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+
+                // Metadata Pill & Action Buttons Row
+                Row(
+                  children: [
+                    if (album.trackCount != null && album.trackCount! > 0)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8.0,
+                          vertical: 4.0,
+                        ),
+                        decoration: BoxDecoration(
+                          color: surfaceTokens.level2,
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        child: Text(
+                          album.trackCountLabel,
+                          style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
+                            color: primary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 11.0,
+                          ),
+                        ),
+                      ),
+                    const Spacer(),
+                    // Play All button
+                    FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
+                      ),
+                      icon: const Icon(Icons.play_arrow_rounded, size: 20.0),
+                      label: const Text('Play'),
+                      onPressed: () {
+                        final tracks = tracksAsync.valueOrNull;
+                        if (tracks != null && tracks.isNotEmpty) {
+                          ref.read(playerNotifierProvider.notifier).playTrack(tracks.first);
+                        }
+                      },
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    // Shuffle button
+                    NexaSurface(
+                      level: NexaSurfaceLevel.l2,
+                      borderRadius: BorderRadius.circular(20.0),
+                      child: IconButton(
+                        icon: const Icon(Icons.shuffle_rounded, size: 20.0),
+                        tooltip: 'Shuffle album',
+                        onPressed: () {
+                          final tracks = tracksAsync.valueOrNull;
+                          if (tracks != null && tracks.isNotEmpty) {
+                            final shuffled = List.of(tracks)..shuffle();
+                            ref.read(playerNotifierProvider.notifier).playTrack(shuffled.first);
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+
+                // Track List
+                Expanded(
+                  child: tracksAsync.when(
+                    data: (tracks) {
+                      if (tracks.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            'No tracks in this album.',
+                            style: AppTypography.bodyMedium,
+                          ),
+                        );
+                      }
+
+                      return ListView.builder(
+                        key: Phase2Keys.albumDetailTrackList,
+                        padding: EdgeInsets.zero,
+                        itemCount: tracks.length,
+                        itemBuilder: (context, index) {
+                          final track = tracks[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                            child: TrackTile.fromTrack(
+                              key: Phase2Keys.trackTile(track.id),
+                              track: track,
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    loading: () => const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                    error: (error, _) => Center(
+                      child: Text(
+                        'Error: $error',
+                        style: AppTypography.bodyMedium,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
-    ],
-  ),
-);
+    );
   }
 }

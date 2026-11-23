@@ -10,86 +10,152 @@ import 'package:nexa_player/features/library/presentation/screens/album_detail_s
 import 'package:nexa_player/shared/widgets/cards/album_card.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
 
-/// Albums tab screen displaying album grid.
-class AlbumsTabScreen extends ConsumerWidget {
+/// Albums tab screen displaying album grid with pinch-to-zoom density control.
+class AlbumsTabScreen extends ConsumerStatefulWidget {
   const AlbumsTabScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AlbumsTabScreen> createState() => _AlbumsTabScreenState();
+}
+
+class _AlbumsTabScreenState extends ConsumerState<AlbumsTabScreen> {
+  int? _customColumns;
+  bool _isScaling = false;
+
+  int _resolveColumnCount(double screenWidth) {
+    if (_customColumns != null) return _customColumns!;
+    if (screenWidth >= 900) return 4;
+    if (screenWidth >= 600) return 3;
+    return 2;
+  }
+
+  double _resolveAspectRatio(int columns) {
+    switch (columns) {
+      case 1:
+        return 1.15;
+      case 2:
+        return 0.74;
+      case 3:
+        return 0.70;
+      case 4:
+      default:
+        return 0.66;
+    }
+  }
+
+  void _cycleDensity(int current) {
+    setState(() {
+      _customColumns = current >= 4 ? 1 : current + 1;
+    });
+  }
+
+  void _onScaleUpdate(ScaleUpdateDetails details, int currentColumns) {
+    if (_isScaling) return;
+    if (details.scale > 1.35) {
+      _isScaling = true;
+      setState(() {
+        _customColumns = (currentColumns - 1).clamp(1, 4);
+      });
+    } else if (details.scale < 0.70) {
+      _isScaling = true;
+      setState(() {
+        _customColumns = (currentColumns + 1).clamp(1, 4);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final albumsAsync = ref.watch(albumsListProvider(null));
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      extendBodyBehindAppBar: true,
-      appBar: GlassAppBar(
-        titleText: 'Albums',
-        automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search_rounded),
-            tooltip: 'Search library',
-            onPressed: () => context.push(AppRoutes.search),
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(16.0, 100.0, 16.0, 130.0),
-        child: albumsAsync.when(
-          data: (albums) {
-            if (albums.isEmpty) {
-              return const Center(
-                child: Text(
-                  'No albums found. Scan your media in Settings!',
-                  style: AppTypography.bodyMedium,
-                ),
-              );
-            }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = _resolveColumnCount(constraints.maxWidth);
+        final aspectRatio = _resolveAspectRatio(columns);
 
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                final crossAxisCount = constraints.maxWidth >= 900
-                    ? 4
-                    : constraints.maxWidth >= 600
-                        ? 3
-                        : 2;
-                return GridView.builder(
-                  key: Phase2Keys.albumsGrid,
-                  padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 140.0),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    crossAxisSpacing: AppSpacing.md,
-                    mainAxisSpacing: AppSpacing.md,
-                    childAspectRatio: 0.65,
-                  ),
-                  itemCount: albums.length,
-                  itemBuilder: (context, index) {
-                    final album = albums[index];
-                    return AlbumCard.fromAlbum(
-                      key: Phase2Keys.albumCard(album.id),
-                      album: album,
-                      mode: AlbumCardMode.grid,
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => AlbumDetailScreen(album: album),
-                          ),
-                        );
-                      },
+        return Scaffold(
+          backgroundColor: Colors.transparent,
+          extendBodyBehindAppBar: true,
+          appBar: GlassAppBar(
+            titleText: 'Albums',
+            automaticallyImplyLeading: false,
+            actions: [
+              IconButton(
+                icon: Icon(
+                  columns == 1
+                      ? Icons.view_agenda_rounded
+                      : columns == 2
+                          ? Icons.grid_view_rounded
+                          : columns == 3
+                              ? Icons.view_module_rounded
+                              : Icons.apps_rounded,
+                ),
+                tooltip: 'Grid density ($columns columns)',
+                onPressed: () => _cycleDensity(columns),
+              ),
+              IconButton(
+                icon: const Icon(Icons.search_rounded),
+                tooltip: 'Search library',
+                onPressed: () => context.push(AppRoutes.search),
+              ),
+            ],
+          ),
+          body: GestureDetector(
+            onScaleUpdate: (details) => _onScaleUpdate(details, columns),
+            onScaleEnd: (_) => _isScaling = false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16.0, 100.0, 16.0, 130.0),
+              child: albumsAsync.when(
+                data: (albums) {
+                  if (albums.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        'No albums found. Scan your media in Settings!',
+                        style: AppTypography.bodyMedium,
+                      ),
                     );
-                  },
-                );
-              },
-            );
-          },
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Center(
-            child: Text(
-              'Error loading albums: $error',
-              style: AppTypography.bodyMedium,
+                  }
+
+                  return GridView.builder(
+                    key: Phase2Keys.albumsGrid,
+                    padding: const EdgeInsets.fromLTRB(4.0, 12.0, 4.0, 140.0),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: columns,
+                      crossAxisSpacing: AppSpacing.md,
+                      mainAxisSpacing: AppSpacing.md,
+                      childAspectRatio: aspectRatio,
+                    ),
+                    itemCount: albums.length,
+                    itemBuilder: (context, index) {
+                      final album = albums[index];
+                      return AlbumCard.fromAlbum(
+                        key: Phase2Keys.albumCard(album.id),
+                        album: album,
+                        heroTag: 'album_art_${album.id}',
+                        mode: AlbumCardMode.grid,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => AlbumDetailScreen(album: album),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, _) => Center(
+                  child: Text(
+                    'Error loading albums: $error',
+                    style: AppTypography.bodyMedium,
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
