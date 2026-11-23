@@ -9,6 +9,14 @@ import 'package:nexa_player/features/playlists/presentation/screens/playlists_ta
 import 'package:nexa_player/shared/models/playlist.dart';
 import 'package:nexa_player/shared/models/track.dart';
 
+class _FakePlaylistsNotifier extends PlaylistsNotifier {
+  _FakePlaylistsNotifier(this._initial);
+  final List<Playlist> _initial;
+
+  @override
+  Future<List<Playlist>> build() async => _initial;
+}
+
 void main() {
   final testPlaylist = Playlist(
     id: 'pl-1',
@@ -34,11 +42,11 @@ void main() {
   }) {
     return ProviderScope(
       overrides: [
-        playlistsListNotifierProvider.overrideWith((ref) => AsyncValue.data(playlists)),
+        playlistsListNotifierProvider.overrideWith(() => _FakePlaylistsNotifier(playlists)),
         playlistTracksProvider(testPlaylist.id).overrideWith((ref) => Future.value(tracks)),
       ],
       child: MaterialApp(
-        theme: AppTheme.dark,
+        theme: AppTheme.dark(),
         home: child,
       ),
     );

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:nexa_player/app/routes.dart';
 import '../../../../core/extensions/duration_x.dart';
 import 'package:nexa_player/core/constants/phase2_keys.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';

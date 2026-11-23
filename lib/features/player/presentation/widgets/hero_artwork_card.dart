@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
-import 'package:nexa_player/core/design_system/nexa_surface_tokens.dart';
 import 'package:nexa_player/core/extensions/duration_x.dart';
 import 'package:nexa_player/shared/models/track.dart';
 import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';

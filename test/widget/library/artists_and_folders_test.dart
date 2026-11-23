@@ -51,7 +51,7 @@ void main() {
         foldersTreeProvider(const []).overrideWith((ref) => Future.value(folders)),
       ],
       child: MaterialApp(
-        theme: AppTheme.dark,
+        theme: AppTheme.dark(),
         home: child,
       ),
     );

@@ -5,9 +5,8 @@ import '../../../../app/routes.dart';
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/glass_tokens.dart';
-import '../../../../core/design_system/nexa_surface_tokens.dart';
 import '../../../../shared/widgets/surfaces/nexa_surface.dart';
-import '../../../equalizer/presentation/providers/equalizer_notifier.dart';
+import '../../../equalizer/presentation/providers/equalizer_providers.dart';
 import '../../../player/presentation/providers/player_providers.dart';
 
 /// Semantic Keys for DesktopStudioDock testing.

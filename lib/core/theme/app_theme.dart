@@ -46,7 +46,7 @@ abstract final class AppTheme {
 
   /// Builds light [ThemeData] for a preset or custom palette.
   static ThemeData light({
-    required ThemePreset preset,
+    ThemePreset preset = ThemePreset.daylight,
     Color? customPrimary,
     Color? customSurface,
     Color? customBackground,
@@ -100,7 +100,7 @@ abstract final class AppTheme {
 
   /// Builds dark [ThemeData] for a preset or custom palette.
   static ThemeData dark({
-    required ThemePreset preset,
+    ThemePreset preset = ThemePreset.obsidian,
     Color? customPrimary,
     Color? customSurface,
     Color? customBackground,

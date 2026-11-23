@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
-import 'package:nexa_player/core/design_system/nexa_surface_tokens.dart';
 import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
 import '../../domain/entities/reverb_preset.dart';
 

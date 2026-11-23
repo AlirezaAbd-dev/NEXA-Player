@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../core/design_system/glass_tokens.dart';
-import '../../../core/design_system/nexa_surface_tokens.dart';
 import '../surfaces/nexa_surface.dart';
 
 export '../surfaces/nexa_surface.dart' show SurfaceBorderReason;

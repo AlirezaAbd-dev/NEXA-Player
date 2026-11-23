@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/glass_tokens.dart';
-import '../../../../core/design_system/nexa_surface_tokens.dart';
 import '../../../../shared/models/track.dart';
 import '../../../../shared/widgets/glass/glass_app_bar.dart';
 import '../../../../shared/widgets/surfaces/nexa_surface.dart';

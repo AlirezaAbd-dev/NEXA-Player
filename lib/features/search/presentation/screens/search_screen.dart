@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
-import 'package:nexa_player/core/design_system/nexa_surface_tokens.dart';
 import 'package:nexa_player/features/library/presentation/screens/album_detail_screen.dart';
 import 'package:nexa_player/features/library/presentation/screens/artist_detail_screen.dart';
 import 'package:nexa_player/features/player/player.dart';

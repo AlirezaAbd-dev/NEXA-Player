@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../domain/models/headphone_autoeq_profile.dart';
+import '../../domain/models/headphone_autoeq_profile.dart';
 
 /// Curated offline database of AutoEQ headphone target calibration profiles.
 class AutoEqDatabase {

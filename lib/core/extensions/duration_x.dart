@@ -60,4 +60,11 @@ extension DurationX on Duration {
 
   /// Convenient helper for `mm:ss` format.
   String toFormattedMmSs() => toMinutesSeconds();
+
+  /// Clamps the duration between [min] and [max].
+  Duration clamp(Duration min, Duration max) {
+    if (this < min) return min;
+    if (this > max) return max;
+    return this;
+  }
 }

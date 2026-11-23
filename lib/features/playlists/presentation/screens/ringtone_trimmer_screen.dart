@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
-import 'package:nexa_player/core/design_system/nexa_surface_tokens.dart';
 import 'package:nexa_player/features/playlists/domain/models/ringtone_trim_range.dart';
 import 'package:nexa_player/features/playlists/presentation/providers/playlists_providers.dart';
 import 'package:nexa_player/shared/models/track.dart';

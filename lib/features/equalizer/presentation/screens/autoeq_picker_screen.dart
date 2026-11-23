@@ -3,13 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/glass_tokens.dart';
-import '../../../../core/design_system/nexa_surface_tokens.dart';
 import '../../../../shared/widgets/glass/glass_app_bar.dart';
 import '../../../../shared/widgets/glass/glass_text_field.dart';
 import '../../../../shared/widgets/surfaces/nexa_surface.dart';
 import '../../data/datasources/autoeq_database.dart';
 import '../../domain/models/headphone_autoeq_profile.dart';
-import '../providers/equalizer_notifier.dart';
+import '../providers/equalizer_providers.dart';
 
 /// Semantic Keys for AutoEqPickerScreen testing.
 abstract final class AutoEqPickerKeys {

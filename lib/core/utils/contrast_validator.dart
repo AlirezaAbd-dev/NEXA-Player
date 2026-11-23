@@ -33,6 +33,9 @@ abstract final class ContrastValidator {
     return (lighter + 0.05) / (darker + 0.05);
   }
 
+  /// Alias for [calculateContrastRatio].
+  static double calculateRatio(Color c1, Color c2) => calculateContrastRatio(c1, c2);
+
   /// Evaluates whether [fg] against [bg] satisfies WCAG AA guidelines.
   ///
   /// - Normal body text requires ratio >= 4.5:1

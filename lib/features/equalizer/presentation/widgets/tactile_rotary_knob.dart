@@ -230,10 +230,6 @@ class _KnobPainter extends CustomPainter {
       ..strokeWidth = 2.5
       ..strokeCap = StrokeCap.round;
 
-    canvas.drawParagraph(
-      (ParagraphBuilder(ParagraphStyle())..build()),
-      Offset.zero,
-    );
     canvas.drawLine(notchStart, notchEnd, notchPaint);
   }
 

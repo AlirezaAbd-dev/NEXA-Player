@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
-import 'package:nexa_player/core/design_system/nexa_surface_tokens.dart';
 import 'package:nexa_player/features/settings/presentation/widgets/settings_tiles.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
 import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
@@ -15,7 +14,7 @@ class VisualizerSettingsScreen extends ConsumerWidget {
   const VisualizerSettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(visualizerSettingsProvider);
     final notifier = ref.read(visualizerSettingsProvider.notifier);
     final theme = Theme.of(context);

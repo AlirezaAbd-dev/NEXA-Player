@@ -67,7 +67,7 @@ void main() {
         equalizerServiceProvider.overrideWithValue(eqService),
       ],
       child: MaterialApp(
-        theme: AppTheme.dark,
+        theme: AppTheme.dark(),
         home: const EqualizerScreen(),
       ),
     );
@@ -100,7 +100,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: AppTheme.dark,
+          theme: AppTheme.dark(),
           home: Scaffold(
             body: Center(
               child: SizedBox(
@@ -137,7 +137,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: AppTheme.dark,
+          theme: AppTheme.dark(),
           home: Scaffold(
             body: Center(
               child: TactileRotaryKnob(

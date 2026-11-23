@@ -1,10 +1,8 @@
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
-import 'package:nexa_player/core/constants/app_constants.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
 import 'package:nexa_player/core/design_system/glass_tokens.dart';
-import 'package:nexa_player/core/design_system/nexa_surface_tokens.dart';
 import 'package:nexa_player/shared/models/artist.dart';
 import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
 

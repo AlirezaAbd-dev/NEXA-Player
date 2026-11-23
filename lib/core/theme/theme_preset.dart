@@ -10,6 +10,9 @@ enum ThemePreset {
   neonPurple,
   custom;
 
+  /// Obsidian alias for midnightBlack.
+  static const ThemePreset obsidian = ThemePreset.midnightBlack;
+
   /// User-facing display name.
   String get displayName => switch (this) {
         midnightBlack => 'Midnight Black',

@@ -6,7 +6,6 @@ import 'package:nexa_player/app/routes.dart';
 import 'package:nexa_player/core/constants/phase2_keys.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
-import 'package:nexa_player/core/design_system/nexa_surface_tokens.dart';
 import 'package:nexa_player/features/player/domain/entities/playback_state.dart';
 import 'package:nexa_player/features/player/presentation/providers/player_providers.dart';
 import 'package:nexa_player/features/playlists/presentation/providers/playlists_providers.dart';

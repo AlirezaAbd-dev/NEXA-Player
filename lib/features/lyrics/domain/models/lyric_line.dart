@@ -3,13 +3,18 @@ import 'package:equatable/equatable.dart';
 /// Represents a single line of lyrics with an optional timestamp.
 class LyricLine extends Equatable {
   const LyricLine({
-    required this.timestamp,
     required this.text,
+    Duration timestamp = Duration.zero,
+    this.timestampMs,
     this.translation,
-  });
+  }) : _timestamp = timestamp;
+
+  final Duration _timestamp;
+  final int? timestampMs;
 
   /// Timestamp when this line starts in the audio stream.
-  final Duration timestamp;
+  Duration get timestamp =>
+      timestampMs != null ? Duration(milliseconds: timestampMs!) : _timestamp;
 
   /// Original lyrical text content.
   final String text;

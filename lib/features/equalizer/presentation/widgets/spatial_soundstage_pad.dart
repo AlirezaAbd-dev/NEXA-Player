@@ -1,10 +1,8 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/glass_tokens.dart';
-import '../../../../core/design_system/nexa_surface_tokens.dart';
 import '../../../../shared/widgets/surfaces/nexa_surface.dart';
 import '../../domain/models/soundstage_position.dart';
 

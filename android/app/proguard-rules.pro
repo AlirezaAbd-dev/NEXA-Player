@@ -36,3 +36,7 @@
 -keepattributes EnclosingMethod
 -dontwarn okio.**
 -dontwarn javax.annotation.**
+
+# 6. Flutter Play Core Deferred Components (non-split APK)
+-dontwarn com.google.android.play.core.**
+

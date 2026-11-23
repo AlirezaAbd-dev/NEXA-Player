@@ -18,7 +18,7 @@ class HeadphoneAutoEqProfile extends Equatable {
     required this.targetCurve,
     required this.bandOffsets,
     this.preampDb = -2.0,
-  }) : assert(bandOffsets.length == 10, 'AutoEQ profile must define exactly 10 bands');
+  });
 
   String get displayName => '$brand $model';
 

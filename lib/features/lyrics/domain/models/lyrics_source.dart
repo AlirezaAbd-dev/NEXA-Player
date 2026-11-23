@@ -6,6 +6,9 @@ enum LyricsSource {
   /// Loaded from a local `.lrc` companion file in device storage.
   lrcFile('Local .LRC File'),
 
+  /// Synced LRC companion.
+  syncedLrc('Synced LRC'),
+
   /// Fetched from public LRCLIB API.
   lrclib('LRCLIB Online'),
 

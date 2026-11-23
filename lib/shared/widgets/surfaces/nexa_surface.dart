@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/design_system/glass_tokens.dart';
 import '../../../core/design_system/nexa_surface_tokens.dart';
 
+export '../../../core/design_system/nexa_surface_tokens.dart';
+
 /// Architectural exceptions permitting a visible outline on a [NexaSurface].
 ///
 /// In the borderless tonal design system, surfaces are distinguished strictly by
@@ -28,7 +30,8 @@ class NexaSurface extends StatefulWidget {
   const NexaSurface({
     required this.child,
     super.key,
-    this.tier = NexaSurfaceTier.l2,
+    NexaSurfaceTier? tier,
+    NexaSurfaceTier? level,
     this.borderRadius = const BorderRadius.all(Radius.circular(GlassTokens.radiusCard)),
     this.padding,
     this.margin,
@@ -47,13 +50,16 @@ class NexaSurface extends StatefulWidget {
     this.boxShadow,
     this.clipBehavior = Clip.antiAlias,
     this.enablePressFeedback = true,
-  });
+  }) : tier = tier ?? level ?? NexaSurfaceTier.l2;
 
   /// The widget content rendered inside the surface.
   final Widget child;
 
   /// Luminance elevation tier governing surface background and contrast foreground.
   final NexaSurfaceTier tier;
+
+  /// Backwards-compatibility alias for [tier].
+  NexaSurfaceTier get level => tier;
 
   /// Corner radius for bounds clipping and ripple shape.
   final BorderRadius borderRadius;

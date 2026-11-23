@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/glass_tokens.dart';
 import '../../../../core/utils/contrast_validator.dart';
-import '../../../../shared/widgets/surfaces/nexa_surface.dart';
 
 /// Reusable preset card displaying theme name, color swatches, active selection indicator,
 /// and live player artwork preview.

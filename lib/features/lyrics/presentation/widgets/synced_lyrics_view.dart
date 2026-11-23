@@ -14,13 +14,13 @@ class SyncedLyricsView extends StatefulWidget {
     super.key,
     required this.lyrics,
     required this.activeIndex,
-    required this.onSeekToTimestamp,
+    this.onSeekToTimestamp,
     this.autoScrollEnabled = true,
   });
 
   final Lyrics lyrics;
   final int activeIndex;
-  final ValueChanged<Duration> onSeekToTimestamp;
+  final ValueChanged<Duration>? onSeekToTimestamp;
   final bool autoScrollEnabled;
 
   @override
@@ -190,7 +190,7 @@ class _SyncedLyricsViewState extends State<SyncedLyricsView> {
           child: InkWell(
             onTap: () {
               HapticFeedback.selectionClick();
-              widget.onSeekToTimestamp(line.timestamp);
+              widget.onSeekToTimestamp?.call(line.timestamp);
             },
             borderRadius: BorderRadius.circular(16),
             child: AnimatedContainer(

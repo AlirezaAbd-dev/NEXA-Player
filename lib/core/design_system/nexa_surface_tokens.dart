@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/dynamic_palette_service.dart';
 
@@ -26,6 +25,9 @@ enum NexaSurfaceTier {
   /// L4: High-chroma interactive accent fills (primary playback controls, active tab indicators).
   l4,
 }
+
+/// Backwards-compatibility alias for [NexaSurfaceTier].
+typedef NexaSurfaceLevel = NexaSurfaceTier;
 
 /// Centralized Material 3 [ThemeExtension] encapsulating the 5 tonal surface tiers ($L_0$ to $L_4$),
 /// foreground contrast pairings, diffuse floating shadows, and tabular telemetry typography.
@@ -81,6 +83,19 @@ class NexaSurfaceTokens extends ThemeExtension<NexaSurfaceTokens> {
 
   /// High-precision tabular typography for timers, dB readouts, bit-depth badges, and BPM.
   final TextStyle telemetryTextStyle;
+
+  /// Backwards-compatibility aliases
+  static final NexaSurfaceTokens midnightBlack = NexaSurfaceTokens.dark();
+  Color get level0 => l0;
+  Color get level1 => l1;
+  Color get level2 => l2;
+  Color get level3 => l3;
+  Color get level4 => l4;
+  Color get onLevel0 => onL0;
+  Color get onLevel1 => onL1;
+  Color get onLevel2 => onL2;
+  Color get onLevel3 => onL3;
+  Color get onLevel4 => onL4;
 
   /// Default Obsidian dark mode tonal tokens.
   factory NexaSurfaceTokens.dark({Color? accent, Color? seedTint}) {

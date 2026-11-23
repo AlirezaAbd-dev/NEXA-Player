@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/design_system/app_typography.dart';
-import '../../../../core/design_system/nexa_surface_tokens.dart';
 import '../../../../shared/widgets/surfaces/nexa_surface.dart';
 import '../providers/equalizer_providers.dart';
 import '../widgets/eq_band_slider.dart';

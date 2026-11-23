@@ -2,10 +2,13 @@ import 'package:equatable/equatable.dart';
 import 'package:nexa_player/features/lyrics/domain/models/lyric_line.dart';
 import 'package:nexa_player/features/lyrics/domain/models/lyrics_source.dart';
 
+export 'lyric_line.dart';
+export 'lyrics_source.dart';
+
 /// Immutable domain entity representing a track's lyrics.
 class Lyrics extends Equatable {
   const Lyrics({
-    required this.trackId,
+    this.trackId = '',
     this.lines = const [],
     this.plainLyrics,
     this.rawLrc,

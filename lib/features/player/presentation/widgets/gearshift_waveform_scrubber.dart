@@ -2,7 +2,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
-import 'package:nexa_player/core/design_system/nexa_surface_tokens.dart';
 import 'package:nexa_player/core/extensions/duration_x.dart';
 import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
 
@@ -181,8 +180,8 @@ class _GearshiftWaveformScrubberState extends State<GearshiftWaveformScrubber> {
               slider: true,
               label: 'Waveform scrubber',
               value: '${activeDuration.toMinutesSeconds()} of ${totalDuration.toMinutesSeconds()}',
-              increasedValue: '${(activeDuration + const Duration(seconds: 10)).clamp(Duration.zero, totalDuration).toMinutesSeconds()}',
-              decreasedValue: '${(activeDuration - const Duration(seconds: 10)).clamp(Duration.zero, totalDuration).toMinutesSeconds()}',
+              increasedValue: (activeDuration + const Duration(seconds: 10)).clamp(Duration.zero, totalDuration).toMinutesSeconds(),
+              decreasedValue: (activeDuration - const Duration(seconds: 10)).clamp(Duration.zero, totalDuration).toMinutesSeconds(),
               onIncrease: () {
                 final next = (widget.position + const Duration(seconds: 10)).clamp(Duration.zero, widget.duration);
                 widget.onSeek(next);
@@ -266,7 +265,7 @@ class _WaveformPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final barCount = 48;
+    const barCount = 48;
     final totalWidth = size.width;
     final barWidth = (totalWidth / barCount) * 0.60;
     final barSpacing = (totalWidth / barCount) * 0.40;

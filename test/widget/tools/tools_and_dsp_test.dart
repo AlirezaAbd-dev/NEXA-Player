@@ -67,7 +67,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: AppTheme.dark,
+          theme: AppTheme.dark(),
           home: Scaffold(
             body: SyncedLyricsView(
               lyrics: sampleLyrics,

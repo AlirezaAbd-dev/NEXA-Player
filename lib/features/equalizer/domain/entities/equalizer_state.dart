@@ -41,6 +41,9 @@ class EqualizerState {
   /// All available presets (built-in factory profiles + user custom profiles).
   final List<EqualizerPreset> presets;
 
+  /// Ordered gain values for all frequency bands.
+  List<double> get bandGains => bands.map((b) => b.gain).toList();
+
   /// Resolves the currently active [EqualizerPreset], if matched.
   EqualizerPreset? get activePreset {
     if (activePresetId == null) return null;

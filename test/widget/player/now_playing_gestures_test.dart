@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nexa_player/core/theme/app_theme.dart';
 import 'package:nexa_player/features/player/domain/entities/playback_state.dart';
+import 'package:nexa_player/features/player/presentation/providers/player_notifier.dart';
 import 'package:nexa_player/features/player/presentation/providers/player_providers.dart';
 import 'package:nexa_player/features/player/presentation/screens/now_playing_screen.dart';
 import 'package:nexa_player/features/player/presentation/widgets/gearshift_waveform_scrubber.dart';
@@ -41,7 +42,7 @@ void main() {
         ),
       ],
       child: MaterialApp(
-        theme: AppTheme.dark,
+        theme: AppTheme.dark(),
         home: const NowPlayingScreen(),
       ),
     );
@@ -92,7 +93,7 @@ void main() {
       Duration? soughtPos;
       await tester.pumpWidget(
         MaterialApp(
-          theme: AppTheme.dark,
+          theme: AppTheme.dark(),
           home: Scaffold(
             body: Center(
               child: SizedBox(
@@ -191,4 +192,10 @@ class _FakePlayerNotifier extends StateNotifier<PlaybackState>
 
   @override
   Future<void> toggleFavorite([Track? targetTrack]) async {}
+
+  @override
+  void startSleepTimer(Duration duration) {}
+
+  @override
+  void cancelSleepTimer() {}
 }

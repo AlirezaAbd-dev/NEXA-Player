@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nexa_player/app/shell/scaffold_with_nav_bar.dart';
-import 'package:nexa_player/core/di/service_providers.dart';
+import 'package:nexa_player/core/di/service_providers.dart' hide playbackQueueProvider;
 import 'package:nexa_player/features/player/data/services/playback_queue_impl.dart';
 import 'package:nexa_player/features/player/domain/entities/playback_state.dart';
 import 'package:nexa_player/features/player/presentation/providers/player_notifier.dart';
@@ -13,7 +13,7 @@ import 'package:nexa_player/shared/models/track.dart';
 import 'package:go_router/go_router.dart';
 import '../../helpers/mock_services.dart';
 
-class FakeNavigationShell implements StatefulNavigationShell {
+class FakeNavigationShell extends Fake implements StatefulNavigationShell {
   @override
   int get currentIndex => 0;
 
@@ -25,7 +25,7 @@ class FakeNavigationShell implements StatefulNavigationShell {
   }
 
   @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) => 'FakeNavigationShell';
 }
 
 class FakePlayerNotifierForDesktop extends StateNotifier<PlaybackState>

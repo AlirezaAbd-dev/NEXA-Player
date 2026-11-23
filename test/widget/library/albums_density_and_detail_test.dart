@@ -39,7 +39,7 @@ void main() {
         albumDetailTracksProvider(testAlbum.id).overrideWith((ref) => Future.value(tracks)),
       ],
       child: MaterialApp(
-        theme: AppTheme.dark,
+        theme: AppTheme.dark(),
         home: child,
       ),
     );

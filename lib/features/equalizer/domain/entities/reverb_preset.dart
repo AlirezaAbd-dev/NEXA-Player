@@ -12,6 +12,9 @@ enum ReverbPreset {
   final String label;
   final String description;
 
+  /// User-facing display name.
+  String get displayName => label;
+
   /// Serialization helper.
   String toJson() => name;
 

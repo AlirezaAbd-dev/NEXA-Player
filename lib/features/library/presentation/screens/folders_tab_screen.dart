@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nexa_player/core/constants/phase2_keys.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
-import 'package:nexa_player/core/design_system/nexa_surface_tokens.dart';
 import 'package:nexa_player/features/library/domain/repositories/folders_repository.dart';
 import 'package:nexa_player/features/library/presentation/providers/library_providers.dart';
 import 'package:nexa_player/shared/widgets/glass/app_ambient_background.dart';

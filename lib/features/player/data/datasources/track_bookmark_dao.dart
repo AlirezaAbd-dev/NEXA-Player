@@ -14,7 +14,8 @@ class TrackBookmarkDao {
   String _key(String trackId) => '$_storagePrefix$trackId';
 
   Future<List<TrackBookmark>> getBookmarks(String trackId) async {
-    final raw = await _storage.getString(_key(trackId));
+    final res = _storage.getString(_key(trackId));
+    final raw = res.valueOrNull;
     if (raw == null || raw.isEmpty) return [];
     try {
       final List<dynamic> list = jsonDecode(raw) as List<dynamic>;
