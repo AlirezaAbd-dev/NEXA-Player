@@ -70,10 +70,12 @@ class _StandbyModeScreenState extends ConsumerState<StandbyModeScreen>
 
     _resetHudTimer();
 
-    // Start rotation if already playing
+    // Start rotation if already playing and animations are not disabled
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final disableAnim = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
       final isPlaying = ref.read(isPlayingProvider);
-      if (isPlaying) {
+      if (isPlaying && !disableAnim) {
         _spinController.repeat();
         _tonearmController.forward();
       }
@@ -272,9 +274,6 @@ class _StandbyModeScreenState extends ConsumerState<StandbyModeScreen>
                                   decoration: BoxDecoration(
                                     color: Colors.white.withOpacity(0.08),
                                     borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: Colors.white12,
-                                    ),
                                   ),
                                   child: Text(
                                     'STANDBY',
@@ -386,10 +385,6 @@ class _StandbyModeScreenState extends ConsumerState<StandbyModeScreen>
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: const Color(0xFF0A0D14),
-              border: Border.all(
-                color: const Color(0xFF222B3D).withOpacity(_dimFactor),
-                width: 2.5,
-              ),
               boxShadow: [
                 BoxShadow(
                   color: accentColor.withOpacity(0.20 * _dimFactor),
@@ -427,17 +422,14 @@ class _StandbyModeScreenState extends ConsumerState<StandbyModeScreen>
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  // Vinyl Micro-grooves
+                  // Vinyl Micro-grooves (subtle tonal rings without raw borders)
                   for (final fraction in [0.78, 0.64, 0.50, 0.36])
                     Container(
                       width: size * 0.92 * fraction,
                       height: size * 0.92 * fraction,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(
-                          color: const Color(0xFF273147).withOpacity(0.35 * _dimFactor),
-                          width: 1.0,
-                        ),
+                        color: const Color(0xFF273147).withOpacity(0.06 * _dimFactor),
                       ),
                     ),
 
@@ -448,10 +440,6 @@ class _StandbyModeScreenState extends ConsumerState<StandbyModeScreen>
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: accentColor,
-                      border: Border.all(
-                        color: Colors.white24,
-                        width: 1.5,
-                      ),
                       boxShadow: [
                         BoxShadow(
                           color: accentColor.withOpacity(0.40 * _dimFactor),

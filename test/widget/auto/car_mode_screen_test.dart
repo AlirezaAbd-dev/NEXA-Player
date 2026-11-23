@@ -242,5 +242,20 @@ void main() {
       expect(find.text('Driving Anthem'), findsOneWidget);
       expect(find.byTooltip('Pause'), findsOneWidget);
     });
+
+    testWidgets('blind gestures on canvas trigger skip next and skip previous', (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Swipe left on canvas: trigger skipNext
+      await tester.drag(find.text('Driving Anthem'), const Offset(-300, 0));
+      await tester.pumpAndSettle();
+      expect(fakePlayer.skipNextCalled, isTrue);
+
+      // Swipe right on canvas: trigger skipPrevious
+      await tester.drag(find.text('Driving Anthem'), const Offset(300, 0));
+      await tester.pumpAndSettle();
+      expect(fakePlayer.skipPreviousCalled, isTrue);
+    });
   });
 }

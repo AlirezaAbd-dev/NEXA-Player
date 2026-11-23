@@ -186,30 +186,54 @@ class _CarModeScreenState extends ConsumerState<CarModeScreen> {
 
             return Stack(
               children: [
-                // Main Car Mode Dashboard Canvas
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-                  child: isLandscape
-                      ? _buildLandscapeLayout(
-                          track: track,
-                          isPlaying: isPlaying,
-                          isFavorite: isFavorite,
-                          position: playerState.position,
-                          duration: playerState.duration,
-                          progress: progress,
-                          accent: accent,
-                          autoSettings: autoSettings,
-                        )
-                      : _buildPortraitLayout(
-                          track: track,
-                          isPlaying: isPlaying,
-                          isFavorite: isFavorite,
-                          position: playerState.position,
-                          duration: playerState.duration,
-                          progress: progress,
-                          accent: accent,
-                          autoSettings: autoSettings,
-                        ),
+                // Main Car Mode Dashboard Canvas with Blind Gestures
+                GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: () {
+                    HapticFeedback.mediumImpact();
+                    final notifier = ref.read(playerNotifierProvider.notifier);
+                    if (isPlaying) {
+                      notifier.pause();
+                    } else {
+                      notifier.play();
+                    }
+                  },
+                  onHorizontalDragEnd: (details) {
+                    final v = details.primaryVelocity ?? 0;
+                    if (v > 250) {
+                      // Swipe right: previous track
+                      HapticFeedback.lightImpact();
+                      ref.read(playerNotifierProvider.notifier).skipPrevious();
+                    } else if (v < -250) {
+                      // Swipe left: next track
+                      HapticFeedback.lightImpact();
+                      ref.read(playerNotifierProvider.notifier).skipNext();
+                    }
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                    child: isLandscape
+                        ? _buildLandscapeLayout(
+                            track: track,
+                            isPlaying: isPlaying,
+                            isFavorite: isFavorite,
+                            position: playerState.position,
+                            duration: playerState.duration,
+                            progress: progress,
+                            accent: accent,
+                            autoSettings: autoSettings,
+                          )
+                        : _buildPortraitLayout(
+                            track: track,
+                            isPlaying: isPlaying,
+                            isFavorite: isFavorite,
+                            position: playerState.position,
+                            duration: playerState.duration,
+                            progress: progress,
+                            accent: accent,
+                            autoSettings: autoSettings,
+                          ),
+                  ),
                 ),
 
                 // Top Header HUD Bar
@@ -231,10 +255,6 @@ class _CarModeScreenState extends ConsumerState<CarModeScreen> {
                             decoration: BoxDecoration(
                               color: accent.withOpacity(0.20),
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: accent.withOpacity(0.4),
-                                width: 1.0,
-                              ),
                             ),
                             child: Row(
                               children: [
@@ -392,10 +412,9 @@ class _CarModeScreenState extends ConsumerState<CarModeScreen> {
             Container(
               width: 72,
               height: 72,
-              decoration: BoxDecoration(
-                color: const Color(0xFF141926),
+              decoration: const BoxDecoration(
+                color: Color(0xFF182030),
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white24, width: 1.5),
               ),
               child: IconButton(
                 icon: const Icon(Icons.skip_previous_rounded),
@@ -447,10 +466,9 @@ class _CarModeScreenState extends ConsumerState<CarModeScreen> {
             Container(
               width: 72,
               height: 72,
-              decoration: BoxDecoration(
-                color: const Color(0xFF141926),
+              decoration: const BoxDecoration(
+                color: Color(0xFF182030),
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white24, width: 1.5),
               ),
               child: IconButton(
                 icon: const Icon(Icons.skip_next_rounded),
@@ -625,10 +643,9 @@ class _CarModeScreenState extends ConsumerState<CarModeScreen> {
                   Container(
                     width: 68,
                     height: 68,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF141926),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF182030),
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white24, width: 1.5),
                     ),
                     child: IconButton(
                       icon: const Icon(Icons.skip_previous_rounded),
@@ -679,10 +696,9 @@ class _CarModeScreenState extends ConsumerState<CarModeScreen> {
                   Container(
                     width: 68,
                     height: 68,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF141926),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF182030),
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white24, width: 1.5),
                     ),
                     child: IconButton(
                       icon: const Icon(Icons.skip_next_rounded),
