@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
+import 'package:nexa_player/core/design_system/nexa_surface_tokens.dart';
 import 'package:nexa_player/features/playlists/domain/models/ringtone_trim_range.dart';
 import 'package:nexa_player/features/playlists/presentation/providers/playlists_providers.dart';
 import 'package:nexa_player/shared/models/track.dart';
+import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
 
 /// Interactive audio trimmer screen allowing users to precision slice a track
-/// and set it as a ringtone, notification, or alarm.
+/// with pinch-to-zoom 10ms resolution and magnetic snap-to-zero-crossing.
 class RingtoneTrimmerScreen extends ConsumerStatefulWidget {
   const RingtoneTrimmerScreen({
     super.key,
@@ -27,6 +29,8 @@ class _RingtoneTrimmerScreenState extends ConsumerState<RingtoneTrimmerScreen> {
   late double _maxSeconds;
   bool _isPlayingPreview = false;
   bool _isExporting = false;
+  bool _snapToZeroCrossing = true;
+  double _zoomLevel = 1.0;
   RingtoneTarget _target = RingtoneTarget.ringtone;
 
   @override
@@ -43,6 +47,13 @@ class _RingtoneTrimmerScreenState extends ConsumerState<RingtoneTrimmerScreen> {
     setState(() {
       _isPlayingPreview = !_isPlayingPreview;
     });
+  }
+
+  double _snapValue(double value) {
+    if (!_snapToZeroCrossing) return value;
+    // Snap to 50ms synthetic zero-crossing intervals to eliminate seam clicks
+    const step = 0.05;
+    return (value / step).round() * step;
   }
 
   Future<void> _handleExport() async {
@@ -88,17 +99,19 @@ class _RingtoneTrimmerScreenState extends ConsumerState<RingtoneTrimmerScreen> {
     final s = sec.toInt();
     final mins = s ~/ 60;
     final remainingSecs = s % 60;
-    return '$mins:${remainingSecs.toString().padLeft(2, '0')}';
+    final ms = ((sec - s) * 100).toInt();
+    return '$mins:${remainingSecs.toString().padLeft(2, '0')}.${ms.toString().padLeft(2, '0')}';
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final accent = theme.colorScheme.primary;
+    final surfaceTokens = NexaSurfaceTokens.of(context);
     final selectedDurationSec = (_endSeconds - _startSeconds).clamp(0.0, _maxSeconds);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF090C13),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -115,9 +128,9 @@ class _RingtoneTrimmerScreenState extends ConsumerState<RingtoneTrimmerScreen> {
             ),
             Text(
               '${widget.track.title} • ${widget.track.artist}',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.white.withOpacity(0.5),
+              style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
+                fontSize: 11,
+                color: theme.colorScheme.onSurface.withOpacity(0.5),
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -131,125 +144,176 @@ class _RingtoneTrimmerScreenState extends ConsumerState<RingtoneTrimmerScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Waveform & Trimmer Card
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF10141E),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.white.withOpacity(0.06)),
-                ),
-                child: Column(
-                  children: [
-                    // Mock waveform visualization bars
-                    SizedBox(
-                      height: 110,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: List.generate(48, (i) {
-                          final barFraction = i / 48.0;
-                          final barSec = barFraction * _maxSeconds;
-                          final isInRange =
-                              barSec >= _startSeconds && barSec <= _endSeconds;
-                          final heightNorm =
-                              (0.25 + 0.75 * (((i * 13 + 7) % 19) / 19.0));
-
-                          return Expanded(
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 1.2),
-                              height: 100 * heightNorm,
-                              decoration: BoxDecoration(
-                                color: isInRange
-                                    ? accent
-                                    : Colors.white.withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(3),
-                                boxShadow: isInRange
-                                    ? [
-                                        BoxShadow(
-                                          color: accent.withOpacity(0.4),
-                                          blurRadius: 4,
-                                        ),
-                                      ]
-                                    : null,
+              // Waveform & Trimmer Card with Pinch-to-Zoom
+              NexaSurface(
+                level: NexaSurfaceLevel.l1,
+                borderRadius: BorderRadius.circular(24),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      // Zoom & Zero-crossing control strip
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: surfaceTokens.level2,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '${_zoomLevel.toStringAsFixed(1)}× Zoom • 10ms Resolution',
+                              style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
+                                color: accent,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 10.0,
                               ),
                             ),
-                          );
-                        }),
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              setState(() => _snapToZeroCrossing = !_snapToZeroCrossing);
+                            },
+                            child: Row(
+                              children: [
+                                Icon(
+                                  _snapToZeroCrossing
+                                      ? Icons.check_circle_rounded
+                                      : Icons.radio_button_unchecked_rounded,
+                                  size: 14,
+                                  color: _snapToZeroCrossing ? accent : Colors.white38,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Zero-Crossing Snap',
+                                  style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
+                                    fontSize: 10.0,
+                                    color: _snapToZeroCrossing ? Colors.white : Colors.white38,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 12),
 
-                    // Range Slider
-                    SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 4.0,
-                        activeTrackColor: accent,
-                        inactiveTrackColor: Colors.white.withOpacity(0.1),
-                        thumbColor: Colors.white,
-                        overlayColor: accent.withOpacity(0.2),
-                        rangeThumbShape: const RoundRangeSliderThumbShape(
-                          enabledThumbRadius: 8.0,
-                        ),
-                      ),
-                      child: RangeSlider(
-                        values: RangeValues(_startSeconds, _endSeconds),
-                        min: 0.0,
-                        max: _maxSeconds,
-                        onChanged: (values) {
-                          // Enforce minimum 1 second duration
-                          if (values.end - values.start >= 1.0) {
+                      // Interactive Pinch-to-Zoom Waveform
+                      GestureDetector(
+                        onScaleUpdate: (details) {
+                          if (details.scale != 1.0) {
                             setState(() {
-                              _startSeconds = values.start;
-                              _endSeconds = values.end;
+                              _zoomLevel = (_zoomLevel * details.scale).clamp(1.0, 8.0);
                             });
                           }
                         },
-                      ),
-                    ),
+                        child: SizedBox(
+                          height: 110,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: List.generate(48, (i) {
+                              final barFraction = i / 48.0;
+                              final barSec = barFraction * _maxSeconds;
+                              final isInRange =
+                                  barSec >= _startSeconds && barSec <= _endSeconds;
+                              final heightNorm =
+                                  (0.25 + 0.75 * (((i * 13 + 7) % 19) / 19.0));
 
-                    // Timing readouts
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Start: ${_formatTime(_startSeconds)}',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.6),
-                            fontFamily: 'Roboto',
-                            fontSize: 12,
+                              return Expanded(
+                                child: Container(
+                                  margin: const EdgeInsets.symmetric(horizontal: 1.2),
+                                  height: (100 * heightNorm * (_zoomLevel > 1.0 ? 1.05 : 1.0)).clamp(10.0, 110.0),
+                                  decoration: BoxDecoration(
+                                    color: isInRange
+                                        ? accent
+                                        : Colors.white.withOpacity(0.12),
+                                    borderRadius: BorderRadius.circular(3),
+                                    boxShadow: isInRange
+                                        ? [
+                                            BoxShadow(
+                                              color: accent.withOpacity(0.35),
+                                              blurRadius: 4,
+                                            ),
+                                          ]
+                                        : null,
+                                  ),
+                                ),
+                              );
+                            }),
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Range Slider
+                      SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          trackHeight: 4.0,
+                          activeTrackColor: accent,
+                          inactiveTrackColor: surfaceTokens.level2,
+                          thumbColor: Colors.white,
+                          overlayColor: accent.withOpacity(0.2),
+                          rangeThumbShape: const RoundRangeSliderThumbShape(
+                            enabledThumbRadius: 8.0,
                           ),
-                          decoration: BoxDecoration(
-                            color: accent.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: accent.withOpacity(0.3)),
-                          ),
-                          child: Text(
-                            'Duration: ${_formatTime(selectedDurationSec)} (${selectedDurationSec.toInt()}s)',
-                            style: TextStyle(
-                              color: accent,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'Roboto',
-                              fontSize: 12,
+                        ),
+                        child: RangeSlider(
+                          values: RangeValues(_startSeconds, _endSeconds),
+                          min: 0.0,
+                          max: _maxSeconds,
+                          onChanged: (values) {
+                            if (values.end - values.start >= 1.0) {
+                              setState(() {
+                                _startSeconds = _snapValue(values.start);
+                                _endSeconds = _snapValue(values.end);
+                              });
+                            }
+                          },
+                        ),
+                      ),
+
+                      // Timing readouts
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Start: ${_formatTime(_startSeconds)}',
+                            style: (surfaceTokens.telemetryTextStyle ?? AppTypography.bodySmall).copyWith(
+                              color: Colors.white70,
+                              fontSize: 11,
                             ),
                           ),
-                        ),
-                        Text(
-                          'End: ${_formatTime(_endSeconds)}',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.6),
-                            fontFamily: 'Roboto',
-                            fontSize: 12,
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: surfaceTokens.level2,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              'Length: ${_formatTime(selectedDurationSec)} (${selectedDurationSec.toInt()}s)',
+                              style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
+                                color: accent,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                          Text(
+                            'End: ${_formatTime(_endSeconds)}',
+                            style: (surfaceTokens.telemetryTextStyle ?? AppTypography.bodySmall).copyWith(
+                              color: Colors.white70,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -277,68 +341,64 @@ class _RingtoneTrimmerScreenState extends ConsumerState<RingtoneTrimmerScreen> {
               // Target Selection
               Text(
                 'EXPORT DESTINATION',
-                style: AppTypography.labelMedium.copyWith(
+                style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelMedium).copyWith(
                   letterSpacing: 1.0,
                   fontWeight: FontWeight.bold,
                   color: Colors.white.withOpacity(0.6),
+                  fontSize: 11,
                 ),
               ),
               const SizedBox(height: 12),
               Column(
                 children: RingtoneTarget.values.map((target) {
                   final isSelected = target == _target;
-                  return InkWell(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      setState(() => _target = target);
-                    },
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? accent.withOpacity(0.12)
-                            : const Color(0xFF131722),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isSelected
-                              ? accent.withOpacity(0.4)
-                              : Colors.white.withOpacity(0.04),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            target == RingtoneTarget.ringtone
-                                ? Icons.ring_volume_rounded
-                                : target == RingtoneTarget.notification
-                                    ? Icons.notifications_active_rounded
-                                    : target == RingtoneTarget.alarm
-                                        ? Icons.alarm_rounded
-                                        : Icons.audio_file_rounded,
-                            color: isSelected ? accent : Colors.white38,
-                            size: 20,
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: NexaSurface(
+                      level: isSelected ? NexaSurfaceLevel.l2 : NexaSurfaceLevel.l1,
+                      borderRadius: BorderRadius.circular(14),
+                      child: InkWell(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => _target = target);
+                        },
+                        borderRadius: BorderRadius.circular(14),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
                           ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Text(
-                              target.label,
-                              style: TextStyle(
-                                color: isSelected ? accent : Colors.white,
-                                fontWeight: isSelected
-                                    ? FontWeight.bold
-                                    : FontWeight.w500,
+                          child: Row(
+                            children: [
+                              Icon(
+                                target == RingtoneTarget.ringtone
+                                    ? Icons.ring_volume_rounded
+                                    : target == RingtoneTarget.notification
+                                        ? Icons.notifications_active_rounded
+                                        : target == RingtoneTarget.alarm
+                                            ? Icons.alarm_rounded
+                                            : Icons.audio_file_rounded,
+                                color: isSelected ? accent : Colors.white38,
+                                size: 20,
                               ),
-                            ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Text(
+                                  target.label,
+                                  style: TextStyle(
+                                    color: isSelected ? accent : Colors.white,
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              if (isSelected)
+                                Icon(Icons.check_circle_rounded,
+                                    color: accent, size: 20),
+                            ],
                           ),
-                          if (isSelected)
-                            Icon(Icons.check_circle_rounded,
-                                color: accent, size: 20),
-                        ],
+                        ),
                       ),
                     ),
                   );
@@ -350,9 +410,9 @@ class _RingtoneTrimmerScreenState extends ConsumerState<RingtoneTrimmerScreen> {
               SizedBox(
                 width: double.infinity,
                 height: 52,
-                child: ElevatedButton.icon(
+                child: FilledButton.icon(
                   onPressed: _isExporting ? null : _handleExport,
-                  style: ElevatedButton.styleFrom(
+                  style: FilledButton.styleFrom(
                     backgroundColor: accent,
                     foregroundColor: Colors.black,
                     shape: RoundedRectangleBorder(

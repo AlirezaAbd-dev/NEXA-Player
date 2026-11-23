@@ -1,3 +1,4 @@
+import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
@@ -5,8 +6,9 @@ import 'package:nexa_player/features/lyrics/domain/models/lyrics.dart';
 
 /// Interactive karaoke-style synchronized lyrics viewer.
 ///
-/// Features smooth centering auto-scroll, active line glow magnification,
-/// dim inactive lines, and tap-to-seek timestamp jumping.
+/// Features Apple Music-style depth-of-field blur on inactive lines,
+/// smooth centering auto-scroll, active line glow magnification,
+/// and tap-to-seek timestamp jumping.
 class SyncedLyricsView extends StatefulWidget {
   const SyncedLyricsView({
     super.key,
@@ -64,9 +66,9 @@ class _SyncedLyricsViewState extends State<SyncedLyricsView> {
       if (context != null) {
         Scrollable.ensureVisible(
           context,
-          duration: const Duration(milliseconds: 350),
+          duration: const Duration(milliseconds: 380),
           curve: Curves.easeInOutCubic,
-          alignment: 0.4, // Center slightly above midpoint
+          alignment: 0.38, // Center slightly above midpoint for optimal reading
         );
       }
     });
@@ -121,71 +123,81 @@ class _SyncedLyricsViewState extends State<SyncedLyricsView> {
           fontSize = 24.0;
           fontWeight = FontWeight.bold;
         } else if (isPast) {
-          textColor = Colors.white.withOpacity(0.35);
-          fontSize = 17.0;
+          textColor = Colors.white.withOpacity(0.40);
+          fontSize = 17.5;
           fontWeight = FontWeight.w500;
         } else {
-          textColor = Colors.white.withOpacity(0.55);
-          fontSize = 18.0;
+          textColor = Colors.white.withOpacity(0.60);
+          fontSize = 18.5;
           fontWeight = FontWeight.w500;
+        }
+
+        // Apple Music-style depth of field optical blur on inactive lines
+        final distance = (index - widget.activeIndex).abs();
+        final blurSigma = isActive ? 0.0 : (distance * 0.75).clamp(0.0, 3.2);
+
+        Widget lineContent = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              line.text.isEmpty ? '♪' : line.text,
+              style: TextStyle(
+                color: textColor,
+                fontSize: fontSize,
+                fontWeight: fontWeight,
+                height: 1.35,
+                letterSpacing: -0.2,
+                shadows: isActive
+                    ? [
+                        Shadow(
+                          color: accent.withOpacity(0.55),
+                          blurRadius: 18.0,
+                        ),
+                      ]
+                    : null,
+              ),
+            ),
+            if (line.translation != null && line.translation!.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                line.translation!,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(isActive ? 0.8 : 0.35),
+                  fontSize: 13,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ],
+        );
+
+        if (blurSigma > 0.01) {
+          lineContent = ImageFiltered(
+            imageFilter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+            child: lineContent,
+          );
         }
 
         return Padding(
           key: _lineKeys[index],
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: const EdgeInsets.symmetric(vertical: 8),
           child: InkWell(
             onTap: () {
               HapticFeedback.selectionClick();
               widget.onSeekToTimestamp(line.timestamp);
             },
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 250),
               curve: Curves.easeOutCubic,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: isActive
-                    ? accent.withOpacity(0.12)
+                    ? accent.withOpacity(0.14)
                     : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-                border: isActive
-                    ? Border.all(color: accent.withOpacity(0.3), width: 1.0)
-                    : null,
+                borderRadius: BorderRadius.circular(16),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    line.text.isEmpty ? '♪' : line.text,
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: fontSize,
-                      fontWeight: fontWeight,
-                      height: 1.35,
-                      letterSpacing: -0.2,
-                      shadows: isActive
-                          ? [
-                              Shadow(
-                                color: accent.withOpacity(0.5),
-                                blurRadius: 16.0,
-                              ),
-                            ]
-                          : null,
-                    ),
-                  ),
-                  if (line.translation != null && line.translation!.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      line.translation!,
-                      style: TextStyle(
-                        fontSize: 14.0,
-                        color: Colors.white.withOpacity(isActive ? 0.7 : 0.3),
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+              child: lineContent,
             ),
           ),
         );

@@ -2,23 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
+import 'package:nexa_player/core/design_system/nexa_surface_tokens.dart';
 import 'package:nexa_player/features/settings/presentation/widgets/settings_tiles.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
-import 'package:nexa_player/shared/widgets/glass/glass_card.dart';
+import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
 import '../../domain/models/visualizer_settings.dart';
 import '../providers/visualizer_providers.dart';
 import '../widgets/spectrum_visualizer_widget.dart';
 
-/// Full visualizer customizer screen with live interactive preview.
+/// Full visualizer customizer screen with live interactive preview and borderless surfaces.
 class VisualizerSettingsScreen extends ConsumerWidget {
   const VisualizerSettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final settings = ref.watch(visualizerSettingsProvider);
     final notifier = ref.read(visualizerSettingsProvider.notifier);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final surfaceTokens = NexaSurfaceTokens.of(context);
 
     // Simulated sample magnitudes for preview
     const previewMagnitudes = [
@@ -41,56 +43,62 @@ class VisualizerSettingsScreen extends ConsumerWidget {
           // Live Preview Card
           Text(
             'LIVE PREVIEW',
-            style: AppTypography.labelSmall.copyWith(
+            style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
               color: colorScheme.primary,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.2,
+              fontSize: 10.5,
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
-          GlassCard(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              children: [
-                Container(
-                  height: 140,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.black45,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white10),
-                  ),
-                  child: Center(
-                    child: SpectrumVisualizerWidget(
-                      magnitudes: previewMagnitudes,
-                      style: settings.style,
-                      accentColor: parsedColor,
-                      secondaryColor: colorScheme.secondary,
-                      sensitivity: settings.sensitivity,
-                      height: 130,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Mode: ${settings.style.name.toUpperCase()}',
-                      style: AppTypography.labelSmall.copyWith(
-                        color: Colors.white70,
+          NexaSurface(
+            level: NexaSurfaceLevel.l1,
+            borderRadius: BorderRadius.circular(20),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                children: [
+                  NexaSurface(
+                    level: NexaSurfaceLevel.l2,
+                    borderRadius: BorderRadius.circular(14),
+                    child: SizedBox(
+                      height: 140,
+                      width: double.infinity,
+                      child: Center(
+                        child: SpectrumVisualizerWidget(
+                          magnitudes: previewMagnitudes,
+                          style: settings.style,
+                          accentColor: parsedColor,
+                          secondaryColor: colorScheme.secondary,
+                          sensitivity: settings.sensitivity,
+                          height: 130,
+                        ),
                       ),
                     ),
-                    Text(
-                      '${settings.fpsCap} FPS • ${settings.fftSize} BANDS',
-                      style: AppTypography.labelSmall.copyWith(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.bold,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Mode: ${settings.style.name.toUpperCase()}',
+                        style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
+                          color: Colors.white70,
+                          fontSize: 11,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      Text(
+                        '${settings.fpsCap} FPS • ${settings.fftSize} BANDS',
+                        style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
+                          color: colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.md),
