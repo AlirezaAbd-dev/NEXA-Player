@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../utils/contrast_validator.dart';
 
 /// Represents an extracted color palette for dynamic album art theme adaptation.
 class ExtractedPalette {
@@ -35,6 +36,15 @@ class ExtractedPalette {
 
   /// Atmospheric tertiary accent for subtle glass cards and glows.
   Color get tertiary => muted;
+
+  /// Atmospheric background ambient tint, guaranteed contrast on L0 canvas.
+  Color get atmosphere => ensureContrast(muted, const Color(0xFF050507), minRatio: 3.0);
+
+  /// Guaranteed contrast accent for primary controls.
+  Color get accent => ensureContrast(vibrant, const Color(0xFF050507), minRatio: 4.5);
+
+  /// High-luminance specular highlight.
+  Color get specular => ensureContrast(lightVibrant, const Color(0xFF050507), minRatio: 4.5);
 
   /// Canonical default fallback palette (Neon Cyan & Electric Orchid).
   static const fallback = ExtractedPalette(

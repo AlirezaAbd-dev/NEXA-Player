@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/custom_theme_data.dart';
 import '../../../../core/theme/theme_controller.dart';
+import '../../../../core/utils/contrast_validator.dart';
 import '../widgets/hsl_color_slider.dart';
 
 /// Semantic Keys matching test/e2e/e2e_test_helpers.dart E2EKeys.
@@ -27,6 +28,7 @@ class _CustomThemeEditorScreenState
     extends ConsumerState<CustomThemeEditorScreen> {
   late CustomThemeData _themeDraft;
   bool _initialized = false;
+  bool _lockContrast = true;
 
   @override
   void didChangeDependencies() {
@@ -34,31 +36,50 @@ class _CustomThemeEditorScreenState
     if (!_initialized) {
       final themeState = ref.read(themeControllerProvider);
       _themeDraft = themeState.customTheme ?? CustomThemeData.defaultDark;
+      if (_lockContrast) {
+        _enforceContrast();
+      }
       _initialized = true;
     }
+  }
+
+  void _enforceContrast() {
+    final currentPrimary = _themeDraft.primaryColor;
+    final bg = _themeDraft.scaffoldBackgroundColor;
+    final safePrimary = ensureContrast(currentPrimary, bg, minRatio: 4.5);
+    final hslSafe = HSLColor.fromColor(safePrimary);
+    _themeDraft = _themeDraft.copyWith(
+      primaryHue: hslSafe.hue,
+      primarySaturation: hslSafe.saturation,
+      primaryLightness: hslSafe.lightness,
+    );
   }
 
   void _onHueChanged(double value) {
     setState(() {
       _themeDraft = _themeDraft.copyWith(primaryHue: value);
+      if (_lockContrast) _enforceContrast();
     });
   }
 
   void _onSaturationChanged(double value) {
     setState(() {
       _themeDraft = _themeDraft.copyWith(primarySaturation: value);
+      if (_lockContrast) _enforceContrast();
     });
   }
 
   void _onLightnessChanged(double value) {
     setState(() {
       _themeDraft = _themeDraft.copyWith(primaryLightness: value);
+      if (_lockContrast) _enforceContrast();
     });
   }
 
   void _onModeToggled(bool isDark) {
     setState(() {
       _themeDraft = _themeDraft.copyWith(isDark: isDark);
+      if (_lockContrast) _enforceContrast();
     });
   }
 
@@ -235,36 +256,61 @@ class _CustomThemeEditorScreenState
   }
 
   Widget _buildContrastBadge(double ratio, bool isPass) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: isPass ? const Color(0x2200E676) : const Color(0x22FF3D00),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isPass ? const Color(0xFF00E676) : const Color(0xFFFF3D00),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            isPass ? Icons.verified : Icons.warning_amber_rounded,
-            color: isPass ? const Color(0xFF00E676) : const Color(0xFFFF3D00),
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'WCAG 2.1 AA Contrast: ${ratio.toStringAsFixed(1)}:1 '
-              '(${isPass ? "Passed" : "Clamped for Legibility"})',
-              style: TextStyle(
-                color: isPass ? const Color(0xFF00E676) : const Color(0xFFFF3D00),
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: isPass ? const Color(0x2200E676) : const Color(0x22FF3D00),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isPass ? const Color(0xFF00E676) : const Color(0xFFFF3D00),
             ),
           ),
-        ],
-      ),
+          child: Row(
+            children: [
+              Icon(
+                isPass ? Icons.verified : Icons.warning_amber_rounded,
+                color: isPass ? const Color(0xFF00E676) : const Color(0xFFFF3D00),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'WCAG 2.1 AA Contrast: ${ratio.toStringAsFixed(1)}:1 '
+                  '(${isPass ? "Passed" : "Clamped for Legibility"})',
+                  style: TextStyle(
+                    color: isPass ? const Color(0xFF00E676) : const Color(0xFFFF3D00),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Expanded(
+              child: Text(
+                'Lock Contrast >= 4.5:1 (WCAG AA)',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+              ),
+            ),
+            Switch(
+              value: _lockContrast,
+              onChanged: (val) {
+                setState(() {
+                  _lockContrast = val;
+                  if (_lockContrast) _enforceContrast();
+                });
+              },
+            ),
+          ],
+        ),
+      ],
     );
   }
 
