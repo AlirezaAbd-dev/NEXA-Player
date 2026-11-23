@@ -240,7 +240,7 @@ class _MiniPlayerSlotState extends ConsumerState<MiniPlayerSlot>
     );
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10.0, 4.0, 10.0, 8.0),
+      padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 8.0),
       child: GestureDetector(
         onHorizontalDragUpdate: _onHorizontalDragUpdate,
         onHorizontalDragEnd: _onHorizontalDragEnd,
