@@ -29,6 +29,8 @@ class ArtistDetailScreen extends ConsumerWidget {
     final onSurfaceVariant = theme.colorScheme.onSurfaceVariant;
     final surfaceTokens = NexaSurfaceTokens.of(context);
     final tracksAsync = ref.watch(artistDetailTracksProvider(artist.id));
+    final playerState = ref.watch(playerNotifierProvider);
+    final currentTrackId = playerState.currentTrack?.id;
 
     return Scaffold(
       key: Phase2Keys.artistDetailScreen,
@@ -180,6 +182,7 @@ class ArtistDetailScreen extends ConsumerWidget {
                             child: TrackTile.fromTrack(
                               key: Phase2Keys.trackTile(track.id),
                               track: track,
+                              isPlaying: track.id == currentTrackId,
                             ),
                           );
                         },
