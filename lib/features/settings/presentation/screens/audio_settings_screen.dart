@@ -211,6 +211,16 @@ class AudioSettingsScreen extends ConsumerWidget {
                 onChanged: (val) =>
                     notifier.update(audio.copyWith(dvcEnabled: val)),
               ),
+              SettingsSwitchTile(
+                title: 'Whisper Loudness Auto-Contour',
+                subtitle: 'Fletcher-Munson bass/treble compensation at low volumes (<35%)',
+                icon: Icons.hearing_rounded,
+                iconColor: Colors.deepOrangeAccent,
+                value: audio.whisperLoudnessEnabled,
+                onChanged: (val) => notifier.update(
+                  audio.copyWith(whisperLoudnessEnabled: val),
+                ),
+              ),
               SettingsSelectorTile<String>(
                 title: 'Stereo Widening',
                 subtitle: 'Soundstage psychoacoustic expansion',

@@ -15,6 +15,7 @@ class AudioSettings {
     this.replayGainPreampDb = 0.0, // -12 to +12
     this.dvcEnabled = true, // Direct Volume Control
     this.stereoWidening = 'off', // off, software, hardware
+    this.whisperLoudnessEnabled = false, // Fletcher-Munson dynamic auto-contour
   });
 
   final bool gaplessPlayback;
@@ -31,6 +32,7 @@ class AudioSettings {
   final double replayGainPreampDb;
   final bool dvcEnabled;
   final String stereoWidening;
+  final bool whisperLoudnessEnabled;
 
   AudioSettings copyWith({
     bool? gaplessPlayback,
@@ -47,6 +49,7 @@ class AudioSettings {
     double? replayGainPreampDb,
     bool? dvcEnabled,
     String? stereoWidening,
+    bool? whisperLoudnessEnabled,
   }) {
     return AudioSettings(
       gaplessPlayback: gaplessPlayback ?? this.gaplessPlayback,
@@ -64,6 +67,8 @@ class AudioSettings {
       replayGainPreampDb: replayGainPreampDb ?? this.replayGainPreampDb,
       dvcEnabled: dvcEnabled ?? this.dvcEnabled,
       stereoWidening: stereoWidening ?? this.stereoWidening,
+      whisperLoudnessEnabled:
+          whisperLoudnessEnabled ?? this.whisperLoudnessEnabled,
     );
   }
 
@@ -82,6 +87,7 @@ class AudioSettings {
         'replayGainPreampDb': replayGainPreampDb,
         'dvcEnabled': dvcEnabled,
         'stereoWidening': stereoWidening,
+        'whisperLoudnessEnabled': whisperLoudnessEnabled,
       };
 
   factory AudioSettings.fromJson(Map<String, dynamic> json) => AudioSettings(
@@ -101,5 +107,7 @@ class AudioSettings {
             (json['replayGainPreampDb'] as num?)?.toDouble() ?? 0.0,
         dvcEnabled: json['dvcEnabled'] as bool? ?? true,
         stereoWidening: json['stereoWidening'] as String? ?? 'off',
+        whisperLoudnessEnabled:
+            json['whisperLoudnessEnabled'] as bool? ?? false,
       );
 }
