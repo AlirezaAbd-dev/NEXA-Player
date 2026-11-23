@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/design_system/app_spacing.dart';
 import '../../../core/design_system/glass_tokens.dart';
 import '../surfaces/nexa_surface.dart';
 
@@ -14,7 +15,7 @@ class GlassCard extends StatelessWidget {
     required this.child,
     super.key,
     this.borderRadius =
-        const BorderRadius.all(Radius.circular(GlassTokens.radiusCard)),
+        const BorderRadius.all(Radius.circular(GlassTokens.radiusMedium)),
     this.blur = GlassTokens.blurStandard,
     this.opacity = GlassTokens.opacityStandard,
     this.borderWidth = GlassTokens.borderWidth,
@@ -24,7 +25,34 @@ class GlassCard extends StatelessWidget {
     this.backgroundColor,
     this.gradient,
     this.boxShadow = GlassTokens.elevationStandard,
-    this.padding,
+    this.padding = const EdgeInsets.all(AppSpacing.md),
+    this.margin,
+    this.width,
+    this.height,
+    this.constraints,
+    this.alignment,
+    this.onTap,
+    this.onLongPress,
+    this.enableBlur = true,
+    this.clipBehavior = Clip.antiAlias,
+  });
+
+  /// Named constructor for unpadded full-bleed cards (waveforms, EQ canvases, custom containers).
+  const GlassCard.raw({
+    required this.child,
+    super.key,
+    this.borderRadius =
+        const BorderRadius.all(Radius.circular(GlassTokens.radiusMedium)),
+    this.blur = GlassTokens.blurStandard,
+    this.opacity = GlassTokens.opacityStandard,
+    this.borderWidth = GlassTokens.borderWidth,
+    this.borderColor,
+    this.borderReason,
+    this.tier = NexaSurfaceTier.l2,
+    this.backgroundColor,
+    this.gradient,
+    this.boxShadow = GlassTokens.elevationStandard,
+    this.padding = EdgeInsets.zero,
     this.margin,
     this.width,
     this.height,

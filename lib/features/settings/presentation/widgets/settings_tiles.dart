@@ -12,18 +12,22 @@ class SettingsGroupCard extends StatelessWidget {
     required this.children,
     this.padding = const EdgeInsets.symmetric(
       horizontal: AppSpacing.md,
-      vertical: AppSpacing.sm,
+      vertical: 12.0,
     ),
+    this.borderRadius,
   });
 
   final String? title;
   final List<Widget> children;
   final EdgeInsetsGeometry padding;
+  final BorderRadius? borderRadius;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final effectiveRadius =
+        borderRadius ?? BorderRadius.circular(GlassTokens.radiusMedium);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,7 +52,7 @@ class SettingsGroupCard extends StatelessWidget {
         NexaSurface(
           tier: NexaSurfaceTier.l1,
           padding: padding,
-          borderRadius: BorderRadius.circular(GlassTokens.radiusCard),
+          borderRadius: effectiveRadius,
           child: Column(
             children: [
               for (int i = 0; i < children.length; i++) ...[

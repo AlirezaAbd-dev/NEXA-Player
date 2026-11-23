@@ -73,7 +73,7 @@ class AboutSettingsScreen extends StatelessWidget {
               vertical: AppSpacing.xl,
               horizontal: AppSpacing.lg,
             ),
-            borderRadius: BorderRadius.circular(GlassTokens.radiusCard),
+            borderRadius: BorderRadius.circular(GlassTokens.radiusMedium),
             child: Column(
               children: [
                 Container(

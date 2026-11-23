@@ -185,12 +185,17 @@ class _ScannerSettingsScreenState extends ConsumerState<ScannerSettingsScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Scanner Status',
-                      style: AppTypography.titleMedium
-                          .copyWith(fontWeight: FontWeight.bold),
+                    Expanded(
+                      child: Text(
+                        'Scanner Status',
+                        style: AppTypography.titleMedium
+                            .copyWith(fontWeight: FontWeight.bold),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
+                    const SizedBox(width: AppSpacing.sm),
                     GlassButton(
+                      size: GlassButtonSize.small,
                       key: Phase2Keys.rescanButton,
                       label: scannerState.status == ScannerStatus.scanning
                           ? 'Scanning...'
@@ -296,8 +301,14 @@ class _ScannerSettingsScreenState extends ConsumerState<ScannerSettingsScreen> {
                 if (_skipShortFiles) ...[
                   const SizedBox(height: AppSpacing.xs),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Minimum Duration:'),
+                      const Flexible(
+                        child: Text(
+                          'Minimum Duration:',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                       const SizedBox(width: AppSpacing.sm),
                       Text('${_minDuration.round()}s'),
                     ],
@@ -377,7 +388,13 @@ class _ScannerSettingsScreenState extends ConsumerState<ScannerSettingsScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Tag Encoding'),
+                    const Expanded(
+                      child: Text(
+                        'Tag Encoding',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
@@ -416,10 +433,13 @@ class _ScannerSettingsScreenState extends ConsumerState<ScannerSettingsScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Music Folders',
-                      style: AppTypography.titleMedium
-                          .copyWith(fontWeight: FontWeight.bold),
+                    Expanded(
+                      child: Text(
+                        'Music Folders',
+                        style: AppTypography.titleMedium
+                            .copyWith(fontWeight: FontWeight.bold),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                     IconButton(
                       key: Phase2Keys.addFolderButton,
