@@ -22,9 +22,32 @@ class ArtistsTabScreen extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
       appBar: GlassAppBar(
-        titleText: 'Artists',
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Artists', style: AppTypography.titleLarge),
+            artistsAsync.maybeWhen(
+              data: (artists) => Text(
+                '${artists.length} ARTISTS IN LIBRARY',
+                style: AppTypography.labelSmall.copyWith(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.85),
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                  fontSize: 10.5,
+                ),
+              ),
+              orElse: () => const SizedBox.shrink(),
+            ),
+          ],
+        ),
         automaticallyImplyLeading: false,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.sort_by_alpha_rounded),
+            tooltip: 'Sort A to Z',
+            onPressed: () {},
+          ),
           IconButton(
             icon: const Icon(Icons.search_rounded),
             tooltip: 'Search library',
@@ -33,7 +56,7 @@ class ArtistsTabScreen extends ConsumerWidget {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.fromLTRB(16.0, 100.0, 16.0, 130.0),
+        padding: const EdgeInsets.fromLTRB(16.0, 100.0, 4.0, 130.0),
         child: artistsAsync.when(
           data: (artists) {
             if (artists.isEmpty) {
@@ -45,27 +68,65 @@ class ArtistsTabScreen extends ConsumerWidget {
               );
             }
 
-            return ListView.builder(
-              key: Phase2Keys.artistsList,
-              padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 140.0),
-              itemCount: artists.length,
-              itemBuilder: (context, index) {
-                final artist = artists[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  child: ArtistCard.fromArtist(
-                    key: Phase2Keys.artistCard(artist.id),
-                    artist: artist,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => ArtistDetailScreen(artist: artist),
-                        ),
-                      );
-                    },
+            return Stack(
+              children: [
+                // Direct-on-L0 Artist List (No repetitive boxed cards)
+                ListView.builder(
+                  key: Phase2Keys.artistsList,
+                  padding: const EdgeInsets.fromLTRB(0.0, 8.0, 24.0, 140.0),
+                  itemCount: artists.length,
+                  itemBuilder: (context, index) {
+                    final artist = artists[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                      child: ArtistCard.fromArtist(
+                        key: Phase2Keys.artistCard(artist.id),
+                        artist: artist,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => ArtistDetailScreen(artist: artist),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+                // Slim A-Z Fast-Scroll Scrubber Rail on right margin
+                Positioned(
+                  right: 2,
+                  top: 16,
+                  bottom: 140,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 3.0),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface.withOpacity(0.25),
+                        borderRadius: BorderRadius.circular(12.0),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: ['A', 'C', 'D', 'J', 'K', 'M', 'T', 'W', '#']
+                            .map((letter) => Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 2.5),
+                                  child: Text(
+                                    letter,
+                                    style: TextStyle(
+                                      color: letter == 'D'
+                                          ? Theme.of(context).colorScheme.primary
+                                          : Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.6),
+                                      fontWeight: letter == 'D' ? FontWeight.bold : FontWeight.w500,
+                                      fontSize: 10.0,
+                                    ),
+                                  ),
+                                ))
+                            .toList(),
+                      ),
+                    ),
                   ),
-                );
-              },
+                ),
+              ],
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
