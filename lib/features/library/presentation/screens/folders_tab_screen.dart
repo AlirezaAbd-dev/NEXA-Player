@@ -22,9 +22,30 @@ class FoldersTabScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
-      appBar: const GlassAppBar(
-        titleText: 'Folders',
-        automaticallyImplyLeading: false,
+      appBar: GlassAppBar(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Folders', style: AppTypography.titleLarge),
+            foldersAsync.maybeWhen(
+              data: (folders) => Text(
+                '${folders.length} STORAGE FOLDERS INDEXED',
+                style: AppTypography.labelSmall.copyWith(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.85),
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                  fontSize: 10.5,
+                ),
+              ),
+              orElse: () => const SizedBox.shrink(),
+            ),
+          ],
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
       ),
       body: Stack(
         fit: StackFit.expand,
