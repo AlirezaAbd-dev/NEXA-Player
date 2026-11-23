@@ -242,7 +242,8 @@ class _ServerConfigDialogState extends ConsumerState<ServerConfigDialog> {
                           Text('HTTPS (SSL)', style: AppTypography.bodySmall.copyWith(color: Colors.white)),
                           Switch(
                             value: _useSsl,
-                            activeColor: colorScheme.primary,
+                            activeColor: Colors.white,
+                            activeTrackColor: colorScheme.primary,
                             onChanged: (val) {
                               setState(() {
                                 _useSsl = val;

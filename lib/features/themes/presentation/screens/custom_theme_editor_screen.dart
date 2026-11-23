@@ -161,7 +161,6 @@ class _CustomThemeEditorScreenState
       decoration: BoxDecoration(
         color: scheme.surface.withOpacity(0.85),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: scheme.primary.withOpacity(0.5), width: 1.5),
         boxShadow: [
           BoxShadow(
             color: scheme.primary.withOpacity(0.2),
@@ -263,9 +262,6 @@ class _CustomThemeEditorScreenState
           decoration: BoxDecoration(
             color: isPass ? const Color(0x2200E676) : const Color(0x22FF3D00),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isPass ? const Color(0xFF00E676) : const Color(0xFFFF3D00),
-            ),
           ),
           child: Row(
             children: [

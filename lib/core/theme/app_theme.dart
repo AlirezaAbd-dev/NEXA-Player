@@ -80,6 +80,20 @@ abstract final class AppTheme {
     ).copyWith(
       cardColor: palette.lightCard,
       scaffoldBackgroundColor: palette.lightScaffold,
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return Colors.white;
+          }
+          return Colors.white70;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return palette.lightScheme.primary;
+          }
+          return const Color(0x30000000);
+        }),
+      ),
       extensions: [surfaceTokens],
     );
   }
@@ -123,6 +137,20 @@ abstract final class AppTheme {
     ).copyWith(
       cardColor: palette.darkCard,
       scaffoldBackgroundColor: palette.darkScaffold,
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return Colors.white;
+          }
+          return Colors.white70;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return palette.darkScheme.primary;
+          }
+          return const Color(0x30FFFFFF);
+        }),
+      ),
       extensions: [surfaceTokens],
     );
   }
@@ -163,6 +191,21 @@ abstract final class AppTheme {
         ? NexaSurfaceTokens.dark(accent: primary, seedTint: primary)
         : NexaSurfaceTokens.light(accent: primary, seedTint: primary);
 
+    final switchTheme = SwitchThemeData(
+      thumbColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return Colors.white;
+        }
+        return Colors.white70;
+      }),
+      trackColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return primary;
+        }
+        return isDark ? const Color(0x30FFFFFF) : const Color(0x30000000);
+      }),
+    );
+
     return isDark
         ? FlexThemeData.dark(
             colors: scheme,
@@ -176,6 +219,7 @@ abstract final class AppTheme {
           ).copyWith(
             scaffoldBackgroundColor: background,
             cardColor: surface,
+            switchTheme: switchTheme,
             extensions: [surfaceTokens],
           )
         : FlexThemeData.light(
@@ -190,6 +234,7 @@ abstract final class AppTheme {
           ).copyWith(
             scaffoldBackgroundColor: background,
             cardColor: surface,
+            switchTheme: switchTheme,
             extensions: [surfaceTokens],
           );
   }

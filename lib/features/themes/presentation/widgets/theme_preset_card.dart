@@ -58,15 +58,10 @@ class ThemePresetCard extends StatelessWidget {
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: surfaceColor.withOpacity(isDark ? 0.75 : 0.90),
+              color: isSelected
+                  ? primaryColor.withOpacity(isDark ? 0.22 : 0.15)
+                  : surfaceColor.withOpacity(isDark ? 0.75 : 0.90),
               borderRadius: BorderRadius.circular(GlassTokens.radiusCard),
-              // Borderless by default: only border for active selection contrast
-              border: isSelected
-                  ? Border.all(
-                      color: primaryColor,
-                      width: 2.0,
-                    )
-                  : null,
               boxShadow: isSelected
                   ? [
                       BoxShadow(

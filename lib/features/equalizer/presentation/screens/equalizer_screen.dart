@@ -99,8 +99,8 @@ class EqualizerScreen extends ConsumerWidget {
                     HapticFeedback.selectionClick();
                     eqNotifier.setEnabled(val);
                   },
-                  activeColor: accentColor,
-                  activeTrackColor: accentColor.withOpacity(0.3),
+                  activeColor: Colors.white,
+                  activeTrackColor: accentColor,
                   inactiveThumbColor: Colors.grey.shade600,
                   inactiveTrackColor: Colors.white.withOpacity(0.08),
                 ),

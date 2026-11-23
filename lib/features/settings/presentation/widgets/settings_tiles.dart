@@ -134,8 +134,8 @@ class SettingsSwitchTile extends StatelessWidget {
           ),
           Switch.adaptive(
             value: value,
-            activeColor: colorScheme.primary,
-            activeTrackColor: colorScheme.primary.withOpacity(0.4),
+            activeColor: Colors.white,
+            activeTrackColor: colorScheme.primary,
             onChanged: onChanged,
           ),
         ],

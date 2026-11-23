@@ -117,7 +117,8 @@ class ThemePickerScreen extends ConsumerWidget {
           ),
           Switch.adaptive(
             value: isDynamicEnabled,
-            activeColor: primaryColor,
+            activeColor: Colors.white,
+            activeTrackColor: primaryColor,
             onChanged: (val) {
               ref.read(dynamicThemeEnabledProvider.notifier).setEnabled(val);
             },

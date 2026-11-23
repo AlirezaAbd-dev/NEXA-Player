@@ -213,15 +213,9 @@ class PresetSelectorModal extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? accent.withOpacity(0.12)
+                          ? accent.withOpacity(0.20)
                           : const Color(0xFF161B26),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected
-                            ? accent.withOpacity(0.4)
-                            : Colors.white.withOpacity(0.04),
-                        width: 1,
-                      ),
                     ),
                     child: Row(
                       children: [
