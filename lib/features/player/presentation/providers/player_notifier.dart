@@ -148,6 +148,16 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
     }
   }
 
+  /// Inserts [track] immediately following the currently active track in queue.
+  void addNext(Track track) {
+    _queue.addNext(track);
+  }
+
+  /// Appends [track] to the end of the active queue.
+  void addTrack(Track track) {
+    _queue.addTrack(track);
+  }
+
   /// Returns to previous track or restarts current track if elapsed > 3s.
   Future<void> skipPrevious() async {
     if (state.position > const Duration(seconds: 3)) {

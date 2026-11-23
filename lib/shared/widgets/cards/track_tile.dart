@@ -1,9 +1,11 @@
+import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/design_system/app_spacing.dart';
 import '../../../core/design_system/app_typography.dart';
 import '../../../core/design_system/glass_tokens.dart';
+import '../../../core/design_system/nexa_surface_tokens.dart';
 import '../../../core/extensions/duration_x.dart';
 import '../../models/track.dart';
 
@@ -132,16 +134,13 @@ class _TrackTileState extends State<TrackTile> {
     final surface = theme.colorScheme.surface;
     final onSurface = theme.colorScheme.onSurface;
     final onSurfaceVariant = theme.colorScheme.onSurfaceVariant;
-    final borderRadius = BorderRadius.circular(12.0);
+    final tokens = NexaSurfaceTokens.of(context);
+    final borderRadius = BorderRadius.circular(16.0);
 
-    // Modern card background: clean dark surface or subtle accent tint when playing
+    // Borderless styling: soft L2 tinted pill for active playing track, transparent on L0 canvas when inactive
     final cardBackgroundColor = widget.isPlaying
-        ? primary.withOpacity(isDark ? 0.14 : 0.10)
-        : (isDark ? const Color(0xFF141923).withOpacity(0.65) : surface.withOpacity(0.75));
-
-    final borderColor = widget.isPlaying
-        ? primary.withOpacity(0.50)
-        : (isDark ? const Color(0x18FFFFFF) : const Color(0x0F000000));
+        ? Color.alphaBlend(primary.withOpacity(0.08), tokens.l2)
+        : Colors.transparent;
 
     // Left Artwork Thumbnail
     Widget artworkWidget;
@@ -153,19 +152,13 @@ class _TrackTileState extends State<TrackTile> {
         height: 48.0,
         decoration: BoxDecoration(
           color: widget.isPlaying
-              ? primary.withOpacity(0.20)
-              : (isDark ? const Color(0xFF1E2433) : primary.withOpacity(0.10)),
-          borderRadius: BorderRadius.circular(10.0),
-          border: Border.all(
-            color: widget.isPlaying
-                ? primary.withOpacity(0.40)
-                : (isDark ? const Color(0x1FFFFFFF) : Colors.transparent),
-            width: 1.0,
-          ),
+              ? primary.withOpacity(0.18)
+              : (isDark ? tokens.l1 : primary.withOpacity(0.08)),
+          borderRadius: BorderRadius.circular(12.0),
           boxShadow: widget.isPlaying
               ? [
                   BoxShadow(
-                    color: primary.withOpacity(0.25),
+                    color: primary.withOpacity(0.20),
                     blurRadius: 10.0,
                     offset: const Offset(0, 2),
                   ),
@@ -174,7 +167,7 @@ class _TrackTileState extends State<TrackTile> {
         ),
         child: Center(
           child: widget.isPlaying
-              ? Icon(Icons.volume_up_rounded, color: primary, size: 24.0)
+              ? AnimatedEqualizerGlyph(color: primary, width: 20.0, height: 20.0)
               : (widget.trackNumber != null
                   ? Text(
                       '${widget.trackNumber}',
@@ -328,16 +321,12 @@ class _TrackTileState extends State<TrackTile> {
       decoration: BoxDecoration(
         color: cardBackgroundColor,
         borderRadius: borderRadius,
-        border: Border.all(
-          color: borderColor,
-          width: 1.0,
-        ),
         boxShadow: widget.isPlaying
             ? [
                 BoxShadow(
-                  color: primary.withOpacity(0.16),
-                  blurRadius: 14.0,
-                  offset: const Offset(0, 3),
+                  color: primary.withOpacity(0.12),
+                  blurRadius: 12.0,
+                  offset: const Offset(0, 2),
                 ),
               ]
             : null,
@@ -421,6 +410,103 @@ class _TrackTileState extends State<TrackTile> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Compact 3-bar animated equalizer glyph indicating active playback.
+///
+/// Automatically freezes under `MediaQuery.disableAnimationsOf(context)` for WCAG accessibility.
+class AnimatedEqualizerGlyph extends StatefulWidget {
+  const AnimatedEqualizerGlyph({
+    super.key,
+    this.color,
+    this.width = 18.0,
+    this.height = 18.0,
+  });
+
+  final Color? color;
+  final double width;
+  final double height;
+
+  @override
+  State<AnimatedEqualizerGlyph> createState() => _AnimatedEqualizerGlyphState();
+}
+
+class _AnimatedEqualizerGlyphState extends State<AnimatedEqualizerGlyph>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 850),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final primary = widget.color ?? theme.colorScheme.primary;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+
+    if (reduceMotion) {
+      return SizedBox(
+        width: widget.width,
+        height: widget.height,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            _buildBar(0.4, primary),
+            _buildBar(0.85, primary),
+            _buildBar(0.5, primary),
+          ],
+        ),
+      );
+    }
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final val = _controller.value;
+        final h1 = 0.3 + 0.6 * math.sin(val * math.pi);
+        final h2 = 0.4 + 0.55 * math.cos(val * math.pi);
+        final h3 = 0.35 + 0.6 * math.sin((val + 0.5) * math.pi).abs();
+
+        return SizedBox(
+          width: widget.width,
+          height: widget.height,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              _buildBar(h1.clamp(0.2, 1.0), primary),
+              _buildBar(h2.clamp(0.2, 1.0), primary),
+              _buildBar(h3.clamp(0.2, 1.0), primary),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBar(double heightFraction, Color color) {
+    return Container(
+      width: 3.0,
+      height: widget.height * heightFraction,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(1.5),
       ),
     );
   }

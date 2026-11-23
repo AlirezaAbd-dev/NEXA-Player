@@ -13,6 +13,7 @@ import 'package:nexa_player/shared/models/track.dart';
 import 'package:nexa_player/shared/widgets/cards/track_tile.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_text_field.dart';
+import '../widgets/swipeable_track_tile.dart';
 
 /// Songs tab screen displaying searchable and sortable track library.
 class SongsTabScreen extends ConsumerStatefulWidget {
@@ -176,42 +177,63 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
                       final isPlaying = isEnginePlaying && activePlayingTrack?.id == track.id;
 
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                        child: TrackTile.fromTrack(
-                          key: Phase2Keys.trackTile(track.id),
-                          track: track,
-                          isPlaying: isPlaying,
-                          onTap: () {
-                            ref.read(playerNotifierProvider.notifier).playTrack(
-                                  track,
-                                  queue: tracks,
-                                  initialIndex: index,
-                                );
-                          },
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                key: Phase2Keys.trackFavoriteToggle(track.id),
-                                icon: Icon(
-                                  track.isFavorite
-                                      ? Icons.favorite_rounded
-                                      : Icons.favorite_border_rounded,
-                                  color: track.isFavorite
-                                      ? Colors.redAccent.shade200
-                                      : null,
-                                ),
-                                onPressed: () => _toggleFavorite(track),
+                        padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                        child: SwipeableTrackTile(
+                          onPlayNext: () {
+                            ref.read(playerNotifierProvider.notifier).addNext(track);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Playing next: ${track.title}'),
+                                duration: const Duration(seconds: 2),
                               ),
-                              if (track.duration.inMilliseconds > 0) ...[
-                                Text(
-                                  track.duration
-                                      .toMinutesSeconds(padMinutes: false),
-                                  style: AppTypography.bodySmall,
+                            );
+                          },
+                          onAddToQueueEnd: () {
+                            ref.read(playerNotifierProvider.notifier).addTrack(track);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Added to queue end: ${track.title}'),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                          onSwipeLeft: () => _toggleFavorite(track),
+                          child: TrackTile.fromTrack(
+                            key: Phase2Keys.trackTile(track.id),
+                            track: track,
+                            isPlaying: isPlaying,
+                            onTap: () {
+                              ref.read(playerNotifierProvider.notifier).playTrack(
+                                    track,
+                                    queue: tracks,
+                                    initialIndex: index,
+                                  );
+                            },
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  key: Phase2Keys.trackFavoriteToggle(track.id),
+                                  icon: Icon(
+                                    track.isFavorite
+                                        ? Icons.favorite_rounded
+                                        : Icons.favorite_border_rounded,
+                                    color: track.isFavorite
+                                        ? Colors.redAccent.shade200
+                                        : null,
+                                  ),
+                                  onPressed: () => _toggleFavorite(track),
                                 ),
-                                const SizedBox(width: AppSpacing.xs),
+                                if (track.duration.inMilliseconds > 0) ...[
+                                  Text(
+                                    track.duration
+                                        .toMinutesSeconds(padMinutes: false),
+                                    style: AppTypography.bodySmall,
+                                  ),
+                                  const SizedBox(width: AppSpacing.xs),
+                                ],
                               ],
-                            ],
+                            ),
                           ),
                         ),
                       );
