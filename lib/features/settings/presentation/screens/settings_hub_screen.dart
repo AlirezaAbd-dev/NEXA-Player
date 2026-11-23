@@ -7,9 +7,10 @@ import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/glass_tokens.dart';
 import '../../../../core/theme/theme_controller.dart';
 import '../../../../shared/widgets/glass/glass_app_bar.dart';
-import '../../../../shared/widgets/glass/glass_card.dart';
 import '../../../../shared/widgets/glass/glass_text_field.dart';
+import '../../../../shared/widgets/surfaces/nexa_surface.dart';
 import '../providers/settings_providers.dart';
+import '../widgets/audio_status_strip.dart';
 
 /// Semantic Keys matching E2EKeys and widget tests.
 abstract final class _SettingsKeys {
@@ -17,7 +18,8 @@ abstract final class _SettingsKeys {
   static const Key searchSettingsInput = ValueKey('search_settings_input');
 }
 
-/// Central settings hub for NEXA Player with instant fuzzy search and categorized deep configurations.
+/// Central settings hub for NEXA Player organized into a 3-tier audiophile hierarchy
+/// with instant telemetry status strip and fuzzy search.
 class SettingsHubScreen extends ConsumerStatefulWidget {
   const SettingsHubScreen({super.key});
 
@@ -102,12 +104,12 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
               ),
               ...searchResults.map((item) => Padding(
                     padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    child: GlassCard(
+                    child: NexaSurface(
+                      tier: NexaSurfaceTier.l1,
                       padding: const EdgeInsets.all(AppSpacing.md),
                       borderRadius:
                           BorderRadius.circular(GlassTokens.radiusCard),
                       onTap: () {
-                        // Clear search and navigate to the route
                         _searchController.clear();
                         ref.read(settingsSearchQueryProvider.notifier).state =
                             '';
@@ -179,9 +181,20 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
                   )),
             ],
           ] else ...[
-            // 1. Theme & Appearance (Hero Card)
-            GlassCard(
+            // Hardware Audio Status Strip (L2 borderless telemetry)
+            const AudioStatusStrip(),
+            const SizedBox(height: AppSpacing.lg),
+
+            // ==========================================
+            // TIER 1: DAILY ESSENTIALS
+            // ==========================================
+            _buildSectionHeader(context, 'DAILY ESSENTIALS'),
+            const SizedBox(height: AppSpacing.xs),
+
+            // Theme & Appearance (Hero Card)
+            NexaSurface(
               key: _SettingsKeys.themeSettingsTile,
+              tier: NexaSurfaceTier.l1,
               padding: const EdgeInsets.all(AppSpacing.md),
               borderRadius: BorderRadius.circular(GlassTokens.radiusCard),
               onTap: () => context.push(AppRoutes.themePicker),
@@ -230,9 +243,38 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.sm),
 
-            // 2. Audio Engine Settings
+            // Playback & Controls
+            _buildCategoryCard(
+              context,
+              icon: Icons.gamepad_rounded,
+              iconColor: Colors.blueAccent,
+              title: 'Playback & Controls',
+              subtitle: 'Telephony resume, Focus ducking, Gestures, Car mode',
+              onTap: () => context.push(AppRoutes.controlSettings),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+
+            // Homescreen Widgets & Bedside Standby
+            _buildCategoryCard(
+              context,
+              icon: Icons.widgets_rounded,
+              iconColor: Colors.deepOrangeAccent,
+              title: 'Homescreen Widgets & Standby',
+              subtitle: '4×1, 4×2 Hero Vinyl, 2×2, 4×3 Karaoke & OLED Bedside',
+              badge: 'INTERACTIVE',
+              onTap: () => context.push(AppRoutes.widgets),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+
+            // ==========================================
+            // TIER 2: ACOUSTIC ENGINE
+            // ==========================================
+            _buildSectionHeader(context, 'ACOUSTIC ENGINE'),
+            const SizedBox(height: AppSpacing.xs),
+
+            // Audio Settings
             _buildCategoryCard(
               context,
               icon: Icons.volume_up_rounded,
@@ -244,7 +286,7 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
 
-            // 3. Equalizer & DSP Engine
+            // Equalizer & DSP Engine
             _buildCategoryCard(
               context,
               icon: Icons.equalizer_rounded,
@@ -256,7 +298,7 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
 
-            // 4. Visualizer & Spectrum Engine
+            // Visualizer & Spectrum Engine
             _buildCategoryCard(
               context,
               icon: Icons.graphic_eq_rounded,
@@ -268,19 +310,7 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
 
-            // Homescreen Widgets & Bedside Standby (Phase 12)
-            _buildCategoryCard(
-              context,
-              icon: Icons.widgets_rounded,
-              iconColor: Colors.deepOrangeAccent,
-              title: 'Homescreen Widgets & Standby',
-              subtitle: '4×1, 4×2 Hero Vinyl, 2×2, 4×3 Karaoke & OLED Bedside',
-              badge: 'INTERACTIVE',
-              onTap: () => context.push(AppRoutes.widgets),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-
-            // Auto & Wearable Ecosystem (Phase 13)
+            // Auto & Wearable Ecosystem
             _buildCategoryCard(
               context,
               icon: Icons.directions_car_rounded,
@@ -292,7 +322,7 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
 
-            // Cloud & Network Streaming (Phase 14)
+            // Cloud & Network Streaming
             _buildCategoryCard(
               context,
               icon: Icons.cloud_sync_rounded,
@@ -302,20 +332,15 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
               badge: 'DLNA / NAS',
               onTap: () => context.push(AppRoutes.cloud),
             ),
-            const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: AppSpacing.lg),
 
-            // 5. Playback & Controls
-            _buildCategoryCard(
-              context,
-              icon: Icons.gamepad_rounded,
-              iconColor: Colors.blueAccent,
-              title: 'Playback & Controls',
-              subtitle: 'Telephony resume, Focus ducking, Gestures, Car mode',
-              onTap: () => context.push(AppRoutes.controlSettings),
-            ),
-            const SizedBox(height: AppSpacing.sm),
+            // ==========================================
+            // TIER 3: SYSTEM & STORAGE
+            // ==========================================
+            _buildSectionHeader(context, 'SYSTEM & STORAGE'),
+            const SizedBox(height: AppSpacing.xs),
 
-            // 5. Media Scanner Settings
+            // Scanner Settings
             _buildCategoryCard(
               context,
               icon: Icons.folder_special_rounded,
@@ -326,7 +351,7 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
 
-            // 6. Album Art Settings
+            // Album Art Settings
             _buildCategoryCard(
               context,
               icon: Icons.image_rounded,
@@ -337,7 +362,7 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
 
-            // 7. Lyrics & Metadata Settings
+            // Lyrics & Metadata Settings
             _buildCategoryCard(
               context,
               icon: Icons.lyrics_rounded,
@@ -348,7 +373,7 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
 
-            // 8. Power Saving Settings
+            // Power Saving Settings
             _buildCategoryCard(
               context,
               icon: Icons.battery_charging_full_rounded,
@@ -359,7 +384,7 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
 
-            // 9. Notifications & Widgets
+            // Notifications & Widgets
             _buildCategoryCard(
               context,
               icon: Icons.notifications_active_rounded,
@@ -370,7 +395,7 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
 
-            // 10. Privacy & Storage Backup
+            // Privacy & Storage Backup
             _buildCategoryCard(
               context,
               icon: Icons.shield_rounded,
@@ -381,18 +406,18 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
 
-            // 11. Design System Showcase Tile
+            // Design System Showcase Tile
             _buildCategoryCard(
               context,
               icon: Icons.auto_awesome_rounded,
               iconColor: Colors.purpleAccent,
               title: 'Design System Showcase',
-              subtitle: 'Live glassmorphism interactive widget lab',
+              subtitle: 'Live tactile interactive widget lab',
               onTap: () => context.push(AppRoutes.designSystem),
             ),
             const SizedBox(height: AppSpacing.sm),
 
-            // 12. About NEXA Player Tile
+            // About NEXA Player Tile
             _buildCategoryCard(
               context,
               icon: Icons.info_outline_rounded,
@@ -403,6 +428,24 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 4.0, bottom: 4.0, top: 4.0),
+      child: Text(
+        title,
+        style: AppTypography.labelSmall.copyWith(
+          color: colorScheme.primary.withOpacity(0.85),
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.2,
+          fontSize: 11,
+        ),
       ),
     );
   }
@@ -419,7 +462,8 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return GlassCard(
+    return NexaSurface(
+      tier: NexaSurfaceTier.l1,
       padding: const EdgeInsets.all(AppSpacing.md),
       borderRadius: BorderRadius.circular(GlassTokens.radiusCard),
       onTap: onTap,

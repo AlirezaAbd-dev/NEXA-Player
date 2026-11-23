@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:nexa_player/core/design_system/app_spacing.dart';
-import 'package:nexa_player/core/design_system/app_typography.dart';
-import 'package:nexa_player/core/design_system/glass_tokens.dart';
-import 'package:nexa_player/shared/widgets/glass/glass_card.dart';
+import '../../../../core/design_system/app_spacing.dart';
+import '../../../../core/design_system/app_typography.dart';
+import '../../../../core/design_system/glass_tokens.dart';
+import '../../../../shared/widgets/surfaces/nexa_surface.dart';
 
 /// Group card container for categorized settings with optional header title.
 class SettingsGroupCard extends StatelessWidget {
@@ -45,7 +45,8 @@ class SettingsGroupCard extends StatelessWidget {
             ),
           ),
         ],
-        GlassCard(
+        NexaSurface(
+          tier: NexaSurfaceTier.l1,
           padding: padding,
           borderRadius: BorderRadius.circular(GlassTokens.radiusCard),
           child: Column(
@@ -56,7 +57,7 @@ class SettingsGroupCard extends StatelessWidget {
                   Divider(
                     height: 1,
                     thickness: 0.5,
-                    color: colorScheme.onSurface.withOpacity(0.08),
+                    color: colorScheme.onSurface.withOpacity(0.06),
                   ),
               ],
             ],
@@ -224,12 +225,8 @@ class SettingsSliderTile extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.15),
+                  color: colorScheme.primary.withOpacity(0.18),
                   borderRadius: BorderRadius.circular(GlassTokens.radiusSmall),
-                  border: Border.all(
-                    color: colorScheme.primary.withOpacity(0.3),
-                    width: 0.8,
-                  ),
                 ),
                 child: Text(
                   valueLabel,
@@ -293,17 +290,11 @@ class SettingsSelectorTile<T> extends StatelessWidget {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (ctx) => Container(
+      builder: (ctx) => NexaSurface(
+        tier: NexaSurfaceTier.l2,
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-        decoration: BoxDecoration(
-          color: const Color(0xFF10131A),
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(GlassTokens.radiusCard),
-          ),
-          border: Border.all(
-            color: colorScheme.outline.withOpacity(0.2),
-            width: 1,
-          ),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(GlassTokens.radiusCard),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -345,16 +336,10 @@ class SettingsSelectorTile<T> extends StatelessWidget {
                       margin: const EdgeInsets.symmetric(vertical: 4),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? colorScheme.primary.withOpacity(0.12)
-                            : Colors.white.withOpacity(0.04),
+                            ? colorScheme.primary.withOpacity(0.18)
+                            : colorScheme.onSurface.withOpacity(0.05),
                         borderRadius: BorderRadius.circular(
                           GlassTokens.radiusSmall,
-                        ),
-                        border: Border.all(
-                          color: isSelected
-                              ? colorScheme.primary.withOpacity(0.4)
-                              : Colors.transparent,
-                          width: 1,
                         ),
                       ),
                       child: ListTile(
@@ -448,12 +433,8 @@ class SettingsSelectorTile<T> extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.12),
+                  color: colorScheme.primary.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(GlassTokens.radiusSmall),
-                  border: Border.all(
-                    color: colorScheme.primary.withOpacity(0.25),
-                    width: 0.8,
-                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
