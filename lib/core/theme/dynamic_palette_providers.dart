@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/storage_keys.dart';
+import '../../core/di/injection.dart';
 import '../../core/di/service_providers.dart';
 import '../../features/player/presentation/providers/player_providers.dart';
+import '../../shared/services/storage/storage_service.dart';
 import 'dynamic_palette_service.dart';
 
 /// Exposes the [DynamicPaletteService] singleton.
@@ -18,6 +20,10 @@ class DynamicThemeNotifier extends StateNotifier<bool> {
   final Ref _ref;
 
   void _load() {
+    if (!getIt.isRegistered<IStorageService>()) {
+      state = true;
+      return;
+    }
     final storage = _ref.read(storageServiceProvider);
     final res = storage.getBool(StorageKeys.dynamicAlbumArtTheme);
     final value = res.valueOrNull;
@@ -26,14 +32,18 @@ class DynamicThemeNotifier extends StateNotifier<bool> {
 
   Future<void> toggle() async {
     state = !state;
-    final storage = _ref.read(storageServiceProvider);
-    await storage.setBool(StorageKeys.dynamicAlbumArtTheme, state);
+    if (getIt.isRegistered<IStorageService>()) {
+      final storage = _ref.read(storageServiceProvider);
+      await storage.setBool(StorageKeys.dynamicAlbumArtTheme, state);
+    }
   }
 
   Future<void> setEnabled(bool enabled) async {
     state = enabled;
-    final storage = _ref.read(storageServiceProvider);
-    await storage.setBool(StorageKeys.dynamicAlbumArtTheme, enabled);
+    if (getIt.isRegistered<IStorageService>()) {
+      final storage = _ref.read(storageServiceProvider);
+      await storage.setBool(StorageKeys.dynamicAlbumArtTheme, enabled);
+    }
   }
 }
 

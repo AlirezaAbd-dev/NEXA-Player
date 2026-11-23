@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:nexa_player/core/design_system/app_typography.dart';
 import 'package:nexa_player/core/extensions/duration_x.dart';
 import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
 
@@ -76,6 +75,7 @@ class _GearshiftWaveformScrubberState extends State<GearshiftWaveformScrubber> {
     _dragStartY = details.localPosition.dy;
     _currentGear = GearShift.normal;
     HapticFeedback.selectionClick();
+    widget.onSeek(_dragPosition);
     setState(() {});
   }
 
@@ -162,7 +162,7 @@ class _GearshiftWaveformScrubberState extends State<GearshiftWaveformScrubber> {
                         const SizedBox(width: 6.0),
                         Text(
                           '${_currentGear.label} • ${activeDuration.toMinutesSeconds()}',
-                          style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
+                          style: surfaceTokens.telemetryTextStyle.copyWith(
                             color: primary,
                             fontWeight: FontWeight.bold,
                             fontSize: 11.0,
@@ -223,7 +223,7 @@ class _GearshiftWaveformScrubberState extends State<GearshiftWaveformScrubber> {
               children: [
                 Text(
                   activeDuration.toMinutesSeconds(),
-                  style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
+                  style: surfaceTokens.telemetryTextStyle.copyWith(
                     color: _isDragging ? primary : onSurfaceVariant,
                     fontWeight: _isDragging ? FontWeight.bold : FontWeight.w500,
                     fontSize: 11.5,
@@ -231,7 +231,7 @@ class _GearshiftWaveformScrubberState extends State<GearshiftWaveformScrubber> {
                 ),
                 Text(
                   '-${(totalDuration - activeDuration).toMinutesSeconds()}',
-                  style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
+                  style: surfaceTokens.telemetryTextStyle.copyWith(
                     color: onSurfaceVariant,
                     fontWeight: FontWeight.w500,
                     fontSize: 11.5,

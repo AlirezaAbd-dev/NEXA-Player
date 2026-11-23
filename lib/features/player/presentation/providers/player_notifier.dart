@@ -148,6 +148,14 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
     }
   }
 
+  /// Skips directly to the track at [index] in the active queue and plays it.
+  Future<void> skipToIndex(int index) async {
+    final targetTrack = _queue.skipToIndex(index);
+    if (targetTrack != null) {
+      await playTrack(targetTrack);
+    }
+  }
+
   /// Inserts [track] immediately following the currently active track in queue.
   void addNext(Track track) {
     _queue.addNext(track);

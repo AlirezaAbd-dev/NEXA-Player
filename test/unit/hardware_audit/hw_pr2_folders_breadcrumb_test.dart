@@ -6,7 +6,6 @@ import 'package:nexa_player/core/utils/storage_path_formatter.dart';
 import 'package:nexa_player/features/library/domain/repositories/folders_repository.dart';
 import 'package:nexa_player/features/library/presentation/providers/library_providers.dart';
 import 'package:nexa_player/features/library/presentation/screens/folders_tab_screen.dart';
-import 'package:nexa_player/features/library/presentation/widgets/library_segmented_pill_bar.dart';
 
 void main() {
   group('HW-v1.1.1 PR 2/5 (DEF-06) — StoragePathFormatter Unit Tests', () {

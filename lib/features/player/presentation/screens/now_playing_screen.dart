@@ -5,14 +5,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes.dart';
 import '../../../../core/design_system/app_typography.dart';
-import '../../../../core/di/service_providers.dart';
+import '../../../../core/di/injection.dart';
+import '../../../../core/di/service_providers.dart' hide playbackQueueProvider;
 import '../../../../core/extensions/duration_x.dart';
 import '../../../../core/theme/dynamic_palette_providers.dart';
+import '../../../../core/theme/dynamic_palette_service.dart';
+import '../../../../shared/models/track.dart';
 import '../../../../shared/widgets/glass/app_ambient_background.dart';
 import '../../../../shared/widgets/surfaces/nexa_surface.dart';
 import '../../../cloud/cloud.dart';
 import '../../../visualizer/visualizer.dart';
 import '../../domain/entities/playback_state.dart';
+import '../../domain/services/playback_queue.dart';
 import '../providers/player_providers.dart';
 import '../widgets/hero_artwork_card.dart';
 import '../widgets/queue_bottom_sheet.dart';
@@ -56,6 +60,26 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
   bool _isDismissing = false;
   late final AnimationController _snapBackController;
   Animation<double>? _snapBackAnimation;
+
+  // Stellio 3D cover flow fractional scroll position
+  double? _carouselPageOffset;
+
+  void _handlePageScrolled(double pageOffset) {
+    if (mounted) {
+      setState(() {
+        _carouselPageOffset = pageOffset;
+      });
+    }
+  }
+
+  void _handlePageSettled(int newIndex) {
+    if (mounted) {
+      setState(() {
+        _carouselPageOffset = newIndex.toDouble();
+      });
+    }
+    ref.read(playerNotifierProvider.notifier).skipToIndex(newIndex);
+  }
 
   // Edge HUD gesture state
   String? _edgeHudText;
@@ -131,6 +155,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
 
   void _loadWaveformIfAvailable(String? trackId, String? filePath) {
     if (trackId == null) return;
+    if (!getIt.isRegistered<IWaveformPreProcessor>()) return;
     final preProcessor = ref.read(waveformPreProcessorProvider);
     preProcessor
         .getOrAnalyzeWaveform(trackId: trackId, filePath: filePath ?? '')
@@ -239,12 +264,45 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
     final isDark = theme.brightness == Brightness.dark;
     final isDynamicEnabled = ref.watch(dynamicThemeEnabledProvider);
     final dynamicPalette = ref.watch(activeDynamicPaletteProvider);
-    final primary = isDynamicEnabled ? dynamicPalette.primary : colorScheme.primary;
-    final surfaceTokens = NexaSurfaceTokens.of(context);
 
     final playerState = ref.watch(playerNotifierProvider);
     final currentTrack = playerState.currentTrack;
     final isPlaying = playerState.isPlaying;
+
+    final queueState = getIt.isRegistered<IPlaybackQueue>()
+        ? (ref.watch(playbackQueueStateStreamProvider).valueOrNull
+            ?? ref.watch(playbackQueueProvider).state)
+        : const PlaybackQueueState();
+    final queueTracks = queueState.tracks;
+    final queueCurrentIndex = (queueState.currentIndex >= 0 && queueState.currentIndex < queueTracks.length)
+        ? queueState.currentIndex
+        : 0;
+    final effectiveTracks = queueTracks.isNotEmpty
+        ? queueTracks
+        : (currentTrack != null ? [currentTrack] : const <Track>[]);
+
+    final activeOffset = _carouselPageOffset ?? queueCurrentIndex.toDouble();
+    ExtractedPalette currentDisplayPalette = dynamicPalette;
+    if (isDynamicEnabled && effectiveTracks.isNotEmpty) {
+      final floorIndex = activeOffset.floor().clamp(0, effectiveTracks.length - 1);
+      final ceilIndex = activeOffset.ceil().clamp(0, effectiveTracks.length - 1);
+      final t = (activeOffset - floorIndex).clamp(0.0, 1.0);
+
+      final palA = (floorIndex == queueCurrentIndex)
+          ? dynamicPalette
+          : const DynamicPaletteService().computeSeedPalette(
+              '${effectiveTracks[floorIndex].title} ${effectiveTracks[floorIndex].artist} ${effectiveTracks[floorIndex].album}',
+            );
+      final palB = (ceilIndex == queueCurrentIndex)
+          ? dynamicPalette
+          : const DynamicPaletteService().computeSeedPalette(
+              '${effectiveTracks[ceilIndex].title} ${effectiveTracks[ceilIndex].artist} ${effectiveTracks[ceilIndex].album}',
+            );
+      currentDisplayPalette = ExtractedPalette.lerp(palA, palB, t);
+    }
+
+    final primary = isDynamicEnabled ? currentDisplayPalette.primary : colorScheme.primary;
+    final surfaceTokens = NexaSurfaceTokens.of(context);
 
     final title = currentTrack?.title ?? 'Starboy';
     final artistAndAlbum = currentTrack?.artistAndAlbum ?? 'The Weeknd • Daft Punk';
@@ -291,9 +349,9 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                   children: [
                     // 1. Ambient Background Glow
                     AppAmbientBackground(
-                      primaryColor: isDynamicEnabled ? dynamicPalette.primary : null,
-                      secondaryColor: isDynamicEnabled ? dynamicPalette.secondary : null,
-                      tertiaryColor: isDynamicEnabled ? dynamicPalette.darkVibrant : null,
+                      primaryColor: isDynamicEnabled ? currentDisplayPalette.primary : null,
+                      secondaryColor: isDynamicEnabled ? currentDisplayPalette.secondary : null,
+                      tertiaryColor: isDynamicEnabled ? currentDisplayPalette.darkVibrant : null,
                     ),
 
                     // 2. Main Sculptural Content
@@ -419,7 +477,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                               ),
                             ),
 
-                            // Center Hero Artwork (with 3D Signal Chain Flip, Double-Tap Seek & Pull-Down Dismiss)
+                            // Center Hero Artwork (with 3D Signal Chain Flip, Double-Tap Seek, Pull-Down Dismiss & Stellio 3D Carousel)
                             Center(
                               child: GestureDetector(
                                 key: const ValueKey('now_playing_pull_down_artwork'),
@@ -432,8 +490,12 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                                   tag: 'now_playing_art',
                                   child: HeroArtworkCard(
                                     track: currentTrack,
+                                    tracks: effectiveTracks,
+                                    currentIndex: queueCurrentIndex,
                                     isPlaying: isPlaying,
                                     size: artworkSize,
+                                    onPageSettled: _handlePageSettled,
+                                    onPageScrolled: _handlePageScrolled,
                                     onSwipeLeft: () {
                                       ref.read(playerNotifierProvider.notifier).skipNext();
                                     },

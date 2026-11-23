@@ -55,6 +55,17 @@ class ExtractedPalette {
     lightVibrant: Color(0xFFE0F2FE),
   );
 
+  /// Linearly interpolates between two palettes.
+  static ExtractedPalette lerp(ExtractedPalette a, ExtractedPalette b, double t) {
+    return ExtractedPalette(
+      dominant: Color.lerp(a.dominant, b.dominant, t) ?? a.dominant,
+      vibrant: Color.lerp(a.vibrant, b.vibrant, t) ?? a.vibrant,
+      muted: Color.lerp(a.muted, b.muted, t) ?? a.muted,
+      darkVibrant: Color.lerp(a.darkVibrant, b.darkVibrant, t) ?? a.darkVibrant,
+      lightVibrant: Color.lerp(a.lightVibrant, b.lightVibrant, t) ?? a.lightVibrant,
+    );
+  }
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

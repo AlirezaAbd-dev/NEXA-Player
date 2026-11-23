@@ -163,6 +163,9 @@ class _FakePlayerNotifier extends StateNotifier<PlaybackState>
   Future<void> skipNext() async {}
 
   @override
+  Future<void> skipToIndex(int index) async {}
+
+  @override
   Future<void> skipPrevious() async {}
 
   @override
