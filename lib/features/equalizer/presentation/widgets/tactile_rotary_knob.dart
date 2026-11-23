@@ -60,20 +60,40 @@ class _TactileRotaryKnobState extends State<TactileRotaryKnob> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Rotary Dial Canvas
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onVerticalDragUpdate: _onVerticalDragUpdate,
-          child: SizedBox(
-            width: widget.size,
-            height: widget.size,
-            child: CustomPaint(
-              painter: _KnobPainter(
-                value: widget.value,
-                isEnabled: widget.isEnabled,
-                primaryColor: primary,
-                surfaceLevel2: surfaceTokens.level2,
-                surfaceLevel3: surfaceTokens.level3,
+        // Rotary Dial Canvas with Screen Reader Semantics
+        Semantics(
+          slider: true,
+          enabled: widget.isEnabled,
+          label: widget.label,
+          value: widget.unit == '%'
+              ? '$percentage%'
+              : '${widget.value.toStringAsFixed(1)} ${widget.unit}',
+          onIncrease: widget.isEnabled
+              ? () {
+                  final next = (widget.value + 0.05).clamp(0.0, 1.0);
+                  widget.onChanged(next);
+                }
+              : null,
+          onDecrease: widget.isEnabled
+              ? () {
+                  final prev = (widget.value - 0.05).clamp(0.0, 1.0);
+                  widget.onChanged(prev);
+                }
+              : null,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onVerticalDragUpdate: _onVerticalDragUpdate,
+            child: SizedBox(
+              width: widget.size,
+              height: widget.size,
+              child: CustomPaint(
+                painter: _KnobPainter(
+                  value: widget.value,
+                  isEnabled: widget.isEnabled,
+                  primaryColor: primary,
+                  surfaceLevel2: surfaceTokens.level2,
+                  surfaceLevel3: surfaceTokens.level3,
+                ),
               ),
             ),
           ),

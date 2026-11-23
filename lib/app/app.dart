@@ -31,6 +31,18 @@ class NexaPlayerApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: effectiveTheme,
       routerConfig: appRouter,
+      builder: (context, child) {
+        return MediaQuery(
+          // WCAG large text accessibility: ensure text scaling is clamped to safe bounds [0.85, 2.0]
+          data: MediaQuery.of(context).copyWith(
+            textScaler: MediaQuery.textScalerOf(context).clamp(
+              minScaleFactor: 0.85,
+              maxScaleFactor: 2.0,
+            ),
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
   }
 }

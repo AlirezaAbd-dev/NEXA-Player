@@ -176,26 +176,41 @@ class _GearshiftWaveformScrubberState extends State<GearshiftWaveformScrubber> {
               ),
             ),
 
-            // Waveform Scrubber Touch Canvas
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onHorizontalDragStart: _onPanStart,
-              onHorizontalDragUpdate: (details) => _onPanUpdate(details, width),
-              onHorizontalDragEnd: _onPanEnd,
-              onVerticalDragStart: _onPanStart,
-              onVerticalDragUpdate: (details) => _onPanUpdate(details, width),
-              onVerticalDragEnd: _onPanEnd,
-              child: SizedBox(
-                height: widget.height,
-                width: width,
-                child: CustomPaint(
-                  painter: _WaveformPainter(
-                    progress: progress,
-                    amplitudes: widget.cachedAmplitudes,
-                    activeColor: primary,
-                    inactiveColor: onSurface.withOpacity(0.18),
-                    thumbColor: primary,
-                    isDragging: _isDragging,
+            // Waveform Scrubber Touch Canvas with Screen Reader Semantics
+            Semantics(
+              slider: true,
+              label: 'Waveform scrubber',
+              value: '${activeDuration.toMinutesSeconds()} of ${totalDuration.toMinutesSeconds()}',
+              increasedValue: '${(activeDuration + const Duration(seconds: 10)).clamp(Duration.zero, totalDuration).toMinutesSeconds()}',
+              decreasedValue: '${(activeDuration - const Duration(seconds: 10)).clamp(Duration.zero, totalDuration).toMinutesSeconds()}',
+              onIncrease: () {
+                final next = (widget.position + const Duration(seconds: 10)).clamp(Duration.zero, widget.duration);
+                widget.onSeek(next);
+              },
+              onDecrease: () {
+                final prev = (widget.position - const Duration(seconds: 10)).clamp(Duration.zero, widget.duration);
+                widget.onSeek(prev);
+              },
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onHorizontalDragStart: _onPanStart,
+                onHorizontalDragUpdate: (details) => _onPanUpdate(details, width),
+                onHorizontalDragEnd: _onPanEnd,
+                onVerticalDragStart: _onPanStart,
+                onVerticalDragUpdate: (details) => _onPanUpdate(details, width),
+                onVerticalDragEnd: _onPanEnd,
+                child: SizedBox(
+                  height: widget.height,
+                  width: width,
+                  child: CustomPaint(
+                    painter: _WaveformPainter(
+                      progress: progress,
+                      amplitudes: widget.cachedAmplitudes,
+                      activeColor: primary,
+                      inactiveColor: onSurface.withOpacity(0.18),
+                      thumbColor: primary,
+                      isDragging: _isDragging,
+                    ),
                   ),
                 ),
               ),

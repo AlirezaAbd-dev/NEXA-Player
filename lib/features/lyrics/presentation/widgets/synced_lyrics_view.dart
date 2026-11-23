@@ -133,42 +133,48 @@ class _SyncedLyricsViewState extends State<SyncedLyricsView> {
         }
 
         // Apple Music-style depth of field optical blur on inactive lines
+        // Disabled automatically under reduced-motion preference
+        final disableAnim = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
         final distance = (index - widget.activeIndex).abs();
-        final blurSigma = isActive ? 0.0 : (distance * 0.75).clamp(0.0, 3.2);
+        final blurSigma = (isActive || disableAnim) ? 0.0 : (distance * 0.75).clamp(0.0, 3.2);
 
-        Widget lineContent = Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              line.text.isEmpty ? '♪' : line.text,
-              style: TextStyle(
-                color: textColor,
-                fontSize: fontSize,
-                fontWeight: fontWeight,
-                height: 1.35,
-                letterSpacing: -0.2,
-                shadows: isActive
-                    ? [
-                        Shadow(
-                          color: accent.withOpacity(0.55),
-                          blurRadius: 18.0,
-                        ),
-                      ]
-                    : null,
-              ),
-            ),
-            if (line.translation != null && line.translation!.isNotEmpty) ...[
-              const SizedBox(height: 4),
+        Widget lineContent = Semantics(
+          selected: isActive,
+          label: isActive ? 'Current lyric: ${line.text}' : line.text,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Text(
-                line.translation!,
+                line.text.isEmpty ? '♪' : line.text,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(isActive ? 0.8 : 0.35),
-                  fontSize: 13,
-                  fontStyle: FontStyle.italic,
+                  color: textColor,
+                  fontSize: fontSize,
+                  fontWeight: fontWeight,
+                  height: 1.35,
+                  letterSpacing: -0.2,
+                  shadows: isActive
+                      ? [
+                          Shadow(
+                            color: accent.withOpacity(0.55),
+                            blurRadius: 18.0,
+                          ),
+                        ]
+                      : null,
                 ),
               ),
+              if (line.translation != null && line.translation!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  line.translation!,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(isActive ? 0.8 : 0.35),
+                    fontSize: 13,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         );
 
         if (blurSigma > 0.01) {
