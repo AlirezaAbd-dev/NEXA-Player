@@ -115,6 +115,16 @@ class SqlitePlaylistsRepository implements IPlaylistsRepository {
   ) async {
     try {
       database.transaction(() {
+        final existing = database.select(
+          'SELECT 1 FROM ${DatabaseSchema.tablePlaylistTracks} '
+          'WHERE ${DatabaseSchema.colPlaylistId} = ? AND ${DatabaseSchema.colTrackId} = ? '
+          'LIMIT 1;',
+          [playlistId, trackId],
+        );
+        if (existing.isNotEmpty) {
+          return;
+        }
+
         final countRows = database.select(
           'SELECT COUNT(*) as count FROM ${DatabaseSchema.tablePlaylistTracks} '
           'WHERE ${DatabaseSchema.colPlaylistId} = ?',

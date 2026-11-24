@@ -341,6 +341,30 @@ class PlaybackQueueImpl implements IPlaybackQueue {
   }
 
   @override
+  void updateTrack(Track updatedTrack) {
+    bool changed = false;
+    final nextTracks = _state.tracks.map((t) {
+      if (t.id == updatedTrack.id) {
+        changed = true;
+        return updatedTrack;
+      }
+      return t;
+    }).toList();
+    final nextOriginal = _state.originalTracks.map((t) {
+      if (t.id == updatedTrack.id) {
+        changed = true;
+        return updatedTrack;
+      }
+      return t;
+    }).toList();
+    if (!changed) return;
+    _emit(_state.copyWith(
+      tracks: nextTracks,
+      originalTracks: nextOriginal,
+    ));
+  }
+
+  @override
   void clear() {
     _emit(PlaybackQueueState(
       tracks: const [],

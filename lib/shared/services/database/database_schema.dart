@@ -8,7 +8,7 @@ abstract final class DatabaseSchema {
   DatabaseSchema._();
 
   /// Current database schema version.
-  static const int currentVersion = 3;
+  static const int currentVersion = 4;
 
   // ---------------------------------------------------------------------------
   // Table Names
@@ -42,6 +42,7 @@ abstract final class DatabaseSchema {
   static const String colDiscNumber = 'disc_number';
   static const String colTrackYear = 'year';
   static const String colTrackGenre = 'genre';
+  static const String colComment = 'comment';
   static const String colIsFavorite = 'is_favorite';
   static const String colFavoritedAt = 'favorited_at';
   static const String colPlayCount = 'play_count';
@@ -156,6 +157,7 @@ CREATE TABLE IF NOT EXISTS $tableTracks (
   $colDiscNumber INTEGER,
   $colTrackYear INTEGER,
   $colTrackGenre TEXT,
+  $colComment TEXT,
   $colIsFavorite INTEGER NOT NULL DEFAULT 0,
   $colFavoritedAt INTEGER,
   $colPlayCount INTEGER NOT NULL DEFAULT 0,
@@ -348,6 +350,13 @@ CREATE TABLE IF NOT EXISTS $tableScanDirectories (
       }
       if (!existingCols.contains(colLastPlayedAt)) {
         db.execute('ALTER TABLE $tableTracks ADD COLUMN $colLastPlayedAt INTEGER;');
+      }
+    }
+    if (oldVersion < 4) {
+      final rows = db.select('PRAGMA table_info($tableTracks);');
+      final existingCols = rows.map((r) => r['name'] as String).toSet();
+      if (!existingCols.contains(colComment)) {
+        db.execute('ALTER TABLE $tableTracks ADD COLUMN $colComment TEXT;');
       }
     }
   }

@@ -212,6 +212,9 @@ class _FakePlayerNotifier extends StateNotifier<PlaybackState>
   }
 
   @override
+  void refreshTrack(Track updatedTrack) {}
+
+  @override
   Future<void> toggleFavorite([Track? targetTrack]) async {}
 
   @override

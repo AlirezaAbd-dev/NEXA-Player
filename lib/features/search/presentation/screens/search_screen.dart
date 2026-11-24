@@ -25,6 +25,7 @@ import 'package:nexa_player/shared/models/track.dart';
 import 'package:nexa_player/shared/widgets/cards/album_card.dart';
 import 'package:nexa_player/shared/widgets/cards/artist_card.dart';
 import 'package:nexa_player/shared/widgets/cards/genre_card.dart';
+import 'package:nexa_player/shared/widgets/cards/track_actions_helper.dart';
 import 'package:nexa_player/shared/widgets/cards/track_tile.dart';
 import 'package:nexa_player/shared/widgets/glass/app_ambient_background.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
@@ -399,6 +400,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               child: TrackTile.fromTrack(
                 track: track,
                 isPlaying: track.id == currentPlayingTrackId,
+                onMenuActionSelected: (action) =>
+                    TrackActionsHelper.handleAction(
+                  context,
+                  ref,
+                  track: track,
+                  action: action,
+                ),
                 onTap: () => _onTrackTapped(track),
               ),
             );
@@ -576,6 +584,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           child: TrackTile.fromTrack(
             track: track,
             isPlaying: track.id == currentPlayingTrackId,
+            onMenuActionSelected: (action) => TrackActionsHelper.handleAction(
+              context,
+              ref,
+              track: track,
+              action: action,
+            ),
             onTap: () => _onTrackTapped(track),
           ),
         );

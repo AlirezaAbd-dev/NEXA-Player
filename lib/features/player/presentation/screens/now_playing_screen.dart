@@ -15,6 +15,8 @@ import '../../../../shared/models/track.dart';
 import '../../../../shared/widgets/glass/app_ambient_background.dart';
 import '../../../../shared/widgets/surfaces/nexa_surface.dart';
 import '../../../../shared/widgets/typography/bidi_text.dart';
+import '../../../playlists/presentation/widgets/add_to_playlist_bottom_sheet.dart';
+import '../../../playlists/presentation/widgets/track_tag_editor_modal.dart';
 import '../../../cloud/cloud.dart';
 import '../../../visualizer/visualizer.dart';
 import '../../domain/services/playback_queue.dart';
@@ -470,12 +472,54 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                                                 _showSpectrumVisualizer = !_showSpectrumVisualizer;
                                               });
                                             },
-                                            tooltip: 'Toggle Spectrum Visualizer',
-                                            padding: const EdgeInsets.all(6),
-                                            constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
-                                          ),
-                                        ],
-                                      ),
+                                              tooltip: 'Toggle Spectrum Visualizer',
+                                              padding: const EdgeInsets.all(6),
+                                              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                            ),
+                                            if (currentTrack != null)
+                                              PopupMenuButton<String>(
+                                                key: const ValueKey('now_playing_more_menu'),
+                                                icon: const Icon(Icons.more_vert_rounded, size: 20),
+                                                tooltip: 'Track Actions',
+                                                padding: const EdgeInsets.all(4),
+                                                onSelected: (value) {
+                                                  if (value == 'add_to_playlist') {
+                                                    AddToPlaylistBottomSheet.show(
+                                                      context,
+                                                      track: currentTrack,
+                                                    );
+                                                  } else if (value == 'edit_tags') {
+                                                    TrackTagEditorModal.show(
+                                                      context,
+                                                      track: currentTrack,
+                                                    );
+                                                  }
+                                                },
+                                                itemBuilder: (_) => const [
+                                                  PopupMenuItem(
+                                                    value: 'add_to_playlist',
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(Icons.playlist_add_rounded, size: 18),
+                                                        SizedBox(width: 8),
+                                                        Text('Add to playlist'),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  PopupMenuItem(
+                                                    value: 'edit_tags',
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(Icons.edit_note_rounded, size: 18),
+                                                        SizedBox(width: 8),
+                                                        Text('Edit tags & cover'),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                          ],
+                                        ),
                                     ],
                                   ),
                                 ],

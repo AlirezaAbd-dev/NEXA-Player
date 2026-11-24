@@ -15,6 +15,7 @@ class Track extends Equatable {
     this.discNumber,
     this.year,
     this.genre,
+    this.comment,
     this.isFavorite = false,
     this.playCount = 0,
     this.bitrate,
@@ -41,6 +42,7 @@ class Track extends Equatable {
   final int? discNumber;
   final int? year;
   final String? genre;
+  final String? comment;
   final bool isFavorite;
   final int playCount;
   final int? bitrate;
@@ -76,6 +78,7 @@ class Track extends Equatable {
       'disc_number': discNumber,
       'year': year,
       'genre': genre,
+      'comment': comment,
       'is_favorite': isFavorite ? 1 : 0,
       'play_count': playCount,
       'bitrate': bitrate,
@@ -120,6 +123,7 @@ class Track extends Equatable {
       discNumber: map['disc_number'] as int? ?? map['discNumber'] as int?,
       year: map['year'] as int?,
       genre: map['genre'] as String?,
+      comment: map['comment'] as String?,
       isFavorite: map['is_favorite'] == 1 || map['isFavorite'] == true,
       playCount: (map['play_count'] ?? map['playCount'] ?? 0) as int,
       bitrate: map['bitrate'] as int?,
@@ -152,6 +156,7 @@ class Track extends Equatable {
     int? discNumber,
     int? year,
     String? genre,
+    String? comment,
     bool? isFavorite,
     int? playCount,
     int? bitrate,
@@ -178,6 +183,7 @@ class Track extends Equatable {
       discNumber: discNumber ?? this.discNumber,
       year: year ?? this.year,
       genre: genre ?? this.genre,
+      comment: comment ?? this.comment,
       isFavorite: isFavorite ?? this.isFavorite,
       playCount: playCount ?? this.playCount,
       bitrate: bitrate ?? this.bitrate,
@@ -207,6 +213,7 @@ class Track extends Equatable {
         discNumber,
         year,
         genre,
+        comment,
         isFavorite,
         playCount,
         bitrate,

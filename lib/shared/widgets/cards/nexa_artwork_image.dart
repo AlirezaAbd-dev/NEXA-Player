@@ -51,17 +51,23 @@ class _NexaArtworkImageState extends State<NexaArtworkImage> {
   @override
   void initState() {
     super.initState();
-    _resolvedUri = widget.artworkUri;
+    _resolvedUri =
+        widget.artworkUri ?? widget.track?.artworkUri ?? widget.album?.artworkUri;
     _maybeResolveLazily();
   }
 
   @override
   void didUpdateWidget(NexaArtworkImage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.artworkUri != widget.artworkUri ||
+    final nextUri =
+        widget.artworkUri ?? widget.track?.artworkUri ?? widget.album?.artworkUri;
+    final oldUri = oldWidget.artworkUri ??
+        oldWidget.track?.artworkUri ??
+        oldWidget.album?.artworkUri;
+    if (oldUri != nextUri ||
         oldWidget.track?.id != widget.track?.id ||
         oldWidget.album?.id != widget.album?.id) {
-      _resolvedUri = widget.artworkUri;
+      _resolvedUri = nextUri;
       _resolutionAttempted = false;
       _maybeResolveLazily();
     }

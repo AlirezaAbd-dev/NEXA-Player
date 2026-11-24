@@ -13,6 +13,7 @@ import 'package:nexa_player/features/player/player.dart';
 import 'package:nexa_player/features/scanner/presentation/providers/scanner_providers.dart';
 import 'package:nexa_player/shared/models/track.dart';
 import 'package:nexa_player/shared/widgets/branding/nexa_animated_logo.dart';
+import 'package:nexa_player/shared/widgets/cards/track_actions_helper.dart';
 import 'package:nexa_player/shared/widgets/cards/track_tile.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_button.dart';
@@ -325,16 +326,12 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
                                   tooltip: 'Track actions',
                                   padding: EdgeInsets.zero,
                                   onSelected: (action) {
-                                    switch (action) {
-                                      case TrackTileMenuAction.playNext:
-                                        ref.read(playerNotifierProvider.notifier).addNext(track);
-                                        break;
-                                      case TrackTileMenuAction.addToQueue:
-                                        ref.read(playerNotifierProvider.notifier).addTrack(track);
-                                        break;
-                                      default:
-                                        break;
-                                    }
+                                    TrackActionsHelper.handleAction(
+                                      context,
+                                      ref,
+                                      track: track,
+                                      action: action,
+                                    );
                                   },
                                   itemBuilder: (context) => const [
                                     PopupMenuItem(
@@ -354,6 +351,66 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
                                           Icon(Icons.queue_music_rounded),
                                           SizedBox(width: 8),
                                           Text('Add to queue'),
+                                        ],
+                                      ),
+                                    ),
+                                    PopupMenuItem(
+                                      value: TrackTileMenuAction.addToPlaylist,
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.playlist_add_rounded),
+                                          SizedBox(width: 8),
+                                          Text('Add to playlist'),
+                                        ],
+                                      ),
+                                    ),
+                                    PopupMenuItem(
+                                      value: TrackTileMenuAction.editTags,
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.edit_note_rounded),
+                                          SizedBox(width: 8),
+                                          Text('Edit tags & cover'),
+                                        ],
+                                      ),
+                                    ),
+                                    PopupMenuItem(
+                                      value: TrackTileMenuAction.goToAlbum,
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.album_rounded),
+                                          SizedBox(width: 8),
+                                          Text('Go to album'),
+                                        ],
+                                      ),
+                                    ),
+                                    PopupMenuItem(
+                                      value: TrackTileMenuAction.goToArtist,
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.person_rounded),
+                                          SizedBox(width: 8),
+                                          Text('Go to artist'),
+                                        ],
+                                      ),
+                                    ),
+                                    PopupMenuItem(
+                                      value: TrackTileMenuAction.share,
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.share_rounded),
+                                          SizedBox(width: 8),
+                                          Text('Share'),
+                                        ],
+                                      ),
+                                    ),
+                                    PopupMenuItem(
+                                      value: TrackTileMenuAction.trimRingtone,
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.content_cut_rounded),
+                                          SizedBox(width: 8),
+                                          Text('Trim ringtone'),
                                         ],
                                       ),
                                     ),

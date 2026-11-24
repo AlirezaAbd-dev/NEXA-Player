@@ -434,6 +434,14 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
     }
   }
 
+  /// Refreshes metadata and cover URI for an edited [updatedTrack] across queue & state.
+  void refreshTrack(Track updatedTrack) {
+    _queue.updateTrack(updatedTrack);
+    if (state.currentTrack?.id == updatedTrack.id) {
+      state = state.copyWith(currentTrack: updatedTrack);
+    }
+  }
+
   /// Toggles favorite status on [track], persisting to repository and syncing UI.
   Future<void> toggleFavorite([Track? targetTrack]) async {
     final track = targetTrack ?? state.currentTrack;

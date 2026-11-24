@@ -9,6 +9,7 @@ import 'package:nexa_player/features/player/domain/entities/queue_context.dart';
 import 'package:nexa_player/features/player/presentation/providers/player_providers.dart';
 import 'package:nexa_player/shared/models/album.dart';
 import 'package:nexa_player/shared/widgets/cards/nexa_artwork_image.dart';
+import 'package:nexa_player/shared/widgets/cards/track_actions_helper.dart';
 import 'package:nexa_player/shared/widgets/cards/track_tile.dart';
 import 'package:nexa_player/shared/widgets/glass/app_ambient_background.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
@@ -231,6 +232,13 @@ class AlbumDetailScreen extends ConsumerWidget {
                               track: track,
                               showTrackNumber: true,
                               isPlaying: track.id == currentTrackId,
+                              onMenuActionSelected: (action) =>
+                                  TrackActionsHelper.handleAction(
+                                context,
+                                ref,
+                                track: track,
+                                action: action,
+                              ),
                               onTap: () {
                                 ref
                                     .read(playerNotifierProvider.notifier)

@@ -11,6 +11,10 @@ class EditableTrackMetadata {
     this.genre,
     this.year,
     this.trackNumber,
+    this.comment,
+    this.artworkUri,
+    this.artworkBytes,
+    this.clearArtwork = false,
   });
 
   final String title;
@@ -19,6 +23,10 @@ class EditableTrackMetadata {
   final String? genre;
   final int? year;
   final int? trackNumber;
+  final String? comment;
+  final String? artworkUri;
+  final Uint8List? artworkBytes;
+  final bool clearArtwork;
 
   factory EditableTrackMetadata.fromTrack(Track track) {
     return EditableTrackMetadata(
@@ -28,6 +36,8 @@ class EditableTrackMetadata {
       genre: track.genre,
       year: track.year,
       trackNumber: track.trackNumber,
+      comment: track.comment,
+      artworkUri: track.artworkUri,
     );
   }
 
@@ -38,6 +48,10 @@ class EditableTrackMetadata {
     String? genre,
     int? year,
     int? trackNumber,
+    String? comment,
+    String? artworkUri,
+    Uint8List? artworkBytes,
+    bool? clearArtwork,
   }) {
     return EditableTrackMetadata(
       title: title ?? this.title,
@@ -46,6 +60,10 @@ class EditableTrackMetadata {
       genre: genre ?? this.genre,
       year: year ?? this.year,
       trackNumber: trackNumber ?? this.trackNumber,
+      comment: comment ?? this.comment,
+      artworkUri: artworkUri ?? this.artworkUri,
+      artworkBytes: artworkBytes ?? this.artworkBytes,
+      clearArtwork: clearArtwork ?? this.clearArtwork,
     );
   }
 
@@ -59,10 +77,25 @@ class EditableTrackMetadata {
           album == other.album &&
           genre == other.genre &&
           year == other.year &&
-          trackNumber == other.trackNumber;
+          trackNumber == other.trackNumber &&
+          comment == other.comment &&
+          artworkUri == other.artworkUri &&
+          clearArtwork == other.clearArtwork &&
+          listEquals(artworkBytes, other.artworkBytes);
 
   @override
-  int get hashCode => Object.hash(title, artist, album, genre, year, trackNumber);
+  int get hashCode => Object.hash(
+        title,
+        artist,
+        album,
+        genre,
+        year,
+        trackNumber,
+        comment,
+        artworkUri,
+        clearArtwork,
+        artworkBytes == null ? null : Object.hashAll(artworkBytes!),
+      );
 
   @override
   String toString() =>

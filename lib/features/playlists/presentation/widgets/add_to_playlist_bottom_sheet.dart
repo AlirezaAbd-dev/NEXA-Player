@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nexa_player/core/design_system/app_typography.dart';
+import 'package:nexa_player/core/di/injection.dart';
+import 'package:nexa_player/core/services/library/library_sync_bus.dart';
 import 'package:nexa_player/features/playlists/presentation/providers/playlists_providers.dart';
 import 'package:nexa_player/shared/models/playlist.dart';
 import 'package:nexa_player/shared/models/track.dart';
+import 'package:nexa_player/shared/widgets/cards/nexa_artwork_image.dart';
+import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
+import 'package:nexa_player/shared/widgets/typography/bidi_text.dart';
 
-/// Bottom sheet allowing users to add a [track] to an existing playlist or create a new one.
+/// Borderless tonal `L3` bottom sheet allowing users to add a [track] to one
+/// or more existing playlists (showing duplicate-check marks and 2x2 covers) or
+/// create a new playlist inline in one tap.
 class AddToPlaylistBottomSheet extends ConsumerStatefulWidget {
   const AddToPlaylistBottomSheet({
     super.key,
@@ -14,7 +22,7 @@ class AddToPlaylistBottomSheet extends ConsumerStatefulWidget {
   final Track track;
 
   static Future<void> show(BuildContext context, {required Track track}) {
-    return showModalBottomSheet(
+    return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -31,6 +39,7 @@ class _AddToPlaylistBottomSheetState
     extends ConsumerState<AddToPlaylistBottomSheet> {
   final TextEditingController _nameController = TextEditingController();
   bool _isCreating = false;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -38,286 +47,424 @@ class _AddToPlaylistBottomSheetState
     super.dispose();
   }
 
+  void _notifySyncBus() {
+    if (getIt.isRegistered<LibrarySyncBus>()) {
+      getIt<LibrarySyncBus>().notifyChanged();
+    }
+  }
+
   Future<void> _handleCreateAndAdd() async {
     final name = _nameController.text.trim();
-    if (name.isEmpty) return;
+    if (name.isEmpty || _isSubmitting) return;
 
-    final repo = ref.read(playlistsRepositoryProvider);
-    final createResult = await repo.createPlaylist(name);
-    if (createResult.isSuccess && mounted) {
-      final newPlaylist = createResult.valueOrNull!;
-      await repo.addTrackToPlaylist(newPlaylist.id, widget.track.id);
-      ref.invalidate(playlistsListNotifierProvider);
-      ref.invalidate(playlistTracksProvider(newPlaylist.id));
+    setState(() => _isSubmitting = true);
+    try {
+      final repo = ref.read(playlistsRepositoryProvider);
+      final createResult = await repo.createPlaylist(name);
+      if (createResult.isSuccess && mounted) {
+        final newPlaylist = createResult.valueOrNull!;
+        await repo.addTrackToPlaylist(newPlaylist.id, widget.track.id);
+        ref.invalidate(playlistsListNotifierProvider);
+        ref.invalidate(playlistTracksProvider(newPlaylist.id));
+        _notifySyncBus();
 
-      if (mounted) {
+        if (mounted) {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Added "${widget.track.title}" to "$name"'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  Future<void> _handleSelectPlaylist(
+    Playlist playlist, {
+    required bool alreadyContains,
+  }) async {
+    if (_isSubmitting) return;
+    if (alreadyContains) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('"${widget.track.title}" is already in "${playlist.name}"'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    try {
+      final repo = ref.read(playlistsRepositoryProvider);
+      final res = await repo.addTrackToPlaylist(playlist.id, widget.track.id);
+      if (res.isSuccess && mounted) {
+        ref.invalidate(playlistsListNotifierProvider);
+        ref.invalidate(playlistTracksProvider(playlist.id));
+        _notifySyncBus();
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Added "${widget.track.title}" to "$name"'),
+            content:
+                Text('Added "${widget.track.title}" to "${playlist.name}"'),
             behavior: SnackBarBehavior.floating,
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
-  Future<void> _handleSelectPlaylist(Playlist playlist) async {
-    final repo = ref.read(playlistsRepositoryProvider);
-    final res = await repo.addTrackToPlaylist(playlist.id, widget.track.id);
-    if (res.isSuccess && mounted) {
-      ref.invalidate(playlistsListNotifierProvider);
-      ref.invalidate(playlistTracksProvider(playlist.id));
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Added "${widget.track.title}" to "${playlist.name}"'),
-          behavior: SnackBarBehavior.floating,
+  Widget _buildPlaylistThumbnail(
+    Playlist playlist,
+    List<Track> tracks,
+    NexaSurfaceTokens surfaceTokens,
+    ColorScheme colorScheme,
+  ) {
+    final collage = tracks.take(4).toList();
+    if (collage.isEmpty) {
+      return Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: colorScheme.primary.withOpacity(0.14),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(
+          Icons.queue_music_rounded,
+          size: 22,
+          color: colorScheme.primary,
         ),
       );
     }
+
+    Widget cell(int index) {
+      final t = index < collage.length ? collage[index] : collage.first;
+      return NexaArtworkImage(
+        track: t,
+        artworkUri: t.artworkUri,
+        fit: BoxFit.cover,
+        cacheWidth: 96,
+        fallbackBuilder: (_) => Container(
+          color: surfaceTokens.level1,
+          child: Icon(
+            Icons.music_note_rounded,
+            size: 10,
+            color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+          ),
+        ),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: SizedBox(
+        width: 44,
+        height: 44,
+        child: Column(
+          children: [
+            Expanded(
+              child: Row(
+                children: [
+                  Expanded(child: cell(0)),
+                  Expanded(child: cell(1)),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Row(
+                children: [
+                  Expanded(child: cell(2)),
+                  Expanded(child: cell(3)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final playlistsAsync = ref.watch(playlistsListNotifierProvider);
     final theme = Theme.of(context);
-    final accent = theme.colorScheme.primary;
+    final colorScheme = theme.colorScheme;
+    final surfaceTokens = NexaSurfaceTokens.of(context);
+    final accent = colorScheme.primary;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom +
+        MediaQuery.of(context).padding.bottom;
 
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.7,
-      ),
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-      ),
-      decoration: const BoxDecoration(
-        color: Color(0xFF0F131D),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 12),
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(2),
+    return NexaSurface(
+      tier: NexaSurfaceTier.l3,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      padding: EdgeInsets.only(bottom: bottomInset + 16),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.72,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 12),
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: colorScheme.onSurfaceVariant.withOpacity(0.35),
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Add to Playlist',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        widget.track.title,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: accent,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                TextButton.icon(
-                  onPressed: () {
-                    setState(() {
-                      _isCreating = !_isCreating;
-                    });
-                  },
-                  icon: Icon(
-                    _isCreating ? Icons.close_rounded : Icons.add_rounded,
-                    size: 18,
-                  ),
-                  label: Text(_isCreating ? 'Cancel' : 'New Playlist'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: accent,
-                    backgroundColor: accent.withOpacity(0.12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (_isCreating) ...[
+            const SizedBox(height: 14),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: TextField(
-                      controller: _nameController,
-                      autofocus: true,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        hintText: 'Playlist name...',
-                        hintStyle:
-                            TextStyle(color: Colors.white.withOpacity(0.4)),
-                        filled: true,
-                        fillColor: const Color(0xFF161B26),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Add to Playlist',
+                          style: AppTypography.titleLarge.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
+                          ),
                         ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide:
-                              BorderSide(color: Colors.white.withOpacity(0.1)),
+                        const SizedBox(height: 2),
+                        BidiText(
+                          widget.track.title,
+                          style: AppTypography.bodySmall.copyWith(
+                            color: accent,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: accent),
-                        ),
-                      ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: _handleCreateAndAdd,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: accent,
-                      foregroundColor: Colors.black,
+                  TextButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _isCreating = !_isCreating;
+                      });
+                    },
+                    icon: Icon(
+                      _isCreating ? Icons.close_rounded : Icons.add_rounded,
+                      size: 18,
+                    ),
+                    label: Text(_isCreating ? 'Cancel' : 'New Playlist'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: accent,
+                      backgroundColor: accent.withOpacity(0.12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: const Text('Add'),
                   ),
                 ],
               ),
             ),
-          ],
-          const Divider(color: Colors.white12, height: 20),
-          Expanded(
-            child: playlistsAsync.when(
-              data: (playlists) {
-                if (playlists.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.playlist_add_rounded,
-                          size: 48,
-                          color: Colors.white.withOpacity(0.2),
+            if (_isCreating) ...[
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _nameController,
+                        autofocus: true,
+                        onSubmitted: (_) => _handleCreateAndAdd(),
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: colorScheme.onSurface,
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'No playlists yet',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.5),
+                        decoration: InputDecoration(
+                          hintText: 'Playlist name...',
+                          hintStyle: AppTypography.bodyMedium.copyWith(
+                            color: colorScheme.onSurfaceVariant.withOpacity(0.6),
+                          ),
+                          filled: true,
+                          fillColor: surfaceTokens.level2,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: accent, width: 1.5),
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  );
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: playlists.length,
-                  itemBuilder: (ctx, i) {
-                    final pl = playlists[i];
-                    return InkWell(
-                      onTap: () => _handleSelectPlaylist(pl),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 6),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      onPressed: _isSubmitting ? null : _handleCreateAndAdd,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: accent,
+                        foregroundColor: colorScheme.onPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF141924),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.04),
-                          ),
-                        ),
-                        child: Row(
+                      ),
+                      child: const Text('Add'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 10),
+            Flexible(
+              child: playlistsAsync.when(
+                data: (playlists) {
+                  if (playlists.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 32),
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: accent.withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                Icons.queue_music_rounded,
-                                size: 20,
-                                color: accent,
-                              ),
+                            Icon(
+                              Icons.playlist_add_rounded,
+                              size: 48,
+                              color:
+                                  colorScheme.onSurfaceVariant.withOpacity(0.4),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    pl.name,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  Text(
-                                    pl.trackCountLabel,
-                                    style: TextStyle(
-                                      color: Colors.white.withOpacity(0.5),
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
+                            const SizedBox(height: 8),
+                            Text(
+                              'No playlists yet',
+                              style: AppTypography.bodyMedium.copyWith(
+                                color: colorScheme.onSurfaceVariant,
                               ),
-                            ),
-                            const Icon(
-                              Icons.add_circle_outline_rounded,
-                              color: Colors.white38,
-                              size: 20,
                             ),
                           ],
                         ),
                       ),
                     );
-                  },
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, _) => Center(
-                child: Text(
-                  'Error loading playlists: $err',
-                  style: const TextStyle(color: Colors.white54),
+                  }
+
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: playlists.length,
+                    itemBuilder: (ctx, i) {
+                      final pl = playlists[i];
+                      final tracksAsync =
+                          ref.watch(playlistTracksProvider(pl.id));
+                      final plTracks = tracksAsync.valueOrNull ?? const [];
+                      final alreadyContains = plTracks.any(
+                        (t) => t.id == widget.track.id,
+                      );
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: NexaSurface(
+                          level: alreadyContains
+                              ? NexaSurfaceLevel.l2
+                              : NexaSurfaceLevel.l1,
+                          borderRadius: BorderRadius.circular(14),
+                          child: InkWell(
+                            key: ValueKey('add_to_playlist_item_${pl.id}'),
+                            onTap: () => _handleSelectPlaylist(
+                              pl,
+                              alreadyContains: alreadyContains,
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                              child: Row(
+                                children: [
+                                  _buildPlaylistThumbnail(
+                                    pl,
+                                    plTracks,
+                                    surfaceTokens,
+                                    colorScheme,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        BidiText(
+                                          pl.name,
+                                          style: AppTypography.titleSmall
+                                              .copyWith(
+                                            color: colorScheme.onSurface,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          alreadyContains
+                                              ? '${pl.trackCountLabel} • Added'
+                                              : pl.trackCountLabel,
+                                          style: AppTypography.bodySmall
+                                              .copyWith(
+                                            color: alreadyContains
+                                                ? accent
+                                                : colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(
+                                    alreadyContains
+                                        ? Icons.check_circle_rounded
+                                        : Icons.add_circle_outline_rounded,
+                                    color: alreadyContains
+                                        ? accent
+                                        : colorScheme.onSurfaceVariant,
+                                    size: 22,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+                loading: () => const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (err, _) => Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Center(
+                    child: Text(
+                      'Error loading playlists: $err',
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

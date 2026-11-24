@@ -181,6 +181,9 @@ abstract class IPlaybackQueue {
   /// Reorders track from [oldIndex] to [newIndex] (drag-and-drop support).
   void reorder(int oldIndex, int newIndex);
 
+  /// Replaces matching track entries with [updatedTrack] in-place.
+  void updateTrack(Track updatedTrack);
+
   /// Clears the queue and resets index.
   void clear();
 

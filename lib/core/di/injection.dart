@@ -345,7 +345,11 @@ Future<void> configureDependencies({
 
   if (!getIt.isRegistered<ITagEditorService>()) {
     getIt.registerSingleton<ITagEditorService>(
-      tagEditorService ?? TagEditorServiceImpl(getIt<IAppDatabase>()),
+      tagEditorService ??
+          TagEditorServiceImpl(
+            getIt<IAppDatabase>(),
+            syncBus: syncBus,
+          ),
     );
   }
 

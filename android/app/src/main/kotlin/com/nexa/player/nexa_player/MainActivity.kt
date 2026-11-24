@@ -1,6 +1,8 @@
 package com.nexa.player.nexa_player
 
+import android.app.Activity
 import android.content.ContentUris
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.AudioFormat
@@ -29,6 +31,11 @@ class MainActivity : AudioServiceActivity() {
     private val channelName = "com.nexa.player/media_store"
     private val ioExecutor: ExecutorService = Executors.newFixedThreadPool(4)
     private val mainHandler = Handler(Looper.getMainLooper())
+    private var pendingImagePickResult: MethodChannel.Result? = null
+
+    companion object {
+        private const val REQUEST_CODE_PICK_COVER = 41029
+    }
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -82,9 +89,70 @@ class MainActivity : AudioServiceActivity() {
                             mainHandler.post { result.success(telemetry) }
                         }
                     }
+                    "pickCoverImageBytes" -> {
+                        if (pendingImagePickResult != null) {
+                            result.error("PICKER_ACTIVE", "Image picker already open", null)
+                            return@setMethodCallHandler
+                        }
+                        pendingImagePickResult = result
+                        val pickIntent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                            type = "image/*"
+                            addCategory(Intent.CATEGORY_OPENABLE)
+                        }
+                        try {
+                            startActivityForResult(
+                                Intent.createChooser(pickIntent, "Select Cover Art"),
+                                REQUEST_CODE_PICK_COVER
+                            )
+                        } catch (e: Exception) {
+                            pendingImagePickResult = null
+                            result.error("PICKER_ERROR", e.message, null)
+                        }
+                    }
                     else -> result.notImplemented()
                 }
             }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (requestCode == REQUEST_CODE_PICK_COVER) {
+            val callback = pendingImagePickResult
+            pendingImagePickResult = null
+            if (callback == null) {
+                super.onActivityResult(requestCode, resultCode, data)
+                return
+            }
+            val uri = data?.data
+            if (resultCode != Activity.RESULT_OK || uri == null) {
+                callback.success(null)
+                return
+            }
+            ioExecutor.execute {
+                try {
+                    val rawBytes = contentResolver.openInputStream(uri)?.use { stream ->
+                        stream.readBytes()
+                    }
+                    if (rawBytes == null || rawBytes.isEmpty()) {
+                        mainHandler.post { callback.success(null) }
+                        return@execute
+                    }
+                    val bitmap = decodeSampledBitmapFromBytes(rawBytes, 1024)
+                    if (bitmap == null) {
+                        mainHandler.post { callback.success(rawBytes) }
+                        return@execute
+                    }
+                    val out = ByteArrayOutputStream()
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+                    bitmap.recycle()
+                    val encoded = out.toByteArray()
+                    mainHandler.post { callback.success(encoded) }
+                } catch (_: Exception) {
+                    mainHandler.post { callback.success(null) }
+                }
+            }
+            return
+        }
+        super.onActivityResult(requestCode, resultCode, data)
     }
 
     override fun onDestroy() {

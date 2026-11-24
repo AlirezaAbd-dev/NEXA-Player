@@ -8,6 +8,7 @@ import 'package:nexa_player/features/player/domain/entities/playback_state.dart'
 import 'package:nexa_player/features/player/domain/entities/queue_context.dart';
 import 'package:nexa_player/features/player/presentation/providers/player_providers.dart';
 import 'package:nexa_player/shared/models/artist.dart';
+import 'package:nexa_player/shared/widgets/cards/track_actions_helper.dart';
 import 'package:nexa_player/shared/widgets/cards/track_tile.dart';
 import 'package:nexa_player/shared/widgets/glass/app_ambient_background.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
@@ -199,6 +200,13 @@ class ArtistDetailScreen extends ConsumerWidget {
                               key: Phase2Keys.trackTile(track.id),
                               track: track,
                               isPlaying: track.id == currentTrackId,
+                              onMenuActionSelected: (action) =>
+                                  TrackActionsHelper.handleAction(
+                                context,
+                                ref,
+                                track: track,
+                                action: action,
+                              ),
                               onTap: () {
                                 ref
                                     .read(playerNotifierProvider.notifier)

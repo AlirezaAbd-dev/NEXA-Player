@@ -342,7 +342,7 @@ class _TrackTileState extends State<TrackTile> {
                   children: [
                     Icon(Icons.edit_note_rounded),
                     SizedBox(width: 8),
-                    Text('Edit tags'),
+                    Text('Edit tags & cover'),
                   ],
                 ),
               ),

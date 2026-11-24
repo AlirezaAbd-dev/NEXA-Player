@@ -10,6 +10,7 @@ import 'package:nexa_player/features/player/domain/entities/playback_state.dart'
 import 'package:nexa_player/features/player/domain/entities/queue_context.dart';
 import 'package:nexa_player/features/player/presentation/providers/player_providers.dart';
 import 'package:nexa_player/features/playlists/presentation/providers/playlists_providers.dart';
+import 'package:nexa_player/features/playlists/presentation/widgets/add_to_playlist_bottom_sheet.dart';
 import 'package:nexa_player/features/playlists/presentation/widgets/track_tag_editor_modal.dart';
 import 'package:nexa_player/shared/models/playlist.dart';
 import 'package:nexa_player/shared/models/track.dart';
@@ -437,6 +438,12 @@ class PlaylistDetailScreen extends ConsumerWidget {
                                               ),
                                             );
                                             break;
+                                          case 'add_to_playlist':
+                                            AddToPlaylistBottomSheet.show(
+                                              context,
+                                              track: track,
+                                            );
+                                            break;
                                           case 'edit_tags':
                                             TrackTagEditorModal.show(
                                               context,
@@ -480,13 +487,24 @@ class PlaylistDetailScreen extends ConsumerWidget {
                                           ),
                                         ),
                                         const PopupMenuItem(
+                                          value: 'add_to_playlist',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.playlist_add_rounded,
+                                                  size: 18),
+                                              SizedBox(width: 10),
+                                              Text('Add to Playlist'),
+                                            ],
+                                          ),
+                                        ),
+                                        const PopupMenuItem(
                                           value: 'edit_tags',
                                           child: Row(
                                             children: [
                                               Icon(Icons.edit_note_rounded,
                                                   size: 18),
                                               SizedBox(width: 10),
-                                              Text('Edit Tags'),
+                                              Text('Edit Tags & Cover'),
                                             ],
                                           ),
                                         ),
