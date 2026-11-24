@@ -146,13 +146,17 @@ class SqliteTracksRepository implements ITracksRepository {
               ${DatabaseSchema.colIsFavorite},
               ${DatabaseSchema.colPlayCount},
               ${DatabaseSchema.colBitrate},
+              ${DatabaseSchema.colSampleRate},
+              ${DatabaseSchema.colBitDepth},
+              ${DatabaseSchema.colChannels},
+              ${DatabaseSchema.colCodec},
               ${DatabaseSchema.colFileSize},
               ${DatabaseSchema.colDateAdded},
               ${DatabaseSchema.colDateModified},
               ${DatabaseSchema.colArtistId},
               ${DatabaseSchema.colAlbumId},
               ${DatabaseSchema.colGenreId}
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(${DatabaseSchema.colTrackFilePath}) DO UPDATE SET
               ${DatabaseSchema.colTitle} = excluded.${DatabaseSchema.colTitle},
               ${DatabaseSchema.colTrackArtist} = excluded.${DatabaseSchema.colTrackArtist},
@@ -164,6 +168,10 @@ class SqliteTracksRepository implements ITracksRepository {
               ${DatabaseSchema.colTrackGenre} = excluded.${DatabaseSchema.colTrackGenre},
               ${DatabaseSchema.colIsFavorite} = excluded.${DatabaseSchema.colIsFavorite},
               ${DatabaseSchema.colBitrate} = excluded.${DatabaseSchema.colBitrate},
+              ${DatabaseSchema.colSampleRate} = COALESCE(excluded.${DatabaseSchema.colSampleRate}, ${DatabaseSchema.colSampleRate}),
+              ${DatabaseSchema.colBitDepth} = COALESCE(excluded.${DatabaseSchema.colBitDepth}, ${DatabaseSchema.colBitDepth}),
+              ${DatabaseSchema.colChannels} = COALESCE(excluded.${DatabaseSchema.colChannels}, ${DatabaseSchema.colChannels}),
+              ${DatabaseSchema.colCodec} = COALESCE(excluded.${DatabaseSchema.colCodec}, ${DatabaseSchema.colCodec}),
               ${DatabaseSchema.colFileSize} = excluded.${DatabaseSchema.colFileSize};
           ''', [
             track.id,
@@ -179,6 +187,10 @@ class SqliteTracksRepository implements ITracksRepository {
             track.isFavorite ? 1 : 0,
             track.playCount,
             track.bitrate,
+            track.sampleRate,
+            track.bitDepth,
+            track.channels,
+            track.codec,
             track.fileSize,
             track.dateAdded?.millisecondsSinceEpoch ??
                 DateTime.now().millisecondsSinceEpoch,

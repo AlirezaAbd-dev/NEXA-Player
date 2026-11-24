@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/storage_keys.dart';
+import '../../../../core/services/audio/audio_telemetry_service.dart';
 import '../../../../shared/models/track.dart';
 import '../../../../shared/services/storage/storage_service.dart';
 import '../../../library/domain/repositories/tracks_repository.dart';
@@ -21,12 +22,14 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
     ITracksRepository? tracksRepository,
     IQueueListNavigator? listNavigator,
     IStorageService? storageService,
+    IAudioTelemetryService? telemetryService,
   })  : _engine = engine,
         _queue = queue,
         _sleepTimer = sleepTimer,
         _tracksRepository = tracksRepository,
         _listNavigator = listNavigator,
         _storageService = storageService,
+        _telemetryService = telemetryService,
         super(_buildInitialState(queue, storageService)) {
     _syncInitialQueueModes();
     _bindStreams();
@@ -59,6 +62,7 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
   final ITracksRepository? _tracksRepository;
   final IQueueListNavigator? _listNavigator;
   final IStorageService? _storageService;
+  final IAudioTelemetryService? _telemetryService;
   final List<StreamSubscription> _subscriptions = [];
   int _loadEpoch = 0;
 
@@ -180,6 +184,22 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
       queueVersion: _queue.state.queueVersion,
       status: PlaybackStatus.loading,
     );
+
+    if (_telemetryService != null &&
+        ((track.bitrate ?? 0) <= 0 ||
+            track.codec == null ||
+            track.sampleRate == null)) {
+      unawaited(
+        _telemetryService.hydrateTrackTelemetry(track).then((enriched) {
+          if (mounted &&
+              epoch == _loadEpoch &&
+              enriched != track &&
+              state.currentTrack?.id == enriched.id) {
+            state = state.copyWith(currentTrack: enriched);
+          }
+        }).catchError((_) {}),
+      );
+    }
 
     await _engine.load(track, autoPlay: true);
     if (epoch != _loadEpoch) return;

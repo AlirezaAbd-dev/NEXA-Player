@@ -18,6 +18,10 @@ class Track extends Equatable {
     this.isFavorite = false,
     this.playCount = 0,
     this.bitrate,
+    this.sampleRate,
+    this.bitDepth,
+    this.channels,
+    this.codec,
     this.fileSize,
     this.dateAdded,
     this.dateModified,
@@ -40,6 +44,10 @@ class Track extends Equatable {
   final bool isFavorite;
   final int playCount;
   final int? bitrate;
+  final int? sampleRate;
+  final int? bitDepth;
+  final int? channels;
+  final String? codec;
   final int? fileSize;
   final DateTime? dateAdded;
   final DateTime? dateModified;
@@ -71,6 +79,10 @@ class Track extends Equatable {
       'is_favorite': isFavorite ? 1 : 0,
       'play_count': playCount,
       'bitrate': bitrate,
+      'sample_rate': sampleRate,
+      'bit_depth': bitDepth,
+      'channels': channels,
+      'codec': codec,
       'file_size': fileSize,
       'date_added': (dateAdded ?? DateTime.now()).millisecondsSinceEpoch,
       'date_modified': dateModified?.millisecondsSinceEpoch ??
@@ -111,6 +123,10 @@ class Track extends Equatable {
       isFavorite: map['is_favorite'] == 1 || map['isFavorite'] == true,
       playCount: (map['play_count'] ?? map['playCount'] ?? 0) as int,
       bitrate: map['bitrate'] as int?,
+      sampleRate: map['sample_rate'] as int? ?? map['sampleRate'] as int?,
+      bitDepth: map['bit_depth'] as int? ?? map['bitDepth'] as int?,
+      channels: map['channels'] as int?,
+      codec: map['codec'] as String?,
       fileSize: map['file_size'] as int? ?? map['fileSize'] as int?,
       dateAdded: dateAddedRaw is int
           ? DateTime.fromMillisecondsSinceEpoch(dateAddedRaw)
@@ -139,6 +155,10 @@ class Track extends Equatable {
     bool? isFavorite,
     int? playCount,
     int? bitrate,
+    int? sampleRate,
+    int? bitDepth,
+    int? channels,
+    String? codec,
     int? fileSize,
     DateTime? dateAdded,
     DateTime? dateModified,
@@ -161,6 +181,10 @@ class Track extends Equatable {
       isFavorite: isFavorite ?? this.isFavorite,
       playCount: playCount ?? this.playCount,
       bitrate: bitrate ?? this.bitrate,
+      sampleRate: sampleRate ?? this.sampleRate,
+      bitDepth: bitDepth ?? this.bitDepth,
+      channels: channels ?? this.channels,
+      codec: codec ?? this.codec,
       fileSize: fileSize ?? this.fileSize,
       dateAdded: dateAdded ?? this.dateAdded,
       dateModified: dateModified ?? this.dateModified,
@@ -186,6 +210,10 @@ class Track extends Equatable {
         isFavorite,
         playCount,
         bitrate,
+        sampleRate,
+        bitDepth,
+        channels,
+        codec,
         fileSize,
         dateAdded,
         dateModified,

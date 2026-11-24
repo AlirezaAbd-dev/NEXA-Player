@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:get_it/get_it.dart';
 import 'package:nexa_player/core/services/artwork/artwork_resolution_service.dart';
+import 'package:nexa_player/core/services/audio/audio_telemetry_service.dart';
 import 'package:nexa_player/features/equalizer/data/services/pure_dart_equalizer_service.dart';
 import 'package:nexa_player/features/equalizer/domain/services/equalizer_service.dart';
 import 'package:nexa_player/features/lyrics/data/services/lrclib_api_client.dart';
@@ -183,6 +185,13 @@ Future<void> configureDependencies({
         },
       ),
     );
+  }
+
+  // 6b. AudioTelemetryService (backfills API 29 missing 0 KBPS tracks cleanly off UI thread)
+  if (!getIt.isRegistered<IAudioTelemetryService>()) {
+    final telemetry = AudioTelemetryService(database: db);
+    getIt.registerSingleton<IAudioTelemetryService>(telemetry);
+    unawaited(telemetry.backfillMissingTelemetry(batchLimit: 60));
   }
 
   // 7. IMediaScannerService

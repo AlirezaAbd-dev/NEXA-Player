@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/services/audio/audio_telemetry_service.dart';
 import '../../../../shared/models/track.dart';
 import '../../../../shared/services/storage/storage_service.dart';
 import '../../../library/domain/repositories/tracks_repository.dart';
@@ -57,6 +58,9 @@ final playerNotifierProvider =
   final storage = getIt.isRegistered<IStorageService>()
       ? getIt<IStorageService>()
       : null;
+  final telemetry = getIt.isRegistered<IAudioTelemetryService>()
+      ? getIt<IAudioTelemetryService>()
+      : null;
 
   return PlayerNotifier(
     engine: engine,
@@ -65,6 +69,7 @@ final playerNotifierProvider =
     tracksRepository: tracksRepo,
     listNavigator: listNavigator,
     storageService: storage,
+    telemetryService: telemetry,
   );
 });
 

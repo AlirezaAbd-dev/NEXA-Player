@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'package:nexa_player/core/services/artwork/artwork_resolution_service.dart';
+import 'package:nexa_player/core/utils/audio_quality_formatter.dart';
 import 'package:nexa_player/core/utils/result.dart';
 import 'package:nexa_player/features/scanner/domain/audio_metadata_reader.dart';
 import 'package:nexa_player/features/scanner/domain/media_scanner_service.dart';
@@ -102,6 +103,22 @@ class MediaScannerServiceImpl implements IMediaScannerService {
                   final trackNumber = (item['track_number'] as num?)?.toInt() ?? 0;
                   final year = (item['year'] as num?)?.toInt() ?? 0;
                   final fileSize = (item['file_size'] as num?)?.toInt() ?? 0;
+                  final rawBitrate = (item['bitrate'] as num?)?.toInt();
+                  final effectiveBitrate = AudioQualityFormatter.resolveEffectiveKbps(
+                    bitrate: rawBitrate,
+                    fileSize: fileSize,
+                    duration: Duration(milliseconds: durationMs),
+                  );
+                  final codec = (item['codec'] as String?) ??
+                      AudioQualityFormatter.inferCodec(
+                        Track(
+                          id: '',
+                          title: '',
+                          artist: '',
+                          duration: Duration.zero,
+                          filePath: filePath,
+                        ),
+                      );
                   final trackId = 'trk_${filePath.hashCode.abs()}';
                   final artistId = 'art_${artist.hashCode.abs()}';
                   final albumKey = '${album}__$artist';
@@ -129,14 +146,17 @@ class MediaScannerServiceImpl implements IMediaScannerService {
                     INSERT INTO ${DatabaseSchema.tableTracks} (
                       ${DatabaseSchema.colId}, ${DatabaseSchema.colTitle}, ${DatabaseSchema.colTrackArtist},
                       ${DatabaseSchema.colTrackAlbum}, ${DatabaseSchema.colDurationMs}, ${DatabaseSchema.colTrackFilePath},
-                      ${DatabaseSchema.colTrackNumber}, ${DatabaseSchema.colTrackYear}, ${DatabaseSchema.colFileSize},
+                      ${DatabaseSchema.colTrackNumber}, ${DatabaseSchema.colTrackYear},
+                      ${DatabaseSchema.colBitrate}, ${DatabaseSchema.colCodec}, ${DatabaseSchema.colFileSize},
                       ${DatabaseSchema.colDateAdded}
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(${DatabaseSchema.colTrackFilePath}) DO UPDATE SET
                       ${DatabaseSchema.colTitle} = excluded.${DatabaseSchema.colTitle},
-                      ${DatabaseSchema.colDurationMs} = excluded.${DatabaseSchema.colDurationMs};
+                      ${DatabaseSchema.colDurationMs} = excluded.${DatabaseSchema.colDurationMs},
+                      ${DatabaseSchema.colBitrate} = COALESCE(excluded.${DatabaseSchema.colBitrate}, ${DatabaseSchema.colBitrate}),
+                      ${DatabaseSchema.colCodec} = COALESCE(excluded.${DatabaseSchema.colCodec}, ${DatabaseSchema.colCodec});
                   ''', [
-                    trackId, title, artist, album, durationMs, filePath, trackNumber, year, fileSize, nowMs
+                    trackId, title, artist, album, durationMs, filePath, trackNumber, year, effectiveBitrate, codec, fileSize, nowMs
                   ]);
                 }
               }
@@ -317,6 +337,21 @@ class MediaScannerServiceImpl implements IMediaScannerService {
             }
 
             // 2f. Upsert Track
+            final effectiveBitrate = AudioQualityFormatter.resolveEffectiveKbps(
+              bitrate: meta.bitrate,
+              fileSize: fileSize,
+              duration: meta.duration,
+            );
+            final effectiveCodec = meta.codec ??
+                AudioQualityFormatter.inferCodec(
+                  Track(
+                    id: trackId,
+                    title: meta.title,
+                    artist: meta.artist,
+                    duration: meta.duration,
+                    filePath: file.path,
+                  ),
+                );
             database.execute('''
               INSERT INTO ${DatabaseSchema.tableTracks} (
                 ${DatabaseSchema.colId},
@@ -331,12 +366,16 @@ class MediaScannerServiceImpl implements IMediaScannerService {
                 ${DatabaseSchema.colTrackYear},
                 ${DatabaseSchema.colTrackGenre},
                 ${DatabaseSchema.colBitrate},
+                ${DatabaseSchema.colSampleRate},
+                ${DatabaseSchema.colBitDepth},
+                ${DatabaseSchema.colChannels},
+                ${DatabaseSchema.colCodec},
                 ${DatabaseSchema.colFileSize},
                 ${DatabaseSchema.colDateAdded},
                 ${DatabaseSchema.colArtistId},
                 ${DatabaseSchema.colAlbumId},
                 ${DatabaseSchema.colGenreId}
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
               ON CONFLICT(${DatabaseSchema.colTrackFilePath}) DO UPDATE SET
                 ${DatabaseSchema.colTitle} = excluded.${DatabaseSchema.colTitle},
                 ${DatabaseSchema.colTrackArtist} = excluded.${DatabaseSchema.colTrackArtist},
@@ -347,7 +386,11 @@ class MediaScannerServiceImpl implements IMediaScannerService {
                 ${DatabaseSchema.colDiscNumber} = excluded.${DatabaseSchema.colDiscNumber},
                 ${DatabaseSchema.colTrackYear} = excluded.${DatabaseSchema.colTrackYear},
                 ${DatabaseSchema.colTrackGenre} = excluded.${DatabaseSchema.colTrackGenre},
-                ${DatabaseSchema.colBitrate} = excluded.${DatabaseSchema.colBitrate},
+                ${DatabaseSchema.colBitrate} = COALESCE(excluded.${DatabaseSchema.colBitrate}, ${DatabaseSchema.colBitrate}),
+                ${DatabaseSchema.colSampleRate} = COALESCE(excluded.${DatabaseSchema.colSampleRate}, ${DatabaseSchema.colSampleRate}),
+                ${DatabaseSchema.colBitDepth} = COALESCE(excluded.${DatabaseSchema.colBitDepth}, ${DatabaseSchema.colBitDepth}),
+                ${DatabaseSchema.colChannels} = COALESCE(excluded.${DatabaseSchema.colChannels}, ${DatabaseSchema.colChannels}),
+                ${DatabaseSchema.colCodec} = COALESCE(excluded.${DatabaseSchema.colCodec}, ${DatabaseSchema.colCodec}),
                 ${DatabaseSchema.colFileSize} = excluded.${DatabaseSchema.colFileSize},
                 ${DatabaseSchema.colArtistId} = excluded.${DatabaseSchema.colArtistId},
                 ${DatabaseSchema.colAlbumId} = excluded.${DatabaseSchema.colAlbumId},
@@ -364,7 +407,11 @@ class MediaScannerServiceImpl implements IMediaScannerService {
               meta.discNumber,
               meta.year,
               meta.genre,
-              meta.bitrate,
+              effectiveBitrate,
+              meta.sampleRate,
+              meta.bitDepth,
+              meta.channels,
+              effectiveCodec,
               fileSize,
               nowMs,
               artistId,

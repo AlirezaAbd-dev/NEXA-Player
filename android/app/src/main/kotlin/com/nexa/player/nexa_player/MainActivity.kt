@@ -3,6 +3,9 @@ package com.nexa.player.nexa_player
 import android.content.ContentUris
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.media.AudioFormat
+import android.media.MediaExtractor
+import android.media.MediaFormat
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
@@ -20,6 +23,7 @@ import java.io.FileOutputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.math.max
+import kotlin.math.roundToInt
 
 class MainActivity : AudioServiceActivity() {
     private val channelName = "com.nexa.player/media_store"
@@ -65,6 +69,19 @@ class MainActivity : AudioServiceActivity() {
                             mainHandler.post { result.success(resolved) }
                         }
                     }
+                    "extractAudioTelemetry" -> {
+                        val filePath = call.argument<String>("filePath")
+                        val fileSize = call.argument<Number>("fileSize")?.toLong() ?: 0L
+                        val durationMs = call.argument<Number>("durationMs")?.toLong() ?: 0L
+                        if (filePath.isNullOrBlank()) {
+                            result.success(null)
+                            return@setMethodCallHandler
+                        }
+                        ioExecutor.execute {
+                            val telemetry = extractAudioTelemetry(filePath, fileSize, durationMs)
+                            mainHandler.post { result.success(telemetry) }
+                        }
+                    }
                     else -> result.notImplemented()
                 }
             }
@@ -77,7 +94,7 @@ class MainActivity : AudioServiceActivity() {
 
     private fun queryMediaStore(): List<Map<String, Any?>> {
         val trackList = mutableListOf<Map<String, Any?>>()
-        val projection = arrayOf(
+        val projectionList = mutableListOf(
             MediaStore.Audio.Media._ID,
             MediaStore.Audio.Media.TITLE,
             MediaStore.Audio.Media.ARTIST,
@@ -87,8 +104,13 @@ class MainActivity : AudioServiceActivity() {
             MediaStore.Audio.Media.DATA,
             MediaStore.Audio.Media.TRACK,
             MediaStore.Audio.Media.YEAR,
-            MediaStore.Audio.Media.SIZE
+            MediaStore.Audio.Media.SIZE,
+            MediaStore.Audio.Media.MIME_TYPE
         )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            projectionList.add(MediaStore.Audio.Media.BITRATE)
+        }
+        val projection = projectionList.toTypedArray()
 
         val selection =
             "${MediaStore.Audio.Media.IS_MUSIC} != 0 OR ${MediaStore.Audio.Media.DURATION} > 15000"
@@ -108,6 +130,12 @@ class MainActivity : AudioServiceActivity() {
             val trackCol = it.getColumnIndex(MediaStore.Audio.Media.TRACK)
             val yearCol = it.getColumnIndex(MediaStore.Audio.Media.YEAR)
             val sizeCol = it.getColumnIndex(MediaStore.Audio.Media.SIZE)
+            val mimeCol = it.getColumnIndex(MediaStore.Audio.Media.MIME_TYPE)
+            val bitrateCol = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                it.getColumnIndex(MediaStore.Audio.Media.BITRATE)
+            } else {
+                -1
+            }
 
             while (it.moveToNext()) {
                 val filePath = if (dataCol >= 0) it.getString(dataCol) else null
@@ -124,6 +152,11 @@ class MainActivity : AudioServiceActivity() {
                 val trackNumber = if (trackCol >= 0) it.getInt(trackCol) else 0
                 val year = if (yearCol >= 0) it.getInt(yearCol) else 0
                 val size = if (sizeCol >= 0) it.getLong(sizeCol) else 0L
+                val mime = if (mimeCol >= 0) it.getString(mimeCol) else null
+                val rawBitrate = if (bitrateCol >= 0) it.getInt(bitrateCol) else 0
+
+                val kbps = normalizeKbps(rawBitrate, size, duration)
+                val codec = normalizeCodec(mime, filePath)
 
                 val title = if (!rawTitle.isNullOrBlank()) {
                     rawTitle
@@ -151,12 +184,151 @@ class MainActivity : AudioServiceActivity() {
                     "file_path" to (filePath ?: ""),
                     "track_number" to trackNumber,
                     "year" to year,
-                    "file_size" to size
+                    "file_size" to size,
+                    "bitrate" to kbps,
+                    "codec" to codec
                 )
                 trackList.add(item)
             }
         }
         return trackList
+    }
+
+    private fun extractAudioTelemetry(
+        filePath: String,
+        knownFileSize: Long,
+        knownDurationMs: Long
+    ): Map<String, Any?>? {
+        val file = File(filePath)
+        if (!file.exists()) return null
+
+        val fileSize = if (knownFileSize > 0L) knownFileSize else file.length()
+        var durationMs = knownDurationMs
+        var bitrateBps = 0
+        var sampleRate = 0
+        var channels = 0
+        var bitDepth = 0
+        var mimeType: String? = null
+
+        val retriever = MediaMetadataRetriever()
+        try {
+            retriever.setDataSource(filePath)
+            val brStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)
+            bitrateBps = brStr?.toIntOrNull() ?: 0
+            mimeType = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_MIMETYPE)
+            if (durationMs <= 0L) {
+                durationMs = retriever
+                    .extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+                    ?.toLongOrNull() ?: 0L
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                sampleRate = retriever
+                    .extractMetadata(MediaMetadataRetriever.METADATA_KEY_SAMPLERATE)
+                    ?.toIntOrNull() ?: 0
+                bitDepth = retriever
+                    .extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITS_PER_SAMPLE)
+                    ?.toIntOrNull() ?: 0
+            }
+        } catch (_: Exception) {
+        } finally {
+            try {
+                retriever.release()
+            } catch (_: Exception) {
+            }
+        }
+
+        val extractor = MediaExtractor()
+        try {
+            extractor.setDataSource(filePath)
+            for (i in 0 until extractor.trackCount) {
+                val format = extractor.getTrackFormat(i)
+                val trackMime = format.getString(MediaFormat.KEY_MIME) ?: continue
+                if (trackMime.startsWith("audio/")) {
+                    mimeType = mimeType ?: trackMime
+                    if (bitrateBps <= 0 && format.containsKey(MediaFormat.KEY_BIT_RATE)) {
+                        bitrateBps = format.getInteger(MediaFormat.KEY_BIT_RATE)
+                    }
+                    if (sampleRate <= 0 && format.containsKey(MediaFormat.KEY_SAMPLE_RATE)) {
+                        sampleRate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE)
+                    }
+                    if (channels <= 0 && format.containsKey(MediaFormat.KEY_CHANNEL_COUNT)) {
+                        channels = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
+                    }
+                    if (bitDepth <= 0 &&
+                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.N &&
+                        format.containsKey(MediaFormat.KEY_PCM_ENCODING)
+                    ) {
+                        bitDepth = when (format.getInteger(MediaFormat.KEY_PCM_ENCODING)) {
+                            AudioFormat.ENCODING_PCM_8BIT -> 8
+                            AudioFormat.ENCODING_PCM_16BIT -> 16
+                            AudioFormat.ENCODING_PCM_FLOAT -> 32
+                            AudioFormat.ENCODING_PCM_24BIT_PACKED -> 24
+                            AudioFormat.ENCODING_PCM_32BIT -> 32
+                            else -> 0
+                        }
+                    }
+                    if (durationMs <= 0L && format.containsKey(MediaFormat.KEY_DURATION)) {
+                        durationMs = format.getLong(MediaFormat.KEY_DURATION) / 1000L
+                    }
+                    break
+                }
+            }
+        } catch (_: Exception) {
+        } finally {
+            try {
+                extractor.release()
+            } catch (_: Exception) {
+            }
+        }
+
+        val kbps = normalizeKbps(bitrateBps, fileSize, durationMs)
+        val codec = normalizeCodec(mimeType, filePath)
+        if (bitDepth <= 0 && (codec == "MP3" || codec == "AAC" || codec == "OPUS" || codec == "OGG" || codec == "FLAC" || codec == "WAV")) {
+            bitDepth = 16
+        }
+
+        return mapOf(
+            "bitrate" to kbps,
+            "sample_rate" to (if (sampleRate > 0) sampleRate else null),
+            "bit_depth" to (if (bitDepth > 0) bitDepth else null),
+            "channels" to (if (channels > 0) channels else null),
+            "codec" to codec
+        )
+    }
+
+    private fun normalizeKbps(rawBitrate: Int, fileSizeBytes: Long, durationMs: Long): Int? {
+        if (rawBitrate > 0) {
+            val kbps = if (rawBitrate > 10000) (rawBitrate / 1000.0).roundToInt() else rawBitrate
+            if (kbps > 0) return kbps
+        }
+        if (fileSizeBytes > 0L && durationMs > 0L) {
+            val computed = ((fileSizeBytes * 8.0) / (durationMs / 1000.0) / 1000.0).roundToInt()
+            if (computed > 0) return computed
+        }
+        return null
+    }
+
+    private fun normalizeCodec(mimeType: String?, filePath: String?): String? {
+        val lowerMime = mimeType?.lowercase() ?: ""
+        if (lowerMime.contains("flac")) return "FLAC"
+        if (lowerMime.contains("mpeg") || lowerMime.contains("mp3")) return "MP3"
+        if (lowerMime.contains("mp4a") || lowerMime.contains("aac")) return "AAC"
+        if (lowerMime.contains("opus")) return "OPUS"
+        if (lowerMime.contains("vorbis") || lowerMime.contains("ogg")) return "OGG"
+        if (lowerMime.contains("raw") || lowerMime.contains("wav") || lowerMime.contains("x-wav")) return "WAV"
+        if (lowerMime.contains("alac")) return "ALAC"
+
+        val ext = filePath?.substringAfterLast('.', "")?.lowercase() ?: ""
+        return when (ext) {
+            "mp3" -> "MP3"
+            "flac" -> "FLAC"
+            "m4a", "aac", "mp4" -> "AAC"
+            "opus" -> "OPUS"
+            "ogg" -> "OGG"
+            "wav" -> "WAV"
+            "alac" -> "ALAC"
+            else -> if (ext.isNotEmpty()) ext.uppercase() else null
+        }
     }
 
     private fun extractAndCacheArtwork(

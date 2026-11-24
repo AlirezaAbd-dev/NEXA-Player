@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/extensions/duration_x.dart';
+import 'package:nexa_player/core/utils/audio_quality_formatter.dart';
 import 'package:nexa_player/shared/models/track.dart';
 import 'package:nexa_player/shared/widgets/cards/nexa_artwork_image.dart';
 import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
@@ -531,9 +532,10 @@ class _HeroArtworkCardState extends State<HeroArtworkCard>
   }) {
     final effectiveTrack = track ?? widget.track;
     final surfaceTokens = NexaSurfaceTokens.of(context);
-    final bitrateStr = effectiveTrack?.bitrate != null
-        ? '${effectiveTrack!.bitrate! ~/ 1000} kbps'
-        : '320 kbps MP3';
+    final bitrateStr =
+        AudioQualityFormatter.formatSignalChainFormat(effectiveTrack);
+    final samplePrecisionStr =
+        AudioQualityFormatter.formatSamplePrecision(effectiveTrack);
     final durationStr = effectiveTrack != null ? effectiveTrack.duration.toMinutesSeconds() : '3:50';
     final yearStr = effectiveTrack?.year != null ? '${effectiveTrack!.year}' : '2016';
     final genreStr = effectiveTrack?.genre ?? 'Synthpop / R&B';
@@ -619,7 +621,7 @@ class _HeroArtworkCardState extends State<HeroArtworkCard>
 
                   // Telemetry Specs
                   _detailRow('Format / Bitrate', bitrateStr, colorScheme, surfaceTokens),
-                  _detailRow('Sample Precision', '44.1 kHz / 16-bit', colorScheme, surfaceTokens),
+                  _detailRow('Sample Precision', samplePrecisionStr, colorScheme, surfaceTokens),
                   _detailRow('Duration', durationStr, colorScheme, surfaceTokens),
                   _detailRow('Year', yearStr, colorScheme, surfaceTokens),
                   _detailRow('ReplayGain', '+0.0 dB (Radio)', colorScheme, surfaceTokens),

@@ -8,7 +8,7 @@ abstract final class DatabaseSchema {
   DatabaseSchema._();
 
   /// Current database schema version.
-  static const int currentVersion = 1;
+  static const int currentVersion = 2;
 
   // ---------------------------------------------------------------------------
   // Table Names
@@ -45,6 +45,10 @@ abstract final class DatabaseSchema {
   static const String colIsFavorite = 'is_favorite';
   static const String colPlayCount = 'play_count';
   static const String colBitrate = 'bitrate';
+  static const String colSampleRate = 'sample_rate';
+  static const String colBitDepth = 'bit_depth';
+  static const String colChannels = 'channels';
+  static const String colCodec = 'codec';
   static const String colFileSize = 'file_size';
   static const String colDateModified = 'date_modified';
   static const String colArtistId = 'artist_id';
@@ -153,6 +157,10 @@ CREATE TABLE IF NOT EXISTS $tableTracks (
   $colIsFavorite INTEGER NOT NULL DEFAULT 0,
   $colPlayCount INTEGER NOT NULL DEFAULT 0,
   $colBitrate INTEGER,
+  $colSampleRate INTEGER,
+  $colBitDepth INTEGER,
+  $colChannels INTEGER,
+  $colCodec TEXT,
   $colFileSize INTEGER,
   $colDateAdded INTEGER NOT NULL,
   $colDateModified INTEGER NOT NULL DEFAULT 0,
@@ -312,7 +320,22 @@ CREATE TABLE IF NOT EXISTS $tableScanDirectories (
 
   /// Handles schema migrations between versions.
   static void onUpgrade(Database db, int oldVersion, int newVersion) {
-    // Version 1 is the baseline schema. Future version upgrades will be added here.
+    if (oldVersion < 2) {
+      final rows = db.select('PRAGMA table_info($tableTracks);');
+      final existingCols = rows.map((r) => r['name'] as String).toSet();
+      if (!existingCols.contains(colSampleRate)) {
+        db.execute('ALTER TABLE $tableTracks ADD COLUMN $colSampleRate INTEGER;');
+      }
+      if (!existingCols.contains(colBitDepth)) {
+        db.execute('ALTER TABLE $tableTracks ADD COLUMN $colBitDepth INTEGER;');
+      }
+      if (!existingCols.contains(colChannels)) {
+        db.execute('ALTER TABLE $tableTracks ADD COLUMN $colChannels INTEGER;');
+      }
+      if (!existingCols.contains(colCodec)) {
+        db.execute('ALTER TABLE $tableTracks ADD COLUMN $colCodec TEXT;');
+      }
+    }
   }
 
   /// Drops all tables in reverse dependency order. Useful for test teardowns.

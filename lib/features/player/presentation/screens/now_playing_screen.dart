@@ -8,6 +8,7 @@ import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/di/service_providers.dart' hide playbackQueueProvider;
 import '../../../../core/extensions/duration_x.dart';
+import '../../../../core/utils/audio_quality_formatter.dart';
 import '../../../../core/theme/dynamic_palette_providers.dart';
 import '../../../../core/theme/dynamic_palette_service.dart';
 import '../../../../shared/models/track.dart';
@@ -721,13 +722,16 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                               borderRadius: BorderRadius.circular(6.0),
                             ),
                             child: Text(
-                              currentTrack?.bitrate != null
-                                  ? '${currentTrack!.bitrate! ~/ 1000} KBPS • STEREO'
-                                  : '320 KBPS • STEREO',
+                              AudioQualityFormatter.formatNowPlayingBadge(
+                                currentTrack,
+                              ),
                               style: surfaceTokens.telemetryTextStyle.copyWith(
                                 color: primary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 10.0,
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
                               ),
                             ),
                           ),

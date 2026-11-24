@@ -13,6 +13,10 @@ class ExtractedMetadata {
     this.discNumber,
     this.genre,
     this.bitrate,
+    this.sampleRate,
+    this.bitDepth,
+    this.channels,
+    this.codec,
     this.artworkBytes,
   });
 
@@ -25,6 +29,10 @@ class ExtractedMetadata {
   final int? discNumber;
   final String? genre;
   final int? bitrate;
+  final int? sampleRate;
+  final int? bitDepth;
+  final int? channels;
+  final String? codec;
   final Uint8List? artworkBytes;
 }
 

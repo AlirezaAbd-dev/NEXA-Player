@@ -69,6 +69,7 @@ class PureDartAudioMetadataReader implements IAudioMetadataReader {
     int? trackNumber;
     int? discNumber;
     Uint8List? artwork;
+    var audioStartOffset = 0;
 
     try {
       final majorVersion = bytes[3];
@@ -79,6 +80,7 @@ class PureDartAudioMetadataReader implements IAudioMetadataReader {
 
       var offset = 10;
       final maxOffset = (10 + tagSize).clamp(10, bytes.length);
+      audioStartOffset = maxOffset;
 
       while (offset + 10 <= maxOffset) {
         if (bytes[offset] == 0) break; // ID3 padding
@@ -148,6 +150,15 @@ class PureDartAudioMetadataReader implements IAudioMetadataReader {
       // Fall back gracefully with partial results
     }
 
+    final mp3AudioInfo = _probeMp3AudioFrame(bytes, audioStartOffset);
+    final computedKbps = mp3AudioInfo.$1 ??
+        ((duration.inMilliseconds > 0 && bytes.length > audioStartOffset)
+            ? (((bytes.length - audioStartOffset) * 8.0) /
+                    (duration.inMilliseconds / 1000.0) /
+                    1000.0)
+                .round()
+            : null);
+
     return ExtractedMetadata(
       title: title,
       artist: artist,
@@ -157,9 +168,55 @@ class PureDartAudioMetadataReader implements IAudioMetadataReader {
       trackNumber: trackNumber,
       discNumber: discNumber,
       genre: genre,
-      bitrate: 320,
+      bitrate: (computedKbps != null && computedKbps > 0) ? computedKbps : null,
+      sampleRate: mp3AudioInfo.$2,
+      bitDepth: 16,
+      channels: mp3AudioInfo.$3,
+      codec: 'MP3',
       artworkBytes: artwork,
     );
+  }
+
+  /// Probes the first valid MPEG Audio sync frame to read bitrate (kbps), sample rate (Hz),
+  /// and channel count (1 or 2). Returns `(null, null, null)` when no sync frame is found.
+  (int?, int?, int?) _probeMp3AudioFrame(Uint8List bytes, int startOffset) {
+    const bitrateV1L3 = [
+      0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0,
+    ];
+    const bitrateV2L3 = [
+      0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 0,
+    ];
+    const sampleRatesV1 = [44100, 48000, 32000, 0];
+    const sampleRatesV2 = [22050, 24000, 16000, 0];
+    const sampleRatesV25 = [11025, 12000, 8000, 0];
+
+    final limit = (startOffset + 8192).clamp(startOffset, bytes.length);
+    for (var i = startOffset; i + 4 <= limit; i++) {
+      if (bytes[i] == 0xFF && (bytes[i + 1] & 0xE0) == 0xE0) {
+        final versionBits = (bytes[i + 1] >> 3) & 0x03;
+        final layerBits = (bytes[i + 1] >> 1) & 0x03;
+        final bitrateIdx = (bytes[i + 2] >> 4) & 0x0F;
+        final srIdx = (bytes[i + 2] >> 2) & 0x03;
+        final channelMode = (bytes[i + 3] >> 6) & 0x03;
+
+        if (versionBits == 1 || layerBits == 0 || bitrateIdx == 15 || srIdx == 3) {
+          continue;
+        }
+        final isMpeg1 = versionBits == 3;
+        final kbps = isMpeg1 ? bitrateV1L3[bitrateIdx] : bitrateV2L3[bitrateIdx];
+        final sr = switch (versionBits) {
+          3 => sampleRatesV1[srIdx],
+          2 => sampleRatesV2[srIdx],
+          0 => sampleRatesV25[srIdx],
+          _ => 0,
+        };
+        if (kbps > 0 && sr > 0) {
+          final channels = channelMode == 3 ? 1 : 2;
+          return (kbps, sr, channels);
+        }
+      }
+    }
+    return (null, null, null);
   }
 
   /// Unwraps ID3v2 APIC frame envelope (`encoding + MIME + NUL + type + desc + NUL`)
@@ -240,30 +297,45 @@ class PureDartAudioMetadataReader implements IAudioMetadataReader {
   }
 
   ExtractedMetadata _parseWav(Uint8List bytes, String fallbackTitle) {
+    final channels = bytes[22] | (bytes[23] << 8);
+    final sampleRate =
+        bytes[24] | (bytes[25] << 8) | (bytes[26] << 16) | (bytes[27] << 24);
     final byteRate =
         bytes[28] | (bytes[29] << 8) | (bytes[30] << 16) | (bytes[31] << 24);
+    final bitDepth = bytes[34] | (bytes[35] << 8);
     final dataSize = bytes.length - 44;
     final durationSeconds =
         byteRate > 0 ? (dataSize / byteRate).round() : 5;
+    final kbps = byteRate > 0 ? (byteRate * 8) ~/ 1000 : null;
     return ExtractedMetadata(
       title: fallbackTitle,
       artist: 'WAV Artist',
       album: 'WAV Album',
       duration: Duration(seconds: durationSeconds.clamp(1, 3600)),
-      bitrate: (byteRate * 8) ~/ 1000,
+      bitrate: (kbps != null && kbps > 0) ? kbps : null,
+      sampleRate: sampleRate > 0 ? sampleRate : null,
+      bitDepth: bitDepth > 0 ? bitDepth : 16,
+      channels: channels > 0 ? channels : 2,
+      codec: 'WAV',
     );
   }
 
   ExtractedMetadata _parseFlac(Uint8List bytes, String fallbackTitle) {
     final sampleRate =
         (bytes[18] << 12) | (bytes[19] << 4) | ((bytes[20] & 0xF0) >> 4);
+    final channels = ((bytes[20] & 0x0E) >> 1) + 1;
+    final bitDepth =
+        (((bytes[20] & 0x01) << 4) | ((bytes[21] & 0xF0) >> 4)) + 1;
     final totalSamples = ((bytes[21] & 0x0F) << 32) |
         (bytes[22] << 24) |
         (bytes[23] << 16) |
         (bytes[24] << 8) |
         bytes[25];
-    final durationSeconds =
-        sampleRate > 0 ? (totalSamples / sampleRate).round() : 10;
+    final durationExactSec = sampleRate > 0 ? (totalSamples / sampleRate) : 10.0;
+    final durationSeconds = durationExactSec.round();
+    final computedKbps = durationExactSec > 0 && bytes.length > 42
+        ? ((bytes.length * 8.0) / durationExactSec / 1000.0).round()
+        : null;
 
     Uint8List? artwork;
     try {
@@ -295,7 +367,11 @@ class PureDartAudioMetadataReader implements IAudioMetadataReader {
       artist: 'FLAC Artist',
       album: 'FLAC Album',
       duration: Duration(seconds: durationSeconds.clamp(1, 7200)),
-      bitrate: 1411,
+      bitrate: (computedKbps != null && computedKbps > 0) ? computedKbps : 1411,
+      sampleRate: sampleRate > 0 ? sampleRate : 44100,
+      bitDepth: bitDepth > 0 ? bitDepth : 16,
+      channels: channels > 0 ? channels : 2,
+      codec: 'FLAC',
       artworkBytes: artwork,
     );
   }
@@ -334,6 +410,8 @@ class PureDartAudioMetadataReader implements IAudioMetadataReader {
       album: 'Unknown Album',
       duration: const Duration(seconds: 180),
       bitrate: 256,
+      channels: 2,
+      codec: 'AAC',
       artworkBytes: artwork,
     );
   }
