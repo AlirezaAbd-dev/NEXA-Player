@@ -289,7 +289,7 @@ class DesktopStudioDock extends ConsumerWidget {
                             onTap: () {
                               ref
                                   .read(playerNotifierProvider.notifier)
-                                  .playTrack(t);
+                                  .skipToIndex(index);
                             },
                             borderRadius:
                                 BorderRadius.circular(GlassTokens.radiusSmall),

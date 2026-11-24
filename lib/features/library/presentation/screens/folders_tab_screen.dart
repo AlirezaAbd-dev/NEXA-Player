@@ -288,26 +288,39 @@ class _FolderItem extends ConsumerWidget {
                 ),
                 onTap: () async {
                   HapticFeedback.lightImpact();
-                  if (file.trackId != null) {
-                    final tracksRepo = ref.read(tracksRepositoryProvider);
-                    final trackRes = await tracksRepo.getTrackById(file.trackId!);
-                    final track = trackRes.valueOrNull;
-                    if (track != null) {
-                      ref.read(playerNotifierProvider.notifier).playTrack(track);
-                      return;
+                  final tracksRepo = ref.read(tracksRepositoryProvider);
+                  final folderTracks = <Track>[];
+                  int tappedIndex = 0;
+
+                  for (var i = 0; i < folder.files.length; i++) {
+                    final f = folder.files[i];
+                    if (f.path == file.path) {
+                      tappedIndex = folderTracks.length;
                     }
+                    Track? resolved;
+                    if (f.trackId != null) {
+                      final res = await tracksRepo.getTrackById(f.trackId!);
+                      resolved = res.valueOrNull;
+                    }
+                    folderTracks.add(
+                      resolved ??
+                          Track(
+                            id: f.trackId ?? f.path,
+                            title: p.basenameWithoutExtension(f.name),
+                            artist: folder.name,
+                            album: folder.name,
+                            duration: Duration.zero,
+                            filePath: f.path,
+                            fileSize: f.fileSize,
+                          ),
+                    );
                   }
-                  // Fallback track from file node
-                  final fallbackTrack = Track(
-                    id: file.trackId ?? file.path,
-                    title: p.basenameWithoutExtension(file.name),
-                    artist: folder.name,
-                    album: folder.name,
-                    duration: Duration.zero,
-                    filePath: file.path,
-                    fileSize: file.fileSize,
-                  );
-                  ref.read(playerNotifierProvider.notifier).playTrack(fallbackTrack);
+
+                  if (folderTracks.isNotEmpty) {
+                    await ref
+                        .read(playerNotifierProvider.notifier)
+                        .playQueue(folderTracks, initialIndex: tappedIndex);
+                  }
                 },
               );
             }),

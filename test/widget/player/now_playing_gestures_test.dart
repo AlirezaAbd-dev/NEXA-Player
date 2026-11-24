@@ -136,6 +136,13 @@ class _FakePlayerNotifier extends StateNotifier<PlaybackState>
   _FakePlayerNotifier(super.state);
 
   @override
+  Future<void> playQueue(
+    List<Track> tracks, {
+    int initialIndex = 0,
+    PlaybackMode? mode,
+  }) async {}
+
+  @override
   Future<void> playTrack(Track track, {List<Track>? queue, int? initialIndex}) async {}
 
   @override

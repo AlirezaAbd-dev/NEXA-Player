@@ -492,6 +492,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                                     track: currentTrack,
                                     tracks: effectiveTracks,
                                     currentIndex: queueCurrentIndex,
+                                    queueVersion: queueState.queueVersion,
                                     isPlaying: isPlaying,
                                     size: artworkSize,
                                     onPageSettled: _handlePageSettled,

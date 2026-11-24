@@ -12,7 +12,7 @@ class PlaybackQueueImpl implements IPlaybackQueue {
   }) : _random = random ?? Random();
 
   final Random _random;
-  final _controller = StreamController<PlaybackQueueState>.broadcast();
+  final _controller = StreamController<PlaybackQueueState>.broadcast(sync: true);
 
   PlaybackQueueState _state = const PlaybackQueueState();
 
@@ -38,12 +38,15 @@ class PlaybackQueueImpl implements IPlaybackQueue {
     final activeMode = mode ?? _state.mode;
     final original = List<Track>.from(tracks);
 
+    final nextVersion = _state.queueVersion + 1;
+
     if (original.isEmpty) {
       _emit(PlaybackQueueState(
         tracks: const [],
         originalTracks: const [],
         currentIndex: -1,
         mode: activeMode,
+        queueVersion: nextVersion,
       ));
       return;
     }
@@ -58,6 +61,7 @@ class PlaybackQueueImpl implements IPlaybackQueue {
         originalTracks: original,
         currentIndex: 0,
         mode: activeMode,
+        queueVersion: nextVersion,
       ));
     } else {
       _emit(PlaybackQueueState(
@@ -65,6 +69,7 @@ class PlaybackQueueImpl implements IPlaybackQueue {
         originalTracks: original,
         currentIndex: clampedInitial,
         mode: activeMode,
+        queueVersion: nextVersion,
       ));
     }
   }
@@ -245,6 +250,7 @@ class PlaybackQueueImpl implements IPlaybackQueue {
       originalTracks: const [],
       currentIndex: -1,
       mode: _state.mode,
+      queueVersion: _state.queueVersion + 1,
     ));
   }
 

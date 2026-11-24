@@ -41,19 +41,17 @@ class PlaylistDetailScreen extends ConsumerWidget {
   void _handlePlayAll(BuildContext context, WidgetRef ref, List<Track> tracks) {
     if (tracks.isEmpty) return;
     HapticFeedback.selectionClick();
-    ref.read(playbackQueueProvider).setQueue(tracks, initialIndex: 0);
-    ref.read(playerNotifierProvider.notifier).playTrack(tracks.first);
+    ref.read(playerNotifierProvider.notifier).playQueue(tracks, initialIndex: 0);
   }
 
   void _handleShuffle(BuildContext context, WidgetRef ref, List<Track> tracks) {
     if (tracks.isEmpty) return;
     HapticFeedback.selectionClick();
-    ref.read(playbackQueueProvider).setQueue(
+    ref.read(playerNotifierProvider.notifier).playQueue(
           tracks,
           initialIndex: 0,
           mode: PlaybackMode.shuffle,
         );
-    ref.read(playerNotifierProvider.notifier).playTrack(tracks.first);
   }
 
   void _handleExportM3u(BuildContext context, WidgetRef ref, List<Track> tracks) {
@@ -178,7 +176,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
                           tracksAsync.when(
                             data: (tracks) => Text(
                               '${tracks.length} tracks • ${_formatTotalDuration(tracks)}',
-                              style: (surfaceTokens.telemetryTextStyle ?? AppTypography.bodySmall).copyWith(
+                              style: surfaceTokens.telemetryTextStyle.copyWith(
                                 color: Colors.white70,
                               ),
                             ),
@@ -350,13 +348,9 @@ class PlaylistDetailScreen extends ConsumerWidget {
                                     track: track,
                                     isPlaying: track.id == currentTrackId,
                                     onTap: () {
-                                      ref.read(playbackQueueProvider).setQueue(
-                                            tracks,
-                                            initialIndex: index,
-                                          );
                                       ref
                                           .read(playerNotifierProvider.notifier)
-                                          .playTrack(track);
+                                          .playQueue(tracks, initialIndex: index);
                                     },
                                     trailing: PopupMenuButton<String>(
                                       icon: const Icon(

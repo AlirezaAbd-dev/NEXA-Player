@@ -57,6 +57,7 @@ class PlaybackState extends Equatable {
     this.volume = 1.0,
     this.speed = 1.0,
     this.playbackMode = PlaybackMode.ordered,
+    this.queueVersion = 0,
     this.crossfadeDuration = Duration.zero,
     this.errorMessage,
   });
@@ -84,6 +85,9 @@ class PlaybackState extends Equatable {
 
   /// Queue sequencing mode (ordered, shuffle, repeat).
   final PlaybackMode playbackMode;
+
+  /// Queue revision ID synchronized with [PlaybackQueueState.queueVersion].
+  final int queueVersion;
 
   /// Crossfade transition duration between tracks.
   final Duration crossfadeDuration;
@@ -123,6 +127,7 @@ class PlaybackState extends Equatable {
     double? volume,
     double? speed,
     PlaybackMode? playbackMode,
+    int? queueVersion,
     Duration? crossfadeDuration,
     String? errorMessage,
     bool clearError = false,
@@ -136,6 +141,7 @@ class PlaybackState extends Equatable {
       volume: volume ?? this.volume,
       speed: speed ?? this.speed,
       playbackMode: playbackMode ?? this.playbackMode,
+      queueVersion: queueVersion ?? this.queueVersion,
       crossfadeDuration: crossfadeDuration ?? this.crossfadeDuration,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
@@ -151,6 +157,7 @@ class PlaybackState extends Equatable {
         volume,
         speed,
         playbackMode,
+        queueVersion,
         crossfadeDuration,
         errorMessage,
       ];

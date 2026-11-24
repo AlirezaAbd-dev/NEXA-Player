@@ -212,10 +212,7 @@ class QueueBottomSheet extends ConsumerWidget {
                                 ],
                               ),
                               onTap: () {
-                                ref.read(playerNotifierProvider.notifier).playTrack(
-                                      track,
-                                      initialIndex: index,
-                                    );
+                                ref.read(playerNotifierProvider.notifier).skipToIndex(index);
                                 Navigator.of(context).pop();
                               },
                             ),

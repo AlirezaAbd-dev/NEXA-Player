@@ -28,6 +28,7 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
   final ISleepTimerService _sleepTimer;
   final ITracksRepository? _tracksRepository;
   final List<StreamSubscription> _subscriptions = [];
+  int _loadEpoch = 0;
 
   void _bindStreams() {
     _subscriptions.add(
@@ -74,12 +75,31 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
         state = state.copyWith(
           currentTrack: qState.currentTrack,
           playbackMode: qState.mode,
+          queueVersion: qState.queueVersion,
+          clearCurrentTrack: qState.currentTrack == null,
         );
       }),
     );
   }
 
-  /// Plays [track]. If [queue] is provided, sets active queue with [initialIndex].
+  /// Atomically replaces the active queue with [tracks], purging any previous
+  /// `playNext` entries, and begins playing [tracks[initialIndex]].
+  Future<void> playQueue(
+    List<Track> tracks, {
+    int initialIndex = 0,
+    PlaybackMode? mode,
+  }) async {
+    if (tracks.isEmpty) return;
+    final clampedIndex = initialIndex.clamp(0, tracks.length - 1);
+    _queue.setQueue(tracks, initialIndex: clampedIndex, mode: mode);
+    final activeTrack = _queue.state.currentTrack ?? tracks[clampedIndex];
+    await _loadAndPlay(activeTrack);
+  }
+
+  /// Plays [track]. If [queue] is provided, atomically replaces the active queue
+  /// with [initialIndex]. If [queue] is omitted and [track] is not already the
+  /// active track in queue, atomically replaces the queue with `[track]` so
+  /// stale `playNext` entries never desync UI/Next from the active audio.
   Future<void> playTrack(
     Track track, {
     List<Track>? queue,
@@ -87,18 +107,30 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
   }) async {
     if (queue != null && queue.isNotEmpty) {
       final index = initialIndex ?? queue.indexWhere((t) => t.id == track.id);
-      _queue.setQueue(queue, initialIndex: index != -1 ? index : 0);
-    } else if (_queue.state.isEmpty) {
+      final resolvedIndex = index >= 0 ? index.clamp(0, queue.length - 1) : 0;
+      _queue.setQueue(queue, initialIndex: resolvedIndex);
+    } else if (_queue.state.isEmpty || _queue.state.currentTrack?.id != track.id) {
       _queue.setQueue([track], initialIndex: 0);
     }
 
+    final activeTrack = _queue.state.currentTrack ?? track;
+    await _loadAndPlay(activeTrack);
+  }
+
+  Future<void> _loadAndPlay(Track track) async {
+    final epoch = ++_loadEpoch;
     state = state.copyWith(
       currentTrack: track,
+      queueVersion: _queue.state.queueVersion,
       status: PlaybackStatus.loading,
     );
 
     await _engine.load(track, autoPlay: true);
-    state = state.copyWith(status: _engine.status);
+    if (epoch != _loadEpoch) return;
+    state = state.copyWith(
+      status: _engine.status,
+      queueVersion: _queue.state.queueVersion,
+    );
   }
 
   /// Toggles playback between playing and paused.
@@ -114,7 +146,7 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
   Future<void> play() async {
     if (state.currentTrack == null && _queue.state.isNotEmpty) {
       final current = _queue.state.currentTrack ?? _queue.state.tracks.first;
-      await playTrack(current);
+      await _loadAndPlay(current);
       return;
     }
     await _engine.play();
@@ -129,6 +161,7 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
 
   /// Stops playback.
   Future<void> stop() async {
+    ++_loadEpoch;
     await _engine.stop();
     state = state.copyWith(status: _engine.status);
   }
@@ -142,7 +175,7 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
   Future<void> skipNext() async {
     final nextTrack = _queue.next();
     if (nextTrack != null) {
-      await playTrack(nextTrack);
+      await _loadAndPlay(nextTrack);
     } else {
       await stop();
     }
@@ -152,7 +185,7 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
   Future<void> skipToIndex(int index) async {
     final targetTrack = _queue.skipToIndex(index);
     if (targetTrack != null) {
-      await playTrack(targetTrack);
+      await _loadAndPlay(targetTrack);
     }
   }
 
@@ -175,7 +208,7 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
 
     final prevTrack = _queue.previous();
     if (prevTrack != null) {
-      await playTrack(prevTrack);
+      await _loadAndPlay(prevTrack);
     } else {
       await seek(Duration.zero);
     }

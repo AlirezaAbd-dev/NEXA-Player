@@ -20,6 +20,7 @@ class HeroArtworkCard extends StatefulWidget {
     required this.track,
     this.tracks,
     this.currentIndex,
+    this.queueVersion = 0,
     this.isPlaying = false,
     this.onSwipeLeft,
     this.onSwipeRight,
@@ -33,6 +34,7 @@ class HeroArtworkCard extends StatefulWidget {
   final Track? track;
   final List<Track>? tracks;
   final int? currentIndex;
+  final int queueVersion;
   final bool isPlaying;
   final VoidCallback? onSwipeLeft;
   final VoidCallback? onSwipeRight;
@@ -104,7 +106,16 @@ class _HeroArtworkCardState extends State<HeroArtworkCard>
   @override
   void didUpdateWidget(HeroArtworkCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.currentIndex != null && widget.currentIndex != _lastCommittedIndex) {
+    final queueChanged = widget.queueVersion != oldWidget.queueVersion;
+    final targetIndex = widget.currentIndex ?? _lastCommittedIndex;
+
+    if (queueChanged) {
+      _lastCommittedIndex = targetIndex;
+      _pendingPageIndex = targetIndex;
+      if (_pageController.hasClients) {
+        _pageController.jumpToPage(targetIndex);
+      }
+    } else if (widget.currentIndex != null && widget.currentIndex != _lastCommittedIndex) {
       _lastCommittedIndex = widget.currentIndex!;
       _pendingPageIndex = _lastCommittedIndex;
       if (_pageController.hasClients) {

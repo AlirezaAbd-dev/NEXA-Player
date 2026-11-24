@@ -4,6 +4,7 @@ import 'package:nexa_player/core/constants/phase2_keys.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
 import 'package:nexa_player/features/library/presentation/providers/library_providers.dart';
+import 'package:nexa_player/features/player/domain/entities/playback_state.dart';
 import 'package:nexa_player/features/player/presentation/providers/player_providers.dart';
 import 'package:nexa_player/shared/models/album.dart';
 import 'package:nexa_player/shared/widgets/cards/track_tile.dart';
@@ -136,7 +137,7 @@ class AlbumDetailScreen extends ConsumerWidget {
                       ),
                       child: Text(
                         '${album.year != null ? '${album.year} • ' : ''}${album.trackCountLabel} • FLAC 96/24',
-                        style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
+                        style: surfaceTokens.telemetryTextStyle.copyWith(
                           color: primary,
                           fontWeight: FontWeight.w600,
                           fontSize: 11.0,
@@ -155,7 +156,9 @@ class AlbumDetailScreen extends ConsumerWidget {
                       onPressed: () {
                         final tracks = tracksAsync.valueOrNull;
                         if (tracks != null && tracks.isNotEmpty) {
-                          ref.read(playerNotifierProvider.notifier).playTrack(tracks.first);
+                          ref
+                              .read(playerNotifierProvider.notifier)
+                              .playQueue(tracks, initialIndex: 0);
                         }
                       },
                     ),
@@ -170,8 +173,11 @@ class AlbumDetailScreen extends ConsumerWidget {
                         onPressed: () {
                           final tracks = tracksAsync.valueOrNull;
                           if (tracks != null && tracks.isNotEmpty) {
-                            final shuffled = List.of(tracks)..shuffle();
-                            ref.read(playerNotifierProvider.notifier).playTrack(shuffled.first);
+                            ref.read(playerNotifierProvider.notifier).playQueue(
+                                  tracks,
+                                  initialIndex: 0,
+                                  mode: PlaybackMode.shuffle,
+                                );
                           }
                         },
                       ),
@@ -205,7 +211,13 @@ class AlbumDetailScreen extends ConsumerWidget {
                             child: TrackTile.fromTrack(
                               key: Phase2Keys.trackTile(track.id),
                               track: track,
+                              showTrackNumber: true,
                               isPlaying: track.id == currentTrackId,
+                              onTap: () {
+                                ref
+                                    .read(playerNotifierProvider.notifier)
+                                    .playQueue(tracks, initialIndex: index);
+                              },
                             ),
                           );
                         },

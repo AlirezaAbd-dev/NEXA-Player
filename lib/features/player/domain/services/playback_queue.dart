@@ -10,6 +10,7 @@ class PlaybackQueueState extends Equatable {
     this.originalTracks = const [],
     this.currentIndex = -1,
     this.mode = PlaybackMode.ordered,
+    this.queueVersion = 0,
   });
 
   /// Currently active sequence of tracks (may be shuffled).
@@ -23,6 +24,9 @@ class PlaybackQueueState extends Equatable {
 
   /// Queue iteration mode.
   final PlaybackMode mode;
+
+  /// Monotonically incremented revision counter whenever the active queue is replaced or cleared.
+  final int queueVersion;
 
   /// Currently playing track, or null if the queue is empty or index invalid.
   Track? get currentTrack {
@@ -81,17 +85,19 @@ class PlaybackQueueState extends Equatable {
     List<Track>? originalTracks,
     int? currentIndex,
     PlaybackMode? mode,
+    int? queueVersion,
   }) {
     return PlaybackQueueState(
       tracks: tracks ?? this.tracks,
       originalTracks: originalTracks ?? this.originalTracks,
       currentIndex: currentIndex ?? this.currentIndex,
       mode: mode ?? this.mode,
+      queueVersion: queueVersion ?? this.queueVersion,
     );
   }
 
   @override
-  List<Object?> get props => [tracks, originalTracks, currentIndex, mode];
+  List<Object?> get props => [tracks, originalTracks, currentIndex, mode, queueVersion];
 }
 
 /// Interface for queue sequencing, shuffle algorithms, and track management.
