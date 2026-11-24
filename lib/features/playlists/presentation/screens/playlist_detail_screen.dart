@@ -17,6 +17,7 @@ import 'package:nexa_player/shared/models/track.dart';
 import 'package:nexa_player/shared/widgets/cards/track_tile.dart';
 import 'package:nexa_player/shared/widgets/glass/app_ambient_background.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
+import 'package:nexa_player/shared/widgets/lists/active_track_auto_scroller.dart';
 import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
 
 /// Full-featured Playlist Detail screen with drag-to-reorder, Play All/Shuffle,
@@ -337,45 +338,52 @@ class PlaylistDetailScreen extends ConsumerWidget {
                         );
                       }
 
-                      return ReorderableListView.builder(
-                        padding: nexaScrollPadding(context,
-                            horizontal: 0.0, top: 0.0),
-                        itemCount: tracks.length,
-                        onReorder: (oldIndex, newIndex) {
-                          int effectiveNew = newIndex;
-                          if (oldIndex < effectiveNew) {
-                            effectiveNew -= 1;
-                          }
-                          ref
-                              .read(playlistsListNotifierProvider.notifier)
-                              .reorderTrack(playlist.id, oldIndex, effectiveNew);
-                        },
-                        itemBuilder: (context, index) {
-                          final track = tracks[index];
-                          return Padding(
-                            key: ValueKey('playlist_track_${track.id}_$index'),
-                            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                            child: Row(
-                              children: [
-                                ReorderableDragStartListener(
-                                  index: index,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 16,
-                                    ),
-                                    child: const Icon(
-                                      Icons.drag_handle_rounded,
-                                      color: Colors.white38,
-                                      size: 20,
+                      return ActiveTrackAutoScrollScope(
+                        trackIds:
+                            tracks.map((t) => t.id).toList(growable: false),
+                        activeTrackId: currentTrackId,
+                        builder: (context, scrollController) =>
+                            ReorderableListView.builder(
+                          scrollController: scrollController,
+                          padding: nexaScrollPadding(context,
+                              horizontal: 0.0, top: 0.0),
+                          itemCount: tracks.length,
+                          onReorder: (oldIndex, newIndex) {
+                            int effectiveNew = newIndex;
+                            if (oldIndex < effectiveNew) {
+                              effectiveNew -= 1;
+                            }
+                            ref
+                                .read(playlistsListNotifierProvider.notifier)
+                                .reorderTrack(playlist.id, oldIndex, effectiveNew);
+                          },
+                          itemBuilder: (context, index) {
+                            final track = tracks[index];
+                            return Padding(
+                              key: ValueKey('playlist_track_${track.id}_$index'),
+                              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                              child: Row(
+                                children: [
+                                  ReorderableDragStartListener(
+                                    index: index,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 16,
+                                      ),
+                                      child: const Icon(
+                                        Icons.drag_handle_rounded,
+                                        color: Colors.white38,
+                                        size: 20,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                Expanded(
-                                  child: TrackTile.fromTrack(
-                                    key: Phase2Keys.trackTile(track.id),
-                                    track: track,
-                                    isPlaying: track.id == currentTrackId,
+                                  Expanded(
+                                    child: TrackTile.fromTrack(
+                                      key: Phase2Keys.trackTile(track.id),
+                                      track: track,
+                                      isPlaying: track.id == currentTrackId,
+                                      isPlaybackActive: playerState.isPlaying,
                                     onTap: () {
                                       ref
                                           .read(playerNotifierProvider.notifier)
@@ -546,7 +554,8 @@ class PlaylistDetailScreen extends ConsumerWidget {
                             ),
                           );
                         },
-                      );
+                      ),
+                    );
                     },
                     loading: () => const Center(
                       child: CircularProgressIndicator(),

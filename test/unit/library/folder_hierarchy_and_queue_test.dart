@@ -126,6 +126,11 @@ class _MapTracksRepo implements ITracksRepository {
   }
 
   @override
+  Future<Result<void, DatabaseFailure>> incrementPlayCount(
+          String trackId) async =>
+      const Result.success(null);
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 

@@ -9,6 +9,7 @@ import '../../../../core/design_system/glass_tokens.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/services/storage_permission_orchestrator.dart';
 import '../../../../core/services/storage_permission_service.dart';
+import '../../../../core/utils/contrast_validator.dart';
 import '../../../../core/utils/storage_path_formatter.dart';
 import '../../../../shared/models/track.dart';
 import '../../../../shared/widgets/branding/nexa_animated_logo.dart';
@@ -18,6 +19,7 @@ import '../../../../shared/widgets/cards/track_tile.dart';
 import '../../../../shared/widgets/glass/app_ambient_background.dart';
 import '../../../../shared/widgets/glass/glass_app_bar.dart';
 import '../../../../shared/widgets/glass/glass_button.dart';
+import '../../../../shared/widgets/lists/active_track_auto_scroller.dart';
 import '../../../../shared/widgets/surfaces/nexa_surface.dart';
 import '../../../../shared/widgets/typography/bidi_text.dart';
 import '../../../player/domain/entities/playback_state.dart';
@@ -389,6 +391,12 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
     final fileCount = folder.files.length;
     final totalItems = subCount + fileCount;
 
+    final activeFileKey = activeTrack == null
+        ? null
+        : (folder.files.any((f) => f.trackId == activeTrack.id)
+            ? activeTrack.id
+            : activeTrack.filePath);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -471,185 +479,215 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
         const SizedBox(height: AppSpacing.sm),
 
         Expanded(
-          child: ListView.builder(
-            key: const ValueKey('folder_contents_list'),
-            padding: nexaScrollPadding(context, horizontal: 0.0, top: 0.0),
-            itemCount: totalItems,
-            itemBuilder: (context, index) {
-              // Direct subfolders first
-              if (index < subCount) {
-                final sub = folder.subFolders[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  child: _buildFolderCard(
-                    context,
-                    folder: sub,
-                    surfaceTokens: surfaceTokens,
-                    colorScheme: colorScheme,
-                  ),
+          child: ActiveTrackAutoScrollScope(
+            trackIds:
+                folder.files.map((f) => f.trackId ?? f.path).toList(growable: false),
+            activeTrackId: activeFileKey,
+            indexOffset: subCount,
+            builder: (context, scrollController) => ListView.builder(
+              key: const ValueKey('folder_contents_list'),
+              controller: scrollController,
+              padding: nexaScrollPadding(context, horizontal: 0.0, top: 0.0),
+              itemCount: totalItems,
+              itemBuilder: (context, index) {
+                // Direct subfolders first
+                if (index < subCount) {
+                  final sub = folder.subFolders[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: _buildFolderCard(
+                      context,
+                      folder: sub,
+                      surfaceTokens: surfaceTokens,
+                      colorScheme: colorScheme,
+                    ),
+                  );
+                }
+
+                // Direct files in this folder
+                final fileIndex = index - subCount;
+                final file = folder.files[fileIndex];
+                final ext = _extractExtension(file.name);
+                final isActive = activeTrack != null &&
+                    ((file.trackId != null && activeTrack.id == file.trackId) ||
+                        activeTrack.filePath == file.path);
+                final activeCardColor = Color.alphaBlend(
+                  primary.withOpacity(0.10),
+                  surfaceTokens.l2,
                 );
-              }
+                final activeTitleColor = ContrastValidator.ensureContrast(
+                  primary,
+                  activeCardColor,
+                );
 
-              // Direct files in this folder
-              final fileIndex = index - subCount;
-              final file = folder.files[fileIndex];
-              final ext = _extractExtension(file.name);
-              final isActive = activeTrack != null &&
-                  ((file.trackId != null && activeTrack.id == file.trackId) ||
-                      activeTrack.filePath == file.path);
-
-              return Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-                child: NexaSurface(
-                  level: isActive ? NexaSurfaceLevel.l2 : NexaSurfaceLevel.l1,
-                  borderRadius: BorderRadius.circular(14.0),
-                  child: ListTile(
-                    key: Phase2Keys.fileNode(file.path),
-                    leading: ClipRRect(
-                      borderRadius: BorderRadius.circular(10.0),
-                      child: SizedBox(
-                        width: 40.0,
-                        height: 40.0,
-                        child: NexaArtworkImage(
-                          track: Track(
-                            id: file.trackId ?? file.path,
-                            title: file.name,
-                            artist: folder.name,
-                            album: folder.name,
-                            duration: Duration.zero,
-                            filePath: file.path,
-                          ),
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isActive ? activeCardColor : surfaceTokens.l1,
+                      borderRadius: BorderRadius.circular(14.0),
+                    ),
+                    child: ListTile(
+                      key: Phase2Keys.fileNode(file.path),
+                      leading: ClipRRect(
+                        borderRadius: BorderRadius.circular(10.0),
+                        child: SizedBox(
                           width: 40.0,
                           height: 40.0,
-                          cacheWidth: 160,
-                          fallbackBuilder: (_) => Container(
-                            color: isActive
-                                ? primary.withOpacity(0.18)
-                                : surfaceTokens.level2,
-                            child: Icon(
-                              isActive
-                                  ? Icons.equalizer_rounded
-                                  : Icons.music_note_rounded,
-                              size: 20,
-                              color: isActive ? primary : null,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    title: BidiText(
-                      file.name,
-                      style: AppTypography.bodyMedium.copyWith(
-                        color: isActive ? primary : null,
-                        fontWeight: isActive ? FontWeight.bold : null,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6.0,
-                            vertical: 2.0,
-                          ),
-                          decoration: BoxDecoration(
-                            color: surfaceTokens.level2,
-                            borderRadius: BorderRadius.circular(4.0),
-                          ),
-                          child: Text(
-                            ext,
-                            style: surfaceTokens.telemetryTextStyle.copyWith(
-                              color: primary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 10.0,
-                            ),
-                          ),
-                        ),
-                        if (file.trackId != null)
-                          PopupMenuButton<TrackTileMenuAction>(
-                            icon: const Icon(Icons.more_vert_rounded, size: 18),
-                            padding: EdgeInsets.zero,
-                            tooltip: 'Track actions',
-                            onSelected: (action) async {
-                              final repo = getIt.isRegistered<ITracksRepository>()
-                                  ? getIt<ITracksRepository>()
-                                  : null;
-                              final fetched = repo != null
-                                  ? (await repo.getTrackById(file.trackId!))
-                                      .valueOrNull
-                                  : null;
-                              final track = fetched ??
-                                  Track(
-                                    id: file.trackId!,
-                                    title: p.basenameWithoutExtension(file.name),
-                                    artist: 'Unknown Artist',
-                                    album: folder.name,
-                                    duration: Duration.zero,
-                                    filePath: file.path,
-                                  );
-                              if (!context.mounted) return;
-                              await TrackActionsHelper.handleAction(
-                                context,
-                                ref,
-                                track: track,
-                                action: action,
-                              );
-                            },
-                            itemBuilder: (_) => const [
-                              PopupMenuItem(
-                                value: TrackTileMenuAction.playNext,
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.playlist_play_rounded),
-                                    SizedBox(width: 8),
-                                    Text('Play next'),
-                                  ],
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              NexaArtworkImage(
+                                track: Track(
+                                  id: file.trackId ?? file.path,
+                                  title: file.name,
+                                  artist: folder.name,
+                                  album: folder.name,
+                                  duration: Duration.zero,
+                                  filePath: file.path,
+                                ),
+                                width: 40.0,
+                                height: 40.0,
+                                cacheWidth: 160,
+                                fallbackBuilder: (_) => Container(
+                                  color: isActive
+                                      ? primary.withOpacity(0.18)
+                                      : surfaceTokens.level2,
+                                  child: Icon(
+                                    Icons.music_note_rounded,
+                                    size: 20,
+                                    color: isActive ? primary : null,
+                                  ),
                                 ),
                               ),
-                              PopupMenuItem(
-                                value: TrackTileMenuAction.addToQueue,
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.queue_music_rounded),
-                                    SizedBox(width: 8),
-                                    Text('Add to queue'),
-                                  ],
+                              if (isActive)
+                                Container(
+                                  color: Colors.black.withOpacity(0.45),
+                                  alignment: Alignment.center,
+                                  child: Icon(
+                                    Icons.equalizer_rounded,
+                                    color: primary,
+                                    size: 20.0,
+                                  ),
                                 ),
-                              ),
-                              PopupMenuItem(
-                                value: TrackTileMenuAction.addToPlaylist,
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.playlist_add_rounded),
-                                    SizedBox(width: 8),
-                                    Text('Add to playlist'),
-                                  ],
-                                ),
-                              ),
-                              PopupMenuItem(
-                                value: TrackTileMenuAction.editTags,
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.edit_note_rounded),
-                                    SizedBox(width: 8),
-                                    Text('Edit tags & cover'),
-                                  ],
-                                ),
-                              ),
                             ],
                           ),
-                      ],
-                    ),
-                    onTap: () => _playFolderFiles(
-                      folder,
-                      initialIndex: fileIndex,
+                        ),
+                      ),
+                      title: BidiText(
+                        file.name,
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: isActive ? activeTitleColor : null,
+                          fontWeight: isActive ? FontWeight.bold : null,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6.0,
+                              vertical: 2.0,
+                            ),
+                            decoration: BoxDecoration(
+                              color: surfaceTokens.level2,
+                              borderRadius: BorderRadius.circular(4.0),
+                            ),
+                            child: Text(
+                              ext,
+                              style: surfaceTokens.telemetryTextStyle.copyWith(
+                                color: primary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 10.0,
+                              ),
+                            ),
+                          ),
+                          if (file.trackId != null)
+                            PopupMenuButton<TrackTileMenuAction>(
+                              icon: const Icon(Icons.more_vert_rounded, size: 18),
+                              padding: EdgeInsets.zero,
+                              tooltip: 'Track actions',
+                              onSelected: (action) async {
+                                final repo = getIt.isRegistered<ITracksRepository>()
+                                    ? getIt<ITracksRepository>()
+                                    : null;
+                                final fetched = repo != null
+                                    ? (await repo.getTrackById(file.trackId!))
+                                        .valueOrNull
+                                    : null;
+                                final track = fetched ??
+                                    Track(
+                                      id: file.trackId!,
+                                      title: p.basenameWithoutExtension(file.name),
+                                      artist: 'Unknown Artist',
+                                      album: folder.name,
+                                      duration: Duration.zero,
+                                      filePath: file.path,
+                                    );
+                                if (!context.mounted) return;
+                                await TrackActionsHelper.handleAction(
+                                  context,
+                                  ref,
+                                  track: track,
+                                  action: action,
+                                );
+                              },
+                              itemBuilder: (_) => const [
+                                PopupMenuItem(
+                                  value: TrackTileMenuAction.playNext,
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.playlist_play_rounded),
+                                      SizedBox(width: 8),
+                                      Text('Play next'),
+                                    ],
+                                  ),
+                                ),
+                                PopupMenuItem(
+                                  value: TrackTileMenuAction.addToQueue,
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.queue_music_rounded),
+                                      SizedBox(width: 8),
+                                      Text('Add to queue'),
+                                    ],
+                                  ),
+                                ),
+                                PopupMenuItem(
+                                  value: TrackTileMenuAction.addToPlaylist,
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.playlist_add_rounded),
+                                      SizedBox(width: 8),
+                                      Text('Add to playlist'),
+                                    ],
+                                  ),
+                                ),
+                                PopupMenuItem(
+                                  value: TrackTileMenuAction.editTags,
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.edit_note_rounded),
+                                      SizedBox(width: 8),
+                                      Text('Edit tags & cover'),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
+                      onTap: () => _playFolderFiles(
+                        folder,
+                        initialIndex: fileIndex,
+                      ),
                     ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ],

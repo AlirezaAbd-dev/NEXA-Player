@@ -7,6 +7,7 @@ import '../../../core/design_system/app_typography.dart';
 import '../../../core/design_system/glass_tokens.dart';
 import '../../../core/design_system/nexa_surface_tokens.dart';
 import '../../../core/extensions/duration_x.dart';
+import '../../../core/utils/contrast_validator.dart';
 import '../../models/track.dart';
 import '../typography/bidi_text.dart';
 import 'nexa_artwork_image.dart';
@@ -38,6 +39,7 @@ class TrackTile extends StatefulWidget {
     this.track,
     this.trackNumber,
     this.isPlaying = false,
+    this.isPlaybackActive = true,
     this.isFavorite = false,
     this.onTap,
     this.onLongPress,
@@ -59,6 +61,7 @@ class TrackTile extends StatefulWidget {
     Key? key,
     required Track track,
     bool isPlaying = false,
+    bool isPlaybackActive = true,
     bool showTrackNumber = false,
     VoidCallback? onTap,
     VoidCallback? onLongPress,
@@ -80,6 +83,7 @@ class TrackTile extends StatefulWidget {
       track: track,
       trackNumber: showTrackNumber ? track.trackNumber : null,
       isPlaying: isPlaying,
+      isPlaybackActive: isPlaybackActive,
       isFavorite: track.isFavorite,
       onTap: onTap,
       onLongPress: onLongPress,
@@ -101,6 +105,7 @@ class TrackTile extends StatefulWidget {
   final Track? track;
   final int? trackNumber;
   final bool isPlaying;
+  final bool isPlaybackActive;
   final bool isFavorite;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
@@ -144,8 +149,12 @@ class _TrackTileState extends State<TrackTile> {
 
     // Borderless styling: soft L2 tinted pill for active playing track, transparent on L0 canvas when inactive
     final cardBackgroundColor = widget.isPlaying
-        ? Color.alphaBlend(primary.withOpacity(0.08), tokens.l2)
+        ? Color.alphaBlend(primary.withOpacity(0.10), tokens.l2)
         : Colors.transparent;
+    final activeTitleColor = ContrastValidator.ensureContrast(
+      primary,
+      widget.isPlaying ? cardBackgroundColor : tokens.l0,
+    );
 
     // Left Artwork Thumbnail: 44x44dp, 10dp radius rounded album art thumbnail
     Widget artworkWidget;
@@ -214,9 +223,14 @@ class _TrackTileState extends State<TrackTile> {
             thumbnailContent,
             if (widget.isPlaying) ...[
               Container(
-                color: Colors.black.withOpacity(0.42),
+                color: Colors.black.withOpacity(0.45),
                 alignment: Alignment.center,
-                child: AnimatedEqualizerGlyph(color: primary, width: 20.0, height: 20.0),
+                child: AnimatedEqualizerGlyph(
+                  color: primary,
+                  isActive: widget.isPlaybackActive,
+                  width: 20.0,
+                  height: 20.0,
+                ),
               ),
               const Opacity(
                 opacity: 0.0,
@@ -391,7 +405,7 @@ class _TrackTileState extends State<TrackTile> {
                 BidiText(
                   widget.title,
                   style: AppTypography.titleMedium.copyWith(
-                    color: widget.isPlaying ? primary : onSurface,
+                    color: widget.isPlaying ? activeTitleColor : onSurface,
                     fontWeight:
                         widget.isPlaying ? FontWeight.bold : FontWeight.w600,
                   ),
@@ -492,11 +506,13 @@ class AnimatedEqualizerGlyph extends StatefulWidget {
   const AnimatedEqualizerGlyph({
     super.key,
     this.color,
+    this.isActive = true,
     this.width = 18.0,
     this.height = 18.0,
   });
 
   final Color? color;
+  final bool isActive;
   final double width;
   final double height;
 
@@ -514,7 +530,22 @@ class _AnimatedEqualizerGlyphState extends State<AnimatedEqualizerGlyph>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 850),
-    )..repeat(reverse: true);
+    );
+    if (widget.isActive) {
+      _controller.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(AnimatedEqualizerGlyph oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive != oldWidget.isActive) {
+      if (widget.isActive) {
+        _controller.repeat(reverse: true);
+      } else {
+        _controller.stop();
+      }
+    }
   }
 
   @override
@@ -529,7 +560,7 @@ class _AnimatedEqualizerGlyphState extends State<AnimatedEqualizerGlyph>
     final primary = widget.color ?? theme.colorScheme.primary;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
-    if (reduceMotion) {
+    if (reduceMotion || !widget.isActive) {
       return SizedBox(
         width: widget.width,
         height: widget.height,

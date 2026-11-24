@@ -18,6 +18,7 @@ import 'package:nexa_player/shared/widgets/cards/track_tile.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_button.dart';
 import 'package:nexa_player/shared/widgets/inputs/nexa_search_bar.dart';
+import 'package:nexa_player/shared/widgets/lists/active_track_auto_scroller.dart';
 import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
 import '../widgets/library_segmented_pill_bar.dart';
 import '../widgets/swipeable_track_tile.dart';
@@ -250,41 +251,47 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
                   final activePlayingTrack = ref.watch(currentTrackProvider);
                   final isEnginePlaying = ref.watch(isPlayingProvider);
 
-                  return ListView.builder(
-                    key: Phase2Keys.allSongsList,
-                    padding:
-                        nexaScrollPadding(context, horizontal: 0.0, top: 0.0),
-                    itemCount: tracks.length,
-                    itemBuilder: (context, index) {
-                      final track = tracks[index];
-                      final isPlaying = isEnginePlaying && activePlayingTrack?.id == track.id;
+                  return ActiveTrackAutoScrollScope(
+                    trackIds: tracks.map((t) => t.id).toList(growable: false),
+                    activeTrackId: activePlayingTrack?.id,
+                    bottomChipPadding: 132.0,
+                    builder: (context, scrollController) => ListView.builder(
+                      key: Phase2Keys.allSongsList,
+                      controller: scrollController,
+                      padding:
+                          nexaScrollPadding(context, horizontal: 0.0, top: 0.0),
+                      itemCount: tracks.length,
+                      itemBuilder: (context, index) {
+                        final track = tracks[index];
+                        final isActive = activePlayingTrack?.id == track.id;
 
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-                        child: SwipeableTrackTile(
-                          onPlayNext: () {
-                            ref.read(playerNotifierProvider.notifier).addNext(track);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Playing next: ${track.title}'),
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
-                          },
-                          onAddToQueueEnd: () {
-                            ref.read(playerNotifierProvider.notifier).addTrack(track);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Added to queue end: ${track.title}'),
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
-                          },
-                          onSwipeLeft: () => _toggleFavorite(track),
-                          child: TrackTile.fromTrack(
-                            key: Phase2Keys.trackTile(track.id),
-                            track: track,
-                            isPlaying: isPlaying,
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                          child: SwipeableTrackTile(
+                            onPlayNext: () {
+                              ref.read(playerNotifierProvider.notifier).addNext(track);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Playing next: ${track.title}'),
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            onAddToQueueEnd: () {
+                              ref.read(playerNotifierProvider.notifier).addTrack(track);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Added to queue end: ${track.title}'),
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            onSwipeLeft: () => _toggleFavorite(track),
+                            child: TrackTile.fromTrack(
+                              key: Phase2Keys.trackTile(track.id),
+                              track: track,
+                              isPlaying: isActive,
+                              isPlaybackActive: isEnginePlaying,
                             onTap: () {
                               ref.read(playerNotifierProvider.notifier).playTrack(
                                     track,
@@ -420,7 +427,8 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
                         ),
                       );
                     },
-                  );
+                  ),
+                );
                 },
                 loading: () => const Center(
                   child: CircularProgressIndicator(),

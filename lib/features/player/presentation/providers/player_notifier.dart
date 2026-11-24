@@ -430,7 +430,9 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
     final reached30Pct = durationMs > 0 && posMs >= (durationMs * 0.30).round();
     if (forceOnCompletion || reached30Sec || reached30Pct) {
       _recordedPlayEpoch = _loadEpoch;
-      unawaited(_tracksRepository.incrementPlayCount(track.id));
+      try {
+        unawaited(_tracksRepository.incrementPlayCount(track.id));
+      } catch (_) {}
     }
   }
 

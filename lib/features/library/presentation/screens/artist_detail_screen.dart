@@ -12,6 +12,7 @@ import 'package:nexa_player/shared/widgets/cards/track_actions_helper.dart';
 import 'package:nexa_player/shared/widgets/cards/track_tile.dart';
 import 'package:nexa_player/shared/widgets/glass/app_ambient_background.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
+import 'package:nexa_player/shared/widgets/lists/active_track_auto_scroller.dart';
 import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
 
 /// Artist detail screen displaying artist profile banner dissolving into L0 canvas,
@@ -187,41 +188,49 @@ class ArtistDetailScreen extends ConsumerWidget {
                         );
                       }
 
-                      return ListView.builder(
-                        key: Phase2Keys.artistDetailTrackList,
-                        padding: nexaScrollPadding(context,
-                            horizontal: 0.0, top: 0.0),
-                        itemCount: tracks.length,
-                        itemBuilder: (context, index) {
-                          final track = tracks[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-                            child: TrackTile.fromTrack(
-                              key: Phase2Keys.trackTile(track.id),
-                              track: track,
-                              isPlaying: track.id == currentTrackId,
-                              onMenuActionSelected: (action) =>
-                                  TrackActionsHelper.handleAction(
-                                context,
-                                ref,
+                      return ActiveTrackAutoScrollScope(
+                        trackIds:
+                            tracks.map((t) => t.id).toList(growable: false),
+                        activeTrackId: currentTrackId,
+                        builder: (context, scrollController) => ListView.builder(
+                          key: Phase2Keys.artistDetailTrackList,
+                          controller: scrollController,
+                          padding: nexaScrollPadding(context,
+                              horizontal: 0.0, top: 0.0),
+                          itemCount: tracks.length,
+                          itemBuilder: (context, index) {
+                            final track = tracks[index];
+                            return Padding(
+                              padding:
+                                  const EdgeInsets.only(bottom: AppSpacing.xs),
+                              child: TrackTile.fromTrack(
+                                key: Phase2Keys.trackTile(track.id),
                                 track: track,
-                                action: action,
+                                isPlaying: track.id == currentTrackId,
+                                isPlaybackActive: playerState.isPlaying,
+                                onMenuActionSelected: (action) =>
+                                    TrackActionsHelper.handleAction(
+                                  context,
+                                  ref,
+                                  track: track,
+                                  action: action,
+                                ),
+                                onTap: () {
+                                  ref
+                                      .read(playerNotifierProvider.notifier)
+                                      .playQueue(
+                                        tracks,
+                                        initialIndex: index,
+                                        queueContext: QueueContext.artist(
+                                          artist.id,
+                                          title: artist.name,
+                                        ),
+                                      );
+                                },
                               ),
-                              onTap: () {
-                                ref
-                                    .read(playerNotifierProvider.notifier)
-                                    .playQueue(
-                                      tracks,
-                                      initialIndex: index,
-                                      queueContext: QueueContext.artist(
-                                        artist.id,
-                                        title: artist.name,
-                                      ),
-                                    );
-                              },
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       );
                     },
                     loading: () => const Center(
