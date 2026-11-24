@@ -154,47 +154,12 @@ jobs:
           path: dist/windows/*.exe
 
   # ===========================================================================
-  # 4. macOS Desktop Build & Disk Image (.dmg)
-  # ===========================================================================
-  build-macos:
-    name: macOS (.dmg)
-    runs-on: macos-latest
-    continue-on-error: true
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.24.5'
-          channel: 'stable'
-          cache: true
-
-      - name: Install Dependencies
-        run: flutter pub get
-
-      - name: Build macOS Desktop Release
-        run: flutter build macos --release
-
-      - name: Package macOS Disk Image (.dmg)
-        run: |
-          chmod +x packaging/macos/build_dmg.sh
-          ./packaging/macos/build_dmg.sh
-
-      - name: Upload macOS Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: nexa-player-macos
-          path: dist/macos/*.dmg
-
-  # ===========================================================================
-  # 5. Automated GitHub Release on Version Tag (v*)
+  # 4. Automated GitHub Release on Version Tag (v*)
   # ===========================================================================
   release:
     name: Create GitHub Release
     if: always() && startsWith(github.ref, 'refs/tags/v') && needs.build-android.result == 'success'
-    needs: [ build-android, build-linux, build-windows, build-macos ]
+    needs: [ build-android, build-linux, build-windows ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -208,7 +173,7 @@ jobs:
       - name: Organize Release Binaries
         run: |
           mkdir -p release-binaries
-          find release-artifacts -type f \( -name "*.apk" -o -name "*.aab" -o -name "*.deb" -o -name "*.exe" -o -name "*.dmg" \) -exec cp {} release-binaries/ \;
+          find release-artifacts -type f \( -name "*.apk" -o -name "*.aab" -o -name "*.deb" -o -name "*.exe" \) -exec cp {} release-binaries/ \;
           ls -la release-binaries/
 
       - name: Publish GitHub Release
