@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/design_system/app_spacing.dart';
 import '../../../core/design_system/app_typography.dart';
 import '../../../core/design_system/glass_tokens.dart';
+import '../../../core/design_system/nexa_surface_tokens.dart';
+import '../../../core/utils/tag_encoding_decoder.dart';
 
 /// Frosted glass search and input text field with prefix/suffix icons,
 /// automatic clear button, error state presentation, and focus glow styling.
@@ -195,9 +197,9 @@ class _GlassTextFieldState extends State<GlassTextField> {
       ];
     }
 
-    final fillColor = isDark
-        ? const Color(0xFF161B26)
-        : theme.colorScheme.surfaceContainerHighest;
+    final surfaceTokens = theme.extension<NexaSurfaceTokens>();
+    final fillColor = surfaceTokens?.level1 ??
+        (isDark ? const Color(0xFF161B26) : theme.colorScheme.surfaceContainerHighest);
 
     final iconColor = _isFocused
         ? primary
@@ -251,15 +253,27 @@ class _GlassTextFieldState extends State<GlassTextField> {
               autofocus: widget.autofocus,
               onTap: widget.onTap,
               maxLines: widget.maxLines,
+              textDirection: TagEncodingDecoder.detectBidiDirection(
+                _effectiveController.text,
+              ),
+              cursorColor: primary,
               style: AppTypography.bodyMedium.copyWith(
                 color: theme.colorScheme.onSurface,
+                fontFamilyFallback: AppTypography.persianFontFallback,
               ),
               decoration: InputDecoration(
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                focusedErrorBorder: InputBorder.none,
+                filled: false,
                 isDense: true,
                 hintText: widget.hintText,
                 hintStyle: AppTypography.bodyMedium.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
+                  color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+                  fontFamilyFallback: AppTypography.persianFontFallback,
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   vertical: 14.0,

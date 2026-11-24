@@ -7,7 +7,7 @@ import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/glass_tokens.dart';
 import '../../../../core/theme/theme_controller.dart';
 import '../../../../shared/widgets/glass/glass_app_bar.dart';
-import '../../../../shared/widgets/glass/glass_text_field.dart';
+import '../../../../shared/widgets/inputs/nexa_search_bar.dart';
 import '../../../../shared/widgets/surfaces/nexa_surface.dart';
 import '../providers/settings_providers.dart';
 import '../widgets/audio_status_strip.dart';
@@ -55,11 +55,10 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
         padding: nexaScrollPadding(context, horizontal: 16.0, top: 100.0),
         children: [
           // Instant Settings Search Bar
-          GlassTextField(
+          NexaSearchBar(
             key: _SettingsKeys.searchSettingsInput,
             controller: _searchController,
             hintText: 'Search audio, controls, theme, gestures...',
-            prefixIcon: const Icon(Icons.search_rounded, size: 20),
             onChanged: (val) {
               ref.read(settingsSearchQueryProvider.notifier).state = val;
             },

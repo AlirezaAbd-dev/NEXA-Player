@@ -29,6 +29,7 @@ import 'package:nexa_player/shared/widgets/cards/track_actions_helper.dart';
 import 'package:nexa_player/shared/widgets/cards/track_tile.dart';
 import 'package:nexa_player/shared/widgets/glass/app_ambient_background.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
+import 'package:nexa_player/shared/widgets/inputs/nexa_search_bar.dart';
 import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
 
 /// Full-screen search interface with bottom-anchored ergonomic search deck,
@@ -296,56 +297,29 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               ),
               const SizedBox(height: 8.0),
 
-              // Floating L2 Search Pill
-              NexaSurface(
-                level: NexaSurfaceLevel.l2,
-                borderRadius: BorderRadius.circular(24.0),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 2.0),
-                  child: Row(
-                    children: [
-                      Icon(Icons.search_rounded, size: 22, color: primary),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: TextField(
-                          controller: _searchController,
-                          focusNode: _searchFocusNode,
-                          style: TextStyle(color: onSurface, fontSize: 14),
-                          decoration: const InputDecoration(
-                            hintText: 'Search songs, albums, artists...',
-                            hintStyle: TextStyle(color: Colors.white54, fontSize: 13),
-                            border: InputBorder.none,
-                            isDense: true,
-                            contentPadding: EdgeInsets.symmetric(vertical: 10),
-                          ),
-                        ),
-                      ),
-                      if (_searchController.text.isNotEmpty)
-                        IconButton(
-                          icon: const Icon(Icons.close_rounded, size: 18, color: Colors.white70),
-                          tooltip: 'Clear query',
-                          onPressed: () {
-                            HapticFeedback.selectionClick();
-                            _searchController.clear();
-                          },
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                        ),
-                      IconButton(
-                        icon: const Icon(Icons.mic_rounded, size: 20, color: Colors.white70),
-                        tooltip: 'Voice Search',
-                        onPressed: () {
-                          VoiceSearchModal.show(
-                            context,
-                            onQueryRecognized: _setSearchQuery,
-                          );
-                        },
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                      ),
-                    ],
+              // Floating L1 Borderless Search Pill
+              NexaSearchBar(
+                controller: _searchController,
+                focusNode: _searchFocusNode,
+                hintText: 'Search songs, albums, artists...',
+                trailingActions: [
+                  IconButton(
+                    icon: Icon(
+                      Icons.mic_rounded,
+                      size: 20,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    tooltip: 'Voice Search',
+                    onPressed: () {
+                      VoiceSearchModal.show(
+                        context,
+                        onQueryRecognized: _setSearchQuery,
+                      );
+                    },
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
                   ),
-                ),
+                ],
               ),
             ],
           ),

@@ -17,7 +17,7 @@ import 'package:nexa_player/shared/widgets/cards/track_actions_helper.dart';
 import 'package:nexa_player/shared/widgets/cards/track_tile.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_button.dart';
-import 'package:nexa_player/shared/widgets/glass/glass_text_field.dart';
+import 'package:nexa_player/shared/widgets/inputs/nexa_search_bar.dart';
 import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
 import '../widgets/library_segmented_pill_bar.dart';
 import '../widgets/swipeable_track_tile.dart';
@@ -124,12 +124,10 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            GlassTextField(
+            NexaSearchBar(
               key: Phase2Keys.searchField,
               controller: _searchController,
               hintText: 'Search songs, artists, albums...',
-              prefixIcon: Icons.search_rounded,
-              borderRadius: BorderRadius.circular(24.0),
             ),
             const SizedBox(height: AppSpacing.md),
             tracksAsync.when(

@@ -20,6 +20,7 @@ class FakePlayerNotifier extends StateNotifier<PlaybackState> implements PlayerN
     Track track, {
     List<Track>? queue,
     int? initialIndex,
+    QueueContext? queueContext,
   }) async {
     playedTrack = track;
     state = state.copyWith(currentTrack: track, status: PlaybackStatus.playing);

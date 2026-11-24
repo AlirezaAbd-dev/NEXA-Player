@@ -4,7 +4,7 @@ import '../../../../core/design_system/app_spacing.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/glass_tokens.dart';
 import '../../../../shared/widgets/glass/glass_app_bar.dart';
-import '../../../../shared/widgets/glass/glass_text_field.dart';
+import '../../../../shared/widgets/inputs/nexa_search_bar.dart';
 import '../../../../shared/widgets/surfaces/nexa_surface.dart';
 import '../../data/datasources/autoeq_database.dart';
 import '../../domain/models/headphone_autoeq_profile.dart';
@@ -98,11 +98,10 @@ class _AutoEqPickerScreenState extends ConsumerState<AutoEqPickerScreen> {
         padding: nexaScrollPadding(context, horizontal: 16.0, top: 100.0),
         children: [
           // Search input
-          GlassTextField(
+          NexaSearchBar(
             key: AutoEqPickerKeys.searchInput,
             controller: _searchController,
             hintText: 'Search Sennheiser, Sony, Apple, Beyerdynamic...',
-            prefixIcon: const Icon(Icons.search_rounded, size: 20),
             onChanged: (val) {
               setState(() => _searchQuery = val);
             },

@@ -82,6 +82,10 @@ abstract final class AppTheme {
     ).copyWith(
       cardColor: palette.lightCard,
       scaffoldBackgroundColor: palette.lightScaffold,
+      inputDecorationTheme: _buildInputDecorationTheme(
+        surfaceTokens: surfaceTokens,
+        primary: palette.lightScheme.primary,
+      ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
@@ -140,6 +144,10 @@ abstract final class AppTheme {
     ).copyWith(
       cardColor: palette.darkCard,
       scaffoldBackgroundColor: palette.darkScaffold,
+      inputDecorationTheme: _buildInputDecorationTheme(
+        surfaceTokens: surfaceTokens,
+        primary: palette.darkScheme.primary,
+      ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
@@ -209,6 +217,11 @@ abstract final class AppTheme {
       }),
     );
 
+    final customInputTheme = _buildInputDecorationTheme(
+      surfaceTokens: surfaceTokens,
+      primary: primary,
+    );
+
     return isDark
         ? FlexThemeData.dark(
             colors: scheme,
@@ -223,6 +236,7 @@ abstract final class AppTheme {
           ).copyWith(
             scaffoldBackgroundColor: background,
             cardColor: surface,
+            inputDecorationTheme: customInputTheme,
             switchTheme: switchTheme,
             extensions: [surfaceTokens],
           )
@@ -239,8 +253,42 @@ abstract final class AppTheme {
           ).copyWith(
             scaffoldBackgroundColor: background,
             cardColor: surface,
+            inputDecorationTheme: customInputTheme,
             switchTheme: switchTheme,
             extensions: [surfaceTokens],
           );
+  }
+
+  static InputDecorationTheme _buildInputDecorationTheme({
+    required NexaSurfaceTokens surfaceTokens,
+    required Color primary,
+  }) {
+    final baseBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14.0),
+      borderSide: BorderSide.none,
+    );
+    return InputDecorationTheme(
+      filled: true,
+      fillColor: surfaceTokens.level2,
+      border: baseBorder,
+      enabledBorder: baseBorder,
+      disabledBorder: baseBorder,
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14.0),
+        borderSide: BorderSide(color: primary, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14.0),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 1.2),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14.0),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+      ),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 14.0,
+        vertical: 12.0,
+      ),
+    );
   }
 }
