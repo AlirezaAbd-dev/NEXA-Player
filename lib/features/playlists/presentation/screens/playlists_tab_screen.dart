@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nexa_player/app/routes.dart';
 import 'package:nexa_player/core/constants/phase2_keys.dart';
+import 'package:nexa_player/core/services/artwork/artwork_providers.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
 import 'package:nexa_player/features/playlists/presentation/providers/playlists_providers.dart';
 import 'package:nexa_player/features/playlists/presentation/screens/playlist_detail_screen.dart';
 import 'package:nexa_player/features/playlists/presentation/widgets/m3u_import_dialog.dart';
 import 'package:nexa_player/shared/models/playlist.dart';
+import 'package:nexa_player/shared/widgets/cards/nexa_artwork_image.dart';
 import 'package:nexa_player/shared/widgets/feedback/app_dialog.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_button.dart';
@@ -290,55 +292,90 @@ class PlaylistsTabScreen extends ConsumerWidget {
                               ),
                               child: Row(
                                 children: [
-                                  Container(
-                                    width: 52,
-                                    height: 52,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(14),
-                                      color: surfaceTokens.level2,
-                                    ),
-                                    clipBehavior: Clip.antiAlias,
-                                    child: Stack(
-                                      children: [
-                                        // 2x2 Artwork Collage quadrants
-                                        Column(
-                                          children: [
-                                            Expanded(
-                                              child: Row(
+                                    Container(
+                                      width: 52,
+                                      height: 52,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(14),
+                                        color: surfaceTokens.level2,
+                                      ),
+                                      clipBehavior: Clip.antiAlias,
+                                      child: Builder(
+                                        builder: (context) {
+                                          final collage = ref
+                                                  .watch(playlistCollageArtworkProvider(playlist.id))
+                                                  .valueOrNull ??
+                                              const <String>[];
+                                          return Stack(
+                                            children: [
+                                              // 2x2 Real Artwork Collage quadrants
+                                              Column(
                                                 children: [
-                                                  Expanded(child: Container(color: accent.withOpacity(0.20))),
-                                                  Expanded(child: Container(color: theme.colorScheme.surface.withOpacity(0.5))),
+                                                  Expanded(
+                                                    child: Row(
+                                                      children: [
+                                                        Expanded(
+                                                          child: _collageCell(
+                                                            collage.isNotEmpty ? collage[0] : null,
+                                                            accent.withOpacity(0.20),
+                                                          ),
+                                                        ),
+                                                        Expanded(
+                                                          child: _collageCell(
+                                                            collage.length > 1
+                                                                ? collage[1]
+                                                                : (collage.isNotEmpty ? collage[0] : null),
+                                                            theme.colorScheme.surface.withOpacity(0.5),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  Expanded(
+                                                    child: Row(
+                                                      children: [
+                                                        Expanded(
+                                                          child: _collageCell(
+                                                            collage.length > 2
+                                                                ? collage[2]
+                                                                : (collage.isNotEmpty ? collage[0] : null),
+                                                            theme.colorScheme.surface.withOpacity(0.3),
+                                                          ),
+                                                        ),
+                                                        Expanded(
+                                                          child: _collageCell(
+                                                            collage.length > 3
+                                                                ? collage[3]
+                                                                : (collage.length > 1 ? collage[1] : null),
+                                                            accent.withOpacity(0.35),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
                                                 ],
                                               ),
-                                            ),
-                                            Expanded(
-                                              child: Row(
-                                                children: [
-                                                  Expanded(child: Container(color: theme.colorScheme.surface.withOpacity(0.3))),
-                                                  Expanded(child: Container(color: accent.withOpacity(0.35))),
-                                                ],
+                                              if (collage.isEmpty)
+                                                Center(
+                                                  child: Icon(
+                                                    Icons.queue_music_rounded,
+                                                    color: accent,
+                                                    size: 22,
+                                                  ),
+                                                ),
+                                              // Subtle 2px energy accent ribbon at bottom
+                                              Positioned(
+                                                bottom: 0,
+                                                left: 0,
+                                                right: 0,
+                                                height: 2.5,
+                                                child: Container(color: accent),
                                               ),
-                                            ),
-                                          ],
-                                        ),
-                                        Center(
-                                          child: Icon(
-                                            Icons.queue_music_rounded,
-                                            color: accent,
-                                            size: 22,
-                                          ),
-                                        ),
-                                        // Subtle 2px energy accent ribbon at bottom
-                                        Positioned(
-                                          bottom: 0,
-                                          left: 0,
-                                          right: 0,
-                                          height: 2.5,
-                                          child: Container(color: accent),
-                                        ),
-                                      ],
+                                            ],
+                                          );
+                                        },
+                                      ),
                                     ),
-                                  ),
                                   const SizedBox(width: AppSpacing.md),
                                   Expanded(
                                     child: Column(
@@ -391,6 +428,18 @@ class PlaylistsTabScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _collageCell(String? artworkPath, Color fallbackColor) {
+    if (artworkPath == null || artworkPath.isEmpty) {
+      return Container(color: fallbackColor);
+    }
+    return NexaArtworkImage(
+      artworkUri: artworkPath,
+      cacheWidth: 120,
+      fit: BoxFit.cover,
+      fallbackBuilder: (_) => Container(color: fallbackColor),
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
 import 'package:nexa_player/core/design_system/glass_tokens.dart';
 import 'package:nexa_player/shared/models/artist.dart';
+import 'package:nexa_player/shared/widgets/cards/nexa_artwork_image.dart';
 import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
 
 /// Layout orientation mode for [ArtistCard].
@@ -136,12 +137,13 @@ class _ArtistCardState extends State<ArtistCard> {
         backgroundColor: Colors.transparent,
         child: widget.artworkUri != null && widget.artworkUri!.isNotEmpty
             ? ClipOval(
-                child: Image.network(
-                  widget.artworkUri!,
+                child: NexaArtworkImage(
+                  artworkUri: widget.artworkUri,
                   fit: BoxFit.cover,
                   width: widget.avatarRadius * 2,
                   height: widget.avatarRadius * 2,
-                  errorBuilder: (_, __, ___) => Text(
+                  cacheWidth: 160,
+                  fallbackBuilder: (_) => Text(
                     _initials,
                     style: TextStyle(
                       fontWeight: FontWeight.w800,

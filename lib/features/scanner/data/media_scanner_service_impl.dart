@@ -3,25 +3,44 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import 'package:nexa_player/core/services/artwork/artwork_resolution_service.dart';
 import 'package:nexa_player/core/utils/result.dart';
 import 'package:nexa_player/features/scanner/domain/audio_metadata_reader.dart';
 import 'package:nexa_player/features/scanner/domain/media_scanner_service.dart';
+import 'package:nexa_player/shared/models/track.dart';
 import 'package:nexa_player/shared/services/database/app_database.dart';
 import 'package:nexa_player/shared/services/database/database_schema.dart';
 
+/// Prepared scan entry parsed off the synchronous SQLite transaction.
+class _PreparedScanItem {
+  const _PreparedScanItem({
+    required this.file,
+    required this.fileSize,
+    required this.meta,
+    this.artworkUri,
+  });
+
+  final File file;
+  final int fileSize;
+  final ExtractedMetadata meta;
+  final String? artworkUri;
+}
+
 /// Production implementation of [IMediaScannerService].
 ///
-/// Recursively scans designated storage folders, extracts audio metadata,
+/// Recursively scans designated storage folders, extracts audio metadata & artwork,
 /// and synchronizes the local SQLite database within an atomic transaction.
 class MediaScannerServiceImpl implements IMediaScannerService {
   MediaScannerServiceImpl({
     required this.database,
     required this.metadataReader,
+    this.artworkService,
   })  : _stateController = StreamController<ScannerState>.broadcast(),
         _state = const ScannerState();
 
   final IAppDatabase database;
   final IAudioMetadataReader metadataReader;
+  final IArtworkResolutionService? artworkService;
   final StreamController<ScannerState> _stateController;
   ScannerState _state;
   bool _stopped = false;
@@ -157,39 +176,84 @@ class MediaScannerServiceImpl implements IMediaScannerService {
 
       var insertedCount = 0;
       var scannedCount = 0;
+      final preparedItems = <_PreparedScanItem>[];
 
-      // 2. Batch Processing & Database Upsert within an atomic transaction
+      // 2a. Async pre-extraction pass (parses tags and caches cover art off SQLite lock)
+      for (var i = 0; i < totalFound; i++) {
+        if (_stopped) break;
+        final file = discoveredFiles[i];
+        scannedCount++;
+
+        _updateState(_state.copyWith(
+          progress: totalFound > 0 ? scannedCount / totalFound : 1.0,
+          filesScanned: scannedCount,
+          currentFile: file.path,
+        ));
+
+        try {
+          final fileSize = await file.length();
+          if (effectiveConfig.skipSmallFiles &&
+              fileSize < effectiveConfig.minSizeBytes) {
+            skippedFiles.add(file.path);
+            continue;
+          }
+
+          final bytes = await file.readAsBytes();
+          final fallbackTitle = file.uri.pathSegments.last.split('.').first;
+          final meta = metadataReader.extractBytes(bytes, fallbackTitle);
+
+          if (effectiveConfig.skipShortAudio &&
+              meta.duration.inSeconds < effectiveConfig.minDurationSeconds) {
+            skippedFiles.add(file.path);
+            continue;
+          }
+
+          String? resolvedArtworkUri;
+          final artService = artworkService;
+          if (artService != null) {
+            final trackId = 'trk_${file.path.hashCode.abs()}';
+            if (meta.artworkBytes != null && meta.artworkBytes!.isNotEmpty) {
+              resolvedArtworkUri = await artService.cacheExtractedBytes(
+                '${trackId}_alb_${'${meta.artist}__${meta.album}'.hashCode.abs()}',
+                meta.artworkBytes!,
+              );
+            }
+            resolvedArtworkUri ??= await artService.resolveTrackArtwork(
+              Track(
+                id: trackId,
+                title: meta.title,
+                artist: meta.artist,
+                album: meta.album,
+                duration: meta.duration,
+                filePath: file.path,
+                fileSize: fileSize,
+              ),
+            );
+          }
+
+          preparedItems.add(
+            _PreparedScanItem(
+              file: file,
+              fileSize: fileSize,
+              meta: meta,
+              artworkUri: resolvedArtworkUri,
+            ),
+          );
+        } catch (e) {
+          errors.add('Failed to parse ${file.path}: $e');
+        }
+      }
+
+      // 2b. Database Upsert within a fast atomic transaction
       database.transaction(() {
-        for (var i = 0; i < totalFound; i++) {
+        for (final item in preparedItems) {
           if (_stopped) break;
-          final file = discoveredFiles[i];
-          scannedCount++;
-
-          _updateState(_state.copyWith(
-            progress: totalFound > 0 ? scannedCount / totalFound : 1.0,
-            filesScanned: scannedCount,
-            currentFile: file.path,
-          ));
+          final file = item.file;
+          final fileSize = item.fileSize;
+          final meta = item.meta;
+          final resolvedArtworkUri = item.artworkUri;
 
           try {
-            final fileSize = file.lengthSync();
-            if (effectiveConfig.skipSmallFiles &&
-                fileSize < effectiveConfig.minSizeBytes) {
-              skippedFiles.add(file.path);
-              continue;
-            }
-
-            final bytes = file.readAsBytesSync();
-            final fallbackTitle =
-                file.uri.pathSegments.last.split('.').first;
-            final meta = metadataReader.extractBytes(bytes, fallbackTitle);
-
-            if (effectiveConfig.skipShortAudio &&
-                meta.duration.inSeconds < effectiveConfig.minDurationSeconds) {
-              skippedFiles.add(file.path);
-              continue;
-            }
-
             final trackId = 'trk_${file.path.hashCode.abs()}';
             final artistId = 'art_${meta.artist.hashCode.abs()}';
             final albumKey = '${meta.album}__${meta.artist}';
@@ -199,7 +263,7 @@ class MediaScannerServiceImpl implements IMediaScannerService {
                 : null;
             final nowMs = DateTime.now().millisecondsSinceEpoch;
 
-            // 2a. Upsert Artist
+            // 2c. Upsert Artist
             database.execute('''
               INSERT INTO ${DatabaseSchema.tableArtists} (
                 ${DatabaseSchema.colId},
@@ -211,7 +275,7 @@ class MediaScannerServiceImpl implements IMediaScannerService {
                 ${DatabaseSchema.colTrackCount} = ${DatabaseSchema.colTrackCount} + 1;
             ''', [artistId, meta.artist]);
 
-            // 2b. Upsert Album
+            // 2d. Upsert Album (persisting first valid artwork_uri if present)
             database.execute('''
               INSERT INTO ${DatabaseSchema.tableAlbums} (
                 ${DatabaseSchema.colId},
@@ -219,24 +283,27 @@ class MediaScannerServiceImpl implements IMediaScannerService {
                 ${DatabaseSchema.colAlbumArtist},
                 ${DatabaseSchema.colArtistId},
                 ${DatabaseSchema.colAlbumYear},
+                ${DatabaseSchema.colArtworkUri},
                 ${DatabaseSchema.colTrackCount},
                 ${DatabaseSchema.colDurationMs},
                 ${DatabaseSchema.colDateAdded}
-              ) VALUES (?, ?, ?, ?, ?, 1, ?, ?)
+              ) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)
               ON CONFLICT(${DatabaseSchema.colTitle}, ${DatabaseSchema.colAlbumArtist}) DO UPDATE SET
                 ${DatabaseSchema.colTrackCount} = ${DatabaseSchema.colTrackCount} + 1,
-                ${DatabaseSchema.colDurationMs} = ${DatabaseSchema.colDurationMs} + excluded.${DatabaseSchema.colDurationMs};
+                ${DatabaseSchema.colDurationMs} = ${DatabaseSchema.colDurationMs} + excluded.${DatabaseSchema.colDurationMs},
+                ${DatabaseSchema.colArtworkUri} = COALESCE(${DatabaseSchema.colArtworkUri}, excluded.${DatabaseSchema.colArtworkUri});
             ''', [
               albumId,
               meta.album,
               meta.artist,
               artistId,
               meta.year,
+              resolvedArtworkUri,
               meta.duration.inMilliseconds,
               nowMs,
             ]);
 
-            // 2c. Upsert Genre (if present)
+            // 2e. Upsert Genre (if present)
             if (genreId != null && meta.genre != null) {
               database.execute('''
                 INSERT INTO ${DatabaseSchema.tableGenres} (
@@ -249,7 +316,7 @@ class MediaScannerServiceImpl implements IMediaScannerService {
               ''', [genreId, meta.genre]);
             }
 
-            // 2d. Upsert Track
+            // 2f. Upsert Track
             database.execute('''
               INSERT INTO ${DatabaseSchema.tableTracks} (
                 ${DatabaseSchema.colId},
@@ -257,6 +324,7 @@ class MediaScannerServiceImpl implements IMediaScannerService {
                 ${DatabaseSchema.colTrackArtist},
                 ${DatabaseSchema.colTrackAlbum},
                 ${DatabaseSchema.colDurationMs},
+                ${DatabaseSchema.colArtworkUri},
                 ${DatabaseSchema.colTrackFilePath},
                 ${DatabaseSchema.colTrackNumber},
                 ${DatabaseSchema.colDiscNumber},
@@ -268,12 +336,13 @@ class MediaScannerServiceImpl implements IMediaScannerService {
                 ${DatabaseSchema.colArtistId},
                 ${DatabaseSchema.colAlbumId},
                 ${DatabaseSchema.colGenreId}
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
               ON CONFLICT(${DatabaseSchema.colTrackFilePath}) DO UPDATE SET
                 ${DatabaseSchema.colTitle} = excluded.${DatabaseSchema.colTitle},
                 ${DatabaseSchema.colTrackArtist} = excluded.${DatabaseSchema.colTrackArtist},
                 ${DatabaseSchema.colTrackAlbum} = excluded.${DatabaseSchema.colTrackAlbum},
                 ${DatabaseSchema.colDurationMs} = excluded.${DatabaseSchema.colDurationMs},
+                ${DatabaseSchema.colArtworkUri} = COALESCE(excluded.${DatabaseSchema.colArtworkUri}, ${DatabaseSchema.colArtworkUri}),
                 ${DatabaseSchema.colTrackNumber} = excluded.${DatabaseSchema.colTrackNumber},
                 ${DatabaseSchema.colDiscNumber} = excluded.${DatabaseSchema.colDiscNumber},
                 ${DatabaseSchema.colTrackYear} = excluded.${DatabaseSchema.colTrackYear},
@@ -289,6 +358,7 @@ class MediaScannerServiceImpl implements IMediaScannerService {
               meta.artist,
               meta.album,
               meta.duration.inMilliseconds,
+              resolvedArtworkUri,
               file.path,
               meta.trackNumber,
               meta.discNumber,
@@ -304,7 +374,7 @@ class MediaScannerServiceImpl implements IMediaScannerService {
 
             insertedCount++;
           } catch (e) {
-            errors.add('Failed to parse ${file.path}: $e');
+            errors.add('Failed to insert ${file.path}: $e');
           }
         }
       });

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
+import 'package:nexa_player/core/services/artwork/artwork_providers.dart';
 import 'package:nexa_player/shared/widgets/feedback/app_dialog.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_button.dart';
@@ -11,7 +12,7 @@ import '../widgets/settings_tiles.dart';
 class AlbumArtSettingsScreen extends ConsumerWidget {
   const AlbumArtSettingsScreen({super.key});
 
-  void _confirmClearCache(BuildContext context) {
+  void _confirmClearCache(BuildContext context, WidgetRef ref) {
     showDialog<void>(
       context: context,
       builder: (ctx) => AppDialog(
@@ -28,8 +29,10 @@ class AlbumArtSettingsScreen extends ConsumerWidget {
           GlassButton(
             label: 'Clear Cache',
             accentColor: Colors.redAccent,
-            onPressed: () {
+            onPressed: () async {
               Navigator.of(ctx).pop();
+              await ref.read(artworkResolutionServiceProvider).clearCache();
+              if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Album covers cache cleared successfully'),
@@ -193,7 +196,7 @@ class AlbumArtSettingsScreen extends ConsumerWidget {
                 icon: Icons.delete_sweep_rounded,
                 iconColor: Colors.redAccent,
                 isDestructive: true,
-                onTap: () => _confirmClearCache(context),
+                onTap: () => _confirmClearCache(context, ref),
               ),
             ],
           ),

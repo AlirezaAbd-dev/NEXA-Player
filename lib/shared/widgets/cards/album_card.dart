@@ -4,6 +4,7 @@ import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
 import 'package:nexa_player/core/design_system/glass_tokens.dart';
 import 'package:nexa_player/shared/models/album.dart';
+import 'package:nexa_player/shared/widgets/cards/nexa_artwork_image.dart';
 import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
 
 /// Layout orientation mode for [AlbumCard].
@@ -23,6 +24,7 @@ class AlbumCard extends StatefulWidget {
     required this.title,
     required this.artist,
     this.artworkUri,
+    this.album,
     this.year,
     this.trackCount,
     this.mode = AlbumCardMode.grid,
@@ -53,6 +55,7 @@ class AlbumCard extends StatefulWidget {
       title: album.title,
       artist: album.artist,
       artworkUri: album.artworkUri,
+      album: album,
       year: album.year,
       trackCount: album.trackCount,
       mode: mode,
@@ -69,6 +72,7 @@ class AlbumCard extends StatefulWidget {
   final String title;
   final String artist;
   final String? artworkUri;
+  final Album? album;
   final int? year;
   final int? trackCount;
   final AlbumCardMode mode;
@@ -185,6 +189,18 @@ class _AlbumCardState extends State<AlbumCard> {
         ),
       ),
     );
+
+    if (widget.artworkUri != null && widget.artworkUri!.isNotEmpty || widget.album != null) {
+      artworkPlaceholder = NexaArtworkImage(
+        artworkUri: widget.artworkUri,
+        album: widget.album,
+        width: double.infinity,
+        height: double.infinity,
+        cacheWidth: 380,
+        borderRadius: artworkRadius,
+        fallbackBuilder: (_) => artworkPlaceholder,
+      );
+    }
 
     if (widget.heroTag != null) {
       artworkPlaceholder = Hero(

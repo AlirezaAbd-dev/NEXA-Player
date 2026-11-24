@@ -1,10 +1,10 @@
-import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/extensions/duration_x.dart';
 import 'package:nexa_player/shared/models/track.dart';
+import 'package:nexa_player/shared/widgets/cards/nexa_artwork_image.dart';
 import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
 
 /// Hero artwork card and Stellio-style 3D Cover Flow Carousel featuring:
@@ -386,33 +386,30 @@ class _HeroArtworkCardState extends State<HeroArtworkCard>
     final effectiveTrack = track ?? widget.track;
     final artworkUri = effectiveTrack?.artworkUri;
 
-    Widget artworkContent;
-    if (artworkUri != null && artworkUri.isNotEmpty) {
-      if (artworkUri.startsWith('http://') || artworkUri.startsWith('https://')) {
-        artworkContent = Image.network(
-          artworkUri,
-          fit: BoxFit.cover,
-          width: widget.size,
-          height: widget.size,
-          cacheWidth: 720,
-          errorBuilder: (_, __, ___) =>
-              _buildProceduralVinyl(context, colorScheme, isDark, primary, isCurrent: isCurrent),
-        );
-      } else {
-        artworkContent = Image.file(
-          File(artworkUri),
-          fit: BoxFit.cover,
-          width: widget.size,
-          height: widget.size,
-          cacheWidth: 720,
-          errorBuilder: (_, __, ___) =>
-              _buildProceduralVinyl(context, colorScheme, isDark, primary, isCurrent: isCurrent),
-        );
-      }
-    } else {
-      artworkContent =
-          _buildProceduralVinyl(context, colorScheme, isDark, primary, isCurrent: isCurrent);
-    }
+    final Widget artworkContent = (artworkUri != null && artworkUri.isNotEmpty) ||
+            effectiveTrack != null
+        ? NexaArtworkImage(
+            artworkUri: artworkUri,
+            track: effectiveTrack,
+            width: widget.size,
+            height: widget.size,
+            fit: BoxFit.cover,
+            cacheWidth: 720,
+            fallbackBuilder: (_) => _buildProceduralVinyl(
+              context,
+              colorScheme,
+              isDark,
+              primary,
+              isCurrent: isCurrent,
+            ),
+          )
+        : _buildProceduralVinyl(
+            context,
+            colorScheme,
+            isDark,
+            primary,
+            isCurrent: isCurrent,
+          );
 
     return Container(
       width: widget.size,

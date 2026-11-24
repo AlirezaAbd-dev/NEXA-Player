@@ -7,6 +7,7 @@ import '../../core/design_system/app_spacing.dart';
 import '../../core/design_system/app_typography.dart';
 import '../../core/design_system/nexa_surface_tokens.dart';
 import '../../features/player/presentation/providers/player_providers.dart';
+import '../../shared/widgets/cards/nexa_artwork_image.dart';
 import '../routes.dart';
 
 /// Semantic Keys matching ShellNavigationTest and Widget Tests.
@@ -303,14 +304,31 @@ class _MiniPlayerSlotState extends ConsumerState<MiniPlayerSlot>
                                         ),
                                       ],
                                     ),
-                                    child: Center(
-                                      child: Container(
-                                        width: 14.0,
-                                        height: 14.0,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: tokens.l1,
-                                        ),
+                                    child: ClipOval(
+                                      child: Stack(
+                                        fit: StackFit.expand,
+                                        children: [
+                                          NexaArtworkImage(
+                                            artworkUri: widget.artworkUri ??
+                                                currentTrack?.artworkUri,
+                                            track: currentTrack,
+                                            width: 42.0,
+                                            height: 42.0,
+                                            cacheWidth: 160,
+                                            fallbackBuilder: (_) =>
+                                                const SizedBox.shrink(),
+                                          ),
+                                          Center(
+                                            child: Container(
+                                              width: 12.0,
+                                              height: 12.0,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: tokens.l1.withOpacity(0.88),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ),

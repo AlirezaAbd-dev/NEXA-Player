@@ -11,6 +11,7 @@ import '../../../../core/services/storage_permission_service.dart';
 import '../../../../core/utils/storage_path_formatter.dart';
 import '../../../../shared/models/track.dart';
 import '../../../../shared/widgets/branding/nexa_animated_logo.dart';
+import '../../../../shared/widgets/cards/nexa_artwork_image.dart';
 import '../../../../shared/widgets/glass/app_ambient_background.dart';
 import '../../../../shared/widgets/glass/glass_app_bar.dart';
 import '../../../../shared/widgets/glass/glass_button.dart';
@@ -499,12 +500,37 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
                   borderRadius: BorderRadius.circular(14.0),
                   child: ListTile(
                     key: Phase2Keys.fileNode(file.path),
-                    leading: Icon(
-                      isActive
-                          ? Icons.equalizer_rounded
-                          : Icons.music_note_rounded,
-                      size: 20,
-                      color: isActive ? primary : null,
+                    leading: ClipRRect(
+                      borderRadius: BorderRadius.circular(10.0),
+                      child: SizedBox(
+                        width: 40.0,
+                        height: 40.0,
+                        child: NexaArtworkImage(
+                          track: Track(
+                            id: file.trackId ?? file.path,
+                            title: file.name,
+                            artist: folder.name,
+                            album: folder.name,
+                            duration: Duration.zero,
+                            filePath: file.path,
+                          ),
+                          width: 40.0,
+                          height: 40.0,
+                          cacheWidth: 160,
+                          fallbackBuilder: (_) => Container(
+                            color: isActive
+                                ? primary.withOpacity(0.18)
+                                : surfaceTokens.level2,
+                            child: Icon(
+                              isActive
+                                  ? Icons.equalizer_rounded
+                                  : Icons.music_note_rounded,
+                              size: 20,
+                              color: isActive ? primary : null,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                     title: Text(
                       file.name,

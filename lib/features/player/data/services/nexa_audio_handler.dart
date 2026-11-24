@@ -70,6 +70,17 @@ class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
     );
   }
 
+  Uri? _resolveArtUri(String? artworkUri) {
+    if (artworkUri == null || artworkUri.isEmpty) return null;
+    if (artworkUri.startsWith('http://') ||
+        artworkUri.startsWith('https://') ||
+        artworkUri.startsWith('content://') ||
+        artworkUri.startsWith('file://')) {
+      return Uri.tryParse(artworkUri);
+    }
+    return Uri.file(artworkUri);
+  }
+
   MediaItem _toMediaItem(Track track, {bool playable = true}) {
     return MediaItem(
       id: track.id,
@@ -77,7 +88,7 @@ class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
       artist: track.artist,
       album: track.album,
       duration: track.duration,
-      artUri: track.artworkUri != null ? Uri.tryParse(track.artworkUri!) : null,
+      artUri: _resolveArtUri(track.artworkUri),
       playable: playable,
       extras: {
         'filePath': track.filePath,

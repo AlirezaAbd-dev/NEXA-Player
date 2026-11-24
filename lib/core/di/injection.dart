@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:get_it/get_it.dart';
+import 'package:nexa_player/core/services/artwork/artwork_resolution_service.dart';
 import 'package:nexa_player/features/equalizer/data/services/pure_dart_equalizer_service.dart';
 import 'package:nexa_player/features/equalizer/domain/services/equalizer_service.dart';
 import 'package:nexa_player/features/lyrics/data/services/lrclib_api_client.dart';
@@ -45,6 +46,7 @@ import 'package:nexa_player/features/settings/data/services/settings_service_imp
 import 'package:nexa_player/features/settings/domain/services/settings_service.dart';
 import 'package:nexa_player/features/visualizer/domain/services/waveform_pre_processor.dart';
 import 'package:nexa_player/shared/services/database/app_database.dart';
+import 'package:nexa_player/shared/services/database/database_schema.dart';
 import 'package:nexa_player/shared/services/logging/logging_service.dart';
 import 'package:nexa_player/shared/services/logging/talker_logging_service.dart';
 import 'package:nexa_player/shared/services/storage/shared_preferences_storage_service.dart';
@@ -141,10 +143,45 @@ Future<void> configureDependencies({
 
   final db = getIt<IAppDatabase>();
 
-  // 6. IAudioMetadataReader
+  // 6. IAudioMetadataReader & ArtworkResolutionService
   if (!getIt.isRegistered<IAudioMetadataReader>()) {
     getIt.registerSingleton<IAudioMetadataReader>(
       metadataReader ?? const PureDartAudioMetadataReader(),
+    );
+  }
+
+  if (!getIt.isRegistered<IArtworkResolutionService>()) {
+    getIt.registerSingleton<IArtworkResolutionService>(
+      ArtworkResolutionService(
+        metadataReader: getIt<IAudioMetadataReader>(),
+        onTrackArtworkResolved: (track, resolvedPath) async {
+          db.execute(
+            'UPDATE ${DatabaseSchema.tableTracks} SET ${DatabaseSchema.colArtworkUri} = ? '
+            'WHERE ${DatabaseSchema.colId} = ? AND (${DatabaseSchema.colArtworkUri} IS NULL OR ${DatabaseSchema.colArtworkUri} = ?);',
+            [resolvedPath, track.id, ''],
+          );
+          if (track.albumId != null && track.albumId!.isNotEmpty) {
+            db.execute(
+              'UPDATE ${DatabaseSchema.tableAlbums} SET ${DatabaseSchema.colArtworkUri} = ? '
+              'WHERE ${DatabaseSchema.colId} = ? AND (${DatabaseSchema.colArtworkUri} IS NULL OR ${DatabaseSchema.colArtworkUri} = ?);',
+              [resolvedPath, track.albumId, ''],
+            );
+          } else if (track.album.isNotEmpty) {
+            db.execute(
+              'UPDATE ${DatabaseSchema.tableAlbums} SET ${DatabaseSchema.colArtworkUri} = ? '
+              'WHERE ${DatabaseSchema.colTitle} = ? AND (${DatabaseSchema.colArtworkUri} IS NULL OR ${DatabaseSchema.colArtworkUri} = ?);',
+              [resolvedPath, track.album, ''],
+            );
+          }
+        },
+        onAlbumArtworkResolved: (album, resolvedPath) async {
+          db.execute(
+            'UPDATE ${DatabaseSchema.tableAlbums} SET ${DatabaseSchema.colArtworkUri} = ? '
+            'WHERE ${DatabaseSchema.colId} = ? AND (${DatabaseSchema.colArtworkUri} IS NULL OR ${DatabaseSchema.colArtworkUri} = ?);',
+            [resolvedPath, album.id, ''],
+          );
+        },
+      ),
     );
   }
 
@@ -155,6 +192,7 @@ Future<void> configureDependencies({
           MediaScannerServiceImpl(
             database: db,
             metadataReader: getIt<IAudioMetadataReader>(),
+            artworkService: getIt<IArtworkResolutionService>(),
           ),
     );
   }

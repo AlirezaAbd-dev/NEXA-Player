@@ -8,6 +8,7 @@ import '../../../core/design_system/glass_tokens.dart';
 import '../../../core/design_system/nexa_surface_tokens.dart';
 import '../../../core/extensions/duration_x.dart';
 import '../../models/track.dart';
+import 'nexa_artwork_image.dart';
 
 /// Context menu actions available on [TrackTile].
 enum TrackTileMenuAction {
@@ -33,6 +34,7 @@ class TrackTile extends StatefulWidget {
     this.album,
     this.duration,
     this.artworkUri,
+    this.track,
     this.trackNumber,
     this.isPlaying = false,
     this.isFavorite = false,
@@ -74,6 +76,7 @@ class TrackTile extends StatefulWidget {
       album: track.album,
       duration: track.duration,
       artworkUri: track.artworkUri,
+      track: track,
       trackNumber: showTrackNumber ? track.trackNumber : null,
       isPlaying: isPlaying,
       isFavorite: track.isFavorite,
@@ -94,6 +97,7 @@ class TrackTile extends StatefulWidget {
   final String? album;
   final Duration? duration;
   final String? artworkUri;
+  final Track? track;
   final int? trackNumber;
   final bool isPlaying;
   final bool isFavorite;
@@ -132,7 +136,6 @@ class _TrackTileState extends State<TrackTile> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final primary = theme.colorScheme.primary;
-    final surface = theme.colorScheme.surface;
     final onSurface = theme.colorScheme.onSurface;
     final onSurfaceVariant = theme.colorScheme.onSurfaceVariant;
     final tokens = NexaSurfaceTokens.of(context);
@@ -151,11 +154,27 @@ class _TrackTileState extends State<TrackTile> {
       final hasTrackNumber = widget.trackNumber != null;
       Widget thumbnailContent;
 
-      if (widget.artworkUri != null && widget.artworkUri!.isNotEmpty) {
-        thumbnailContent = Image.network(
-          widget.artworkUri!,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildArtworkFallback(primary, tokens),
+      final hasArtworkSource =
+          (widget.artworkUri != null && widget.artworkUri!.isNotEmpty) ||
+              widget.track != null;
+
+      if (hasArtworkSource && (!hasTrackNumber || widget.artworkUri != null)) {
+        thumbnailContent = NexaArtworkImage(
+          artworkUri: widget.artworkUri,
+          track: widget.track,
+          width: 44.0,
+          height: 44.0,
+          cacheWidth: 160,
+          borderRadius: BorderRadius.circular(10.0),
+          fallbackBuilder: (_) => hasTrackNumber && !widget.isPlaying
+              ? Text(
+                  '${widget.trackNumber}',
+                  style: AppTypography.titleMedium.copyWith(
+                    color: primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )
+              : _buildArtworkFallback(primary, tokens),
         );
       } else if (hasTrackNumber && !widget.isPlaying) {
         thumbnailContent = Text(
