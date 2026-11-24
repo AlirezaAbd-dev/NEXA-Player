@@ -5,6 +5,7 @@ import '../../../../core/services/library/library_sync_bus.dart';
 import '../../../../shared/models/track.dart';
 import '../../../../shared/services/storage/storage_service.dart';
 import '../../../library/domain/repositories/tracks_repository.dart';
+import '../../data/services/nexa_audio_handler.dart';
 import '../../domain/entities/playback_state.dart';
 import '../../domain/services/audio_engine.dart';
 import '../../domain/services/playback_queue.dart';
@@ -65,6 +66,9 @@ final playerNotifierProvider =
   final syncBus = getIt.isRegistered<LibrarySyncBus>()
       ? getIt<LibrarySyncBus>()
       : null;
+  final audioHandler = getIt.isRegistered<NexaAudioHandler>()
+      ? getIt<NexaAudioHandler>()
+      : null;
 
   return PlayerNotifier(
     engine: engine,
@@ -75,6 +79,7 @@ final playerNotifierProvider =
     storageService: storage,
     telemetryService: telemetry,
     syncBus: syncBus,
+    audioHandler: audioHandler,
   );
 });
 

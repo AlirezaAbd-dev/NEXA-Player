@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:audio_service/audio_service.dart';
 import 'package:get_it/get_it.dart';
 import 'package:nexa_player/core/services/artwork/artwork_resolution_service.dart';
 import 'package:nexa_player/core/services/audio/audio_telemetry_service.dart';
@@ -91,6 +92,7 @@ Future<void> configureDependencies({
   ISearchRepository? searchRepository,
   ISettingsService? settingsService,
   bool seedDemoData = false,
+  bool initAudioService = false,
 }) async {
   // 1. SharedPreferences instance
   final prefs = sharedPreferences ?? await SharedPreferences.getInstance();
@@ -312,12 +314,34 @@ Future<void> configureDependencies({
   }
 
   if (!getIt.isRegistered<NexaAudioHandler>()) {
-    getIt.registerSingleton<NexaAudioHandler>(
-      NexaAudioHandler(
-        engine: getIt<IAudioEngine>(),
-        queue: getIt<IPlaybackQueue>(),
-      ),
+    final handler = NexaAudioHandler(
+      engine: getIt<IAudioEngine>(),
+      queue: getIt<IPlaybackQueue>(),
+      tracksRepository: getIt<ITracksRepository>(),
+      playlistsRepository: getIt<IPlaylistsRepository>(),
+      searchRepository: getIt<ISearchRepository>(),
+      artworkResolver: getIt<IArtworkResolutionService>(),
+      storageService: getIt<IStorageService>(),
     );
+    if (initAudioService &&
+        (Platform.isAndroid || Platform.isIOS || Platform.isMacOS)) {
+      try {
+        final initializedHandler = await AudioService.init<NexaAudioHandler>(
+          builder: () => handler,
+          config: nexaAudioServiceConfig,
+        );
+        getIt.registerSingleton<NexaAudioHandler>(initializedHandler);
+      } catch (e, st) {
+        getIt<ILoggingService>().error(
+          'AudioService.init failed; falling back to local handler',
+          e,
+          st,
+        );
+        getIt.registerSingleton<NexaAudioHandler>(handler);
+      }
+    } else {
+      getIt.registerSingleton<NexaAudioHandler>(handler);
+    }
   }
 
   // 10. Equalizer & DSP Service

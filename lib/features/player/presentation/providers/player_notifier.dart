@@ -1,11 +1,14 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../../../core/constants/storage_keys.dart';
 import '../../../../core/services/audio/audio_telemetry_service.dart';
 import '../../../../core/services/library/library_sync_bus.dart';
 import '../../../../shared/models/track.dart';
 import '../../../../shared/services/storage/storage_service.dart';
 import '../../../library/domain/repositories/tracks_repository.dart';
+import '../../data/services/nexa_audio_handler.dart';
 import '../../domain/entities/playback_state.dart';
 import '../../domain/entities/queue_context.dart';
 import '../../domain/services/audio_engine.dart';
@@ -25,6 +28,7 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
     IStorageService? storageService,
     IAudioTelemetryService? telemetryService,
     LibrarySyncBus? syncBus,
+    NexaAudioHandler? audioHandler,
   })  : _engine = engine,
         _queue = queue,
         _sleepTimer = sleepTimer,
@@ -33,9 +37,11 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
         _storageService = storageService,
         _telemetryService = telemetryService,
         _syncBus = syncBus,
+        _audioHandler = audioHandler,
         super(_buildInitialState(queue, storageService)) {
     _syncInitialQueueModes();
     _bindStreams();
+    _bindAudioHandler();
   }
 
   static PlaybackState _buildInitialState(
@@ -67,9 +73,38 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
   final IStorageService? _storageService;
   final IAudioTelemetryService? _telemetryService;
   final LibrarySyncBus? _syncBus;
+  final NexaAudioHandler? _audioHandler;
   final List<StreamSubscription> _subscriptions = [];
   int _loadEpoch = 0;
   int _recordedPlayEpoch = -1;
+  bool _checkedNotificationPermission = false;
+
+  void _bindAudioHandler() {
+    _audioHandler?.bindTransportCallbacks(
+      onPlay: play,
+      onPause: pause,
+      onStop: stop,
+      onSeek: seek,
+      onSkipNext: skipNext,
+      onSkipPrevious: skipPrevious,
+      onToggleFavorite: toggleFavorite,
+    );
+  }
+
+  void _requestAndroidNotificationPermissionOnce() {
+    if (_checkedNotificationPermission) return;
+    _checkedNotificationPermission = true;
+    if (Platform.environment.containsKey('FLUTTER_TEST') || !Platform.isAndroid) {
+      return;
+    }
+    unawaited(
+      Permission.notification.status.then((status) async {
+        if (status.isDenied) {
+          await Permission.notification.request();
+        }
+      }).catchError((_) {}),
+    );
+  }
 
   void _syncInitialQueueModes() {
     if (_queue.state.repeatMode != state.repeatMode) {
@@ -185,12 +220,14 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
   }
 
   Future<void> _loadAndPlay(Track track) async {
+    _requestAndroidNotificationPermissionOnce();
     final epoch = ++_loadEpoch;
     state = state.copyWith(
       currentTrack: track,
       queueVersion: _queue.state.queueVersion,
       status: PlaybackStatus.loading,
     );
+    _audioHandler?.updateMediaTrack(track);
 
     if (_telemetryService != null &&
         ((track.bitrate ?? 0) <= 0 ||
@@ -203,6 +240,7 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
               enriched != track &&
               state.currentTrack?.id == enriched.id) {
             state = state.copyWith(currentTrack: enriched);
+            _audioHandler?.updateMediaTrack(enriched);
           }
         }).catchError((_) {}),
       );
@@ -441,6 +479,7 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
     _queue.updateTrack(updatedTrack);
     if (state.currentTrack?.id == updatedTrack.id) {
       state = state.copyWith(currentTrack: updatedTrack);
+      _audioHandler?.updateMediaTrack(updatedTrack);
     }
   }
 
@@ -457,7 +496,9 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
     _syncBus?.notifyChanged();
 
     if (state.currentTrack?.id == track.id) {
+      _queue.updateTrack(updatedTrack);
       state = state.copyWith(currentTrack: updatedTrack);
+      _audioHandler?.updateMediaTrack(updatedTrack);
     }
   }
 

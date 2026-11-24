@@ -1,7 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'package:audio_service/audio_service.dart';
+import '../../../../core/constants/storage_keys.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/services/artwork/artwork_resolution_service.dart';
 import '../../../../shared/models/track.dart';
+import '../../../../shared/services/storage/storage_service.dart';
 import '../../../library/domain/repositories/tracks_repository.dart';
 import '../../../playlists/domain/repositories/playlists_repository.dart';
 import '../../../search/domain/repositories/search_repository.dart';
@@ -9,8 +14,26 @@ import '../../domain/entities/playback_state.dart' as domain;
 import '../../domain/services/audio_engine.dart';
 import '../../domain/services/playback_queue.dart';
 
+/// Shared production configuration for Android/iOS OS media notification and lockscreen controls.
+const AudioServiceConfig nexaAudioServiceConfig = AudioServiceConfig(
+  androidResumeOnClick: true,
+  androidNotificationChannelId: 'com.nexa.player.channel.audio',
+  androidNotificationChannelName: 'NEXA Playback Controls',
+  androidNotificationChannelDescription:
+      'Album cover, track controls, and interactive seek bar',
+  androidNotificationIcon: 'drawable/ic_stat_nexa',
+  androidShowNotificationBadge: false,
+  androidNotificationClickStartsActivity: true,
+  androidNotificationOngoing: false,
+  androidStopForegroundOnPause: false,
+  artDownscaleWidth: 512,
+  artDownscaleHeight: 512,
+  preloadArtwork: true,
+);
+
 /// Background audio handler integrating NEXA Player with the platform OS media session,
-/// lock screen controls, headset events, notification tray, and Android Auto MediaBrowser.
+/// lock screen controls, headset events, notification tray, interactive seekbar, and
+/// Android Auto MediaBrowser.
 class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
   NexaAudioHandler({
     required IAudioEngine engine,
@@ -18,11 +41,15 @@ class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
     ITracksRepository? tracksRepository,
     IPlaylistsRepository? playlistsRepository,
     ISearchRepository? searchRepository,
+    IArtworkResolutionService? artworkResolver,
+    IStorageService? storageService,
   })  : _engine = engine,
         _queue = queue,
         _tracksRepository = tracksRepository,
         _playlistsRepository = playlistsRepository,
-        _searchRepository = searchRepository {
+        _searchRepository = searchRepository,
+        _artworkResolver = artworkResolver,
+        _storageService = storageService {
     _bindStreams();
   }
 
@@ -31,8 +58,22 @@ class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
   final ITracksRepository? _tracksRepository;
   final IPlaylistsRepository? _playlistsRepository;
   final ISearchRepository? _searchRepository;
+  final IArtworkResolutionService? _artworkResolver;
+  final IStorageService? _storageService;
 
   final List<StreamSubscription> _subscriptions = [];
+  Duration _lastSyncedPosition = Duration.zero;
+  DateTime _lastSyncTime = DateTime.fromMillisecondsSinceEpoch(0);
+  domain.PlaybackStatus? _lastSyncedStatus;
+  String? _lastMediaItemKey;
+
+  Future<void> Function()? _onSkipNextRequested;
+  Future<void> Function()? _onSkipPreviousRequested;
+  Future<void> Function()? _onPlayRequested;
+  Future<void> Function()? _onPauseRequested;
+  Future<void> Function()? _onStopRequested;
+  Future<void> Function(Duration position)? _onSeekRequested;
+  Future<void> Function()? _onToggleFavoriteRequested;
 
   ITracksRepository? get _effectiveTracksRepo =>
       _tracksRepository ??
@@ -52,42 +93,149 @@ class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
           ? getIt<ISearchRepository>()
           : null);
 
+  IArtworkResolutionService? get _effectiveArtworkResolver =>
+      _artworkResolver ??
+      (getIt.isRegistered<IArtworkResolutionService>()
+          ? getIt<IArtworkResolutionService>()
+          : null);
+
+  IStorageService? get _effectiveStorage =>
+      _storageService ??
+      (getIt.isRegistered<IStorageService>()
+          ? getIt<IStorageService>()
+          : null);
+
+  /// Binds higher-level coordinator callbacks (e.g. `PlayerNotifier`) so
+  /// notification/lockscreen transport controls respect Stellio repeat modes,
+  /// play counts, and Riverpod UI state.
+  void bindTransportCallbacks({
+    Future<void> Function()? onPlay,
+    Future<void> Function()? onPause,
+    Future<void> Function()? onStop,
+    Future<void> Function(Duration position)? onSeek,
+    Future<void> Function()? onSkipNext,
+    Future<void> Function()? onSkipPrevious,
+    Future<void> Function()? onToggleFavorite,
+  }) {
+    _onPlayRequested = onPlay;
+    _onPauseRequested = onPause;
+    _onStopRequested = onStop;
+    _onSeekRequested = onSeek;
+    _onSkipNextRequested = onSkipNext;
+    _onSkipPreviousRequested = onSkipPrevious;
+    _onToggleFavoriteRequested = onToggleFavorite;
+  }
+
+  /// Immediately updates the published OS `MediaItem` & notification controls
+  /// for [track] (e.g. after metadata edit, telemetry hydration, or favorite toggle).
+  void updateMediaTrack(Track track) {
+    _publishMediaItem(track);
+    _syncPlaybackState(force: true);
+  }
+
   void _bindStreams() {
     _subscriptions.add(
-      _engine.statusStream.listen((_) => _syncPlaybackState()),
+      _engine.statusStream.listen((_) => _syncPlaybackState(force: true)),
     );
     _subscriptions.add(
-      _engine.positionStream.listen((_) => _syncPlaybackState()),
+      _engine.speedStream.listen((_) => _syncPlaybackState(force: true)),
+    );
+    _subscriptions.add(
+      _engine.durationStream.listen((dur) {
+        final current = _queue.state.currentTrack;
+        if (current != null && dur > Duration.zero && current.duration != dur) {
+          _publishMediaItem(current.copyWith(duration: dur));
+          _syncPlaybackState(force: true);
+        }
+      }),
+    );
+    _subscriptions.add(
+      _engine.positionStream.listen((pos) {
+        // Avoid excessive IPC floods while correcting any seek/buffer drift > 1s.
+        final now = DateTime.now();
+        final expectedDelta =
+            (now.difference(_lastSyncTime).inMilliseconds * _engine.speed)
+                .round();
+        final actualDelta = (pos - _lastSyncedPosition).inMilliseconds;
+        if ((actualDelta - expectedDelta).abs() > 1000) {
+          _syncPlaybackState(force: true, explicitPosition: pos);
+        }
+      }),
     );
     _subscriptions.add(
       _queue.queueStream.listen((queueState) {
         final current = queueState.currentTrack;
         if (current != null) {
-          mediaItem.add(_toMediaItem(current));
+          _publishMediaItem(current);
         }
-        _syncPlaybackState();
+        _syncPlaybackState(force: true);
       }),
     );
+  }
+
+  void _publishMediaItem(Track track) {
+    final resolvedDuration =
+        _engine.duration > Duration.zero ? _engine.duration : track.duration;
+    final enrichedTrack = track.copyWith(duration: resolvedDuration);
+    final item = _toMediaItem(enrichedTrack);
+    final itemKey =
+        '${item.id}|${item.title}|${item.artist}|${item.album}|${item.duration?.inMilliseconds}|${item.artUri}';
+    if (_lastMediaItemKey != itemKey) {
+      _lastMediaItemKey = itemKey;
+      mediaItem.add(item);
+    }
+
+    // Lazily resolve local album artwork URI for SystemUI/lockscreen tinting if missing.
+    if (item.artUri == null) {
+      final resolver = _effectiveArtworkResolver;
+      if (resolver != null) {
+        unawaited(
+          resolver.resolveTrackArtwork(enrichedTrack).then((path) {
+            if (path == null || path.isEmpty) return;
+            final current = _queue.state.currentTrack;
+            if (current == null || current.id != enrichedTrack.id) return;
+            final updatedItem = _toMediaItem(
+              enrichedTrack.copyWith(artworkUri: path),
+            );
+            _lastMediaItemKey =
+                '${updatedItem.id}|${updatedItem.title}|${updatedItem.artist}|${updatedItem.album}|${updatedItem.duration?.inMilliseconds}|${updatedItem.artUri}';
+            mediaItem.add(updatedItem);
+          }).catchError((_) {}),
+        );
+      }
+    }
   }
 
   Uri? _resolveArtUri(String? artworkUri) {
     if (artworkUri == null || artworkUri.isEmpty) return null;
     if (artworkUri.startsWith('http://') ||
         artworkUri.startsWith('https://') ||
-        artworkUri.startsWith('content://') ||
-        artworkUri.startsWith('file://')) {
+        artworkUri.startsWith('content://')) {
+      return Uri.tryParse(artworkUri);
+    }
+    if (artworkUri.startsWith('file://')) {
+      final path = artworkUri.substring('file://'.length);
+      if (File(path).existsSync()) {
+        return Uri.tryParse(artworkUri);
+      }
       return Uri.tryParse(artworkUri);
     }
     return Uri.file(artworkUri);
   }
 
   MediaItem _toMediaItem(Track track, {bool playable = true}) {
+    final effectiveTitle =
+        track.title.trim().isNotEmpty ? track.title : 'Unknown Track';
+    final effectiveArtist =
+        track.artist.trim().isNotEmpty ? track.artist : 'Unknown Artist';
+    final effectiveAlbum =
+        track.album.trim().isNotEmpty ? track.album : 'NEXA Player';
     return MediaItem(
       id: track.id,
-      title: track.title,
-      artist: track.artist,
-      album: track.album,
-      duration: track.duration,
+      title: effectiveTitle,
+      artist: effectiveArtist,
+      album: effectiveAlbum,
+      duration: track.duration > Duration.zero ? track.duration : null,
       artUri: _resolveArtUri(track.artworkUri),
       playable: playable,
       extras: {
@@ -99,18 +247,86 @@ class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
     );
   }
 
-  void _syncPlaybackState() {
+  bool _includeFavoriteControl() {
+    final raw =
+        _effectiveStorage?.getString(StorageKeys.notificationActions).valueOrNull;
+    if (raw == null || raw.isEmpty) return false;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List) {
+        return decoded.map((e) => e.toString()).contains('favorite');
+      }
+    } catch (_) {}
+    return raw.split(',').map((s) => s.trim()).contains('favorite');
+  }
+
+  void _syncPlaybackState({
+    bool force = false,
+    Duration? explicitPosition,
+  }) {
     final status = _engine.status;
+    if (!force && status == _lastSyncedStatus) {
+      return;
+    }
+
     final isPlaying = status == domain.PlaybackStatus.playing;
     final isBuffering = status == domain.PlaybackStatus.buffering ||
         status == domain.PlaybackStatus.loading;
+    final currentTrack = _queue.state.currentTrack;
+    final pos = explicitPosition ?? _engine.position;
+    final maxDur = _engine.duration > Duration.zero
+        ? _engine.duration
+        : (currentTrack?.duration ?? Duration.zero);
+    final clampedPos = (maxDur > Duration.zero && pos > maxDur)
+        ? maxDur
+        : (pos < Duration.zero ? Duration.zero : pos);
 
-    final controls = [
+    final showFavorite = _includeFavoriteControl();
+    final isFavorite = currentTrack?.isFavorite ?? false;
+
+    final controls = <MediaControl>[
       MediaControl.skipToPrevious,
       if (isPlaying) MediaControl.pause else MediaControl.play,
       MediaControl.skipToNext,
-      MediaControl.stop,
+      if (showFavorite)
+        MediaControl.custom(
+          androidIcon: 'drawable/ic_stat_nexa',
+          label: isFavorite ? 'Unfavorite' : 'Favorite',
+          name: 'toggleFavorite',
+        ),
     ];
+
+    final AudioProcessingState processingState;
+    if (isBuffering) {
+      processingState = AudioProcessingState.buffering;
+    } else if (status == domain.PlaybackStatus.completed) {
+      processingState = AudioProcessingState.completed;
+    } else if (status == domain.PlaybackStatus.idle && currentTrack == null) {
+      processingState = AudioProcessingState.idle;
+    } else if (status == domain.PlaybackStatus.error) {
+      processingState = AudioProcessingState.error;
+    } else {
+      processingState = AudioProcessingState.ready;
+    }
+
+    final AudioServiceRepeatMode mappedRepeat;
+    switch (_queue.state.repeatMode) {
+      case domain.NexaRepeatMode.stopOnLastTrack:
+        mappedRepeat = AudioServiceRepeatMode.none;
+        break;
+      case domain.NexaRepeatMode.repeatSelectedTrack:
+        mappedRepeat = AudioServiceRepeatMode.one;
+        break;
+      case domain.NexaRepeatMode.repeatList:
+      case domain.NexaRepeatMode.nextListStopOnLast:
+      case domain.NexaRepeatMode.nextListRepeatFirst:
+        mappedRepeat = AudioServiceRepeatMode.all;
+        break;
+    }
+
+    _lastSyncedStatus = status;
+    _lastSyncedPosition = clampedPos;
+    _lastSyncTime = DateTime.now();
 
     playbackState.add(
       PlaybackState(
@@ -125,37 +341,74 @@ class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
           MediaAction.playFromSearch,
         },
         androidCompactActionIndices: const [0, 1, 2],
-        processingState: isBuffering
-            ? AudioProcessingState.buffering
-            : status == domain.PlaybackStatus.completed
-                ? AudioProcessingState.completed
-                : AudioProcessingState.ready,
+        processingState: processingState,
         playing: isPlaying,
-        updatePosition: _engine.position,
-        bufferedPosition: _engine.position,
-        speed: _engine.speed,
+        updatePosition: clampedPos,
+        bufferedPosition: clampedPos,
+        speed: isPlaying ? _engine.speed : 0.0,
         queueIndex: _queue.state.currentIndex,
+        repeatMode: mappedRepeat,
+        shuffleMode: _queue.state.isShuffled
+            ? AudioServiceShuffleMode.all
+            : AudioServiceShuffleMode.none,
       ),
     );
   }
 
   @override
-  Future<void> play() => _engine.play();
+  Future<void> play() async {
+    if (_onPlayRequested != null) {
+      await _onPlayRequested!();
+    } else {
+      await _engine.play();
+    }
+    _syncPlaybackState(force: true);
+  }
 
   @override
-  Future<void> pause() => _engine.pause();
+  Future<void> pause() async {
+    if (_onPauseRequested != null) {
+      await _onPauseRequested!();
+    } else {
+      await _engine.pause();
+    }
+    _syncPlaybackState(force: true);
+  }
 
   @override
   Future<void> stop() async {
-    await _engine.stop();
+    if (_onStopRequested != null) {
+      await _onStopRequested!();
+    } else {
+      await _engine.stop();
+    }
+    _syncPlaybackState(force: true, explicitPosition: Duration.zero);
     await super.stop();
   }
 
   @override
-  Future<void> seek(Duration position) => _engine.seek(position);
+  Future<void> seek(Duration position) async {
+    final maxDur = _engine.duration > Duration.zero
+        ? _engine.duration
+        : (_queue.state.currentTrack?.duration ?? Duration.zero);
+    final clamped = position < Duration.zero
+        ? Duration.zero
+        : (maxDur > Duration.zero && position > maxDur ? maxDur : position);
+
+    if (_onSeekRequested != null) {
+      await _onSeekRequested!(clamped);
+    } else {
+      await _engine.seek(clamped);
+    }
+    _syncPlaybackState(force: true, explicitPosition: clamped);
+  }
 
   @override
   Future<void> skipToNext() async {
+    if (_onSkipNextRequested != null) {
+      await _onSkipNextRequested!();
+      return;
+    }
     final track = _queue.next();
     if (track != null) {
       await _engine.load(track, autoPlay: true);
@@ -164,8 +417,12 @@ class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> skipToPrevious() async {
+    if (_onSkipPreviousRequested != null) {
+      await _onSkipPreviousRequested!();
+      return;
+    }
     if (_engine.position > const Duration(seconds: 3)) {
-      await _engine.seek(Duration.zero);
+      await seek(Duration.zero);
       return;
     }
 
@@ -197,6 +454,7 @@ class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
         _queue.setMode(domain.PlaybackMode.repeatAll);
         break;
     }
+    _syncPlaybackState(force: true);
   }
 
   @override
@@ -207,6 +465,7 @@ class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
     } else {
       _queue.setMode(domain.PlaybackMode.ordered);
     }
+    _syncPlaybackState(force: true);
   }
 
   // ===========================================================================
@@ -284,13 +543,15 @@ class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
       if (repo == null) return const [];
       final res = await repo.getAllPlaylists();
       final playlists = res.valueOrNull ?? [];
-      return playlists.map((p) => MediaItem(
-        id: 'playlist/${p.id}',
-        title: p.name,
-        album: 'Playlist (${p.trackCount} tracks)',
-        artist: 'NEXA Playlist',
-        playable: false,
-      )).toList();
+      return playlists
+          .map((p) => MediaItem(
+                id: 'playlist/${p.id}',
+                title: p.name,
+                album: 'Playlist (${p.trackCount} tracks)',
+                artist: 'NEXA Playlist',
+                playable: false,
+              ))
+          .toList();
     }
 
     // 5. Tracks inside a specific Playlist
@@ -315,14 +576,12 @@ class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<MediaItem?> getMediaItem(String mediaId) async {
-    // Check if item is in active queue
     for (final track in _queue.state.tracks) {
       if (track.id == mediaId) {
         return _toMediaItem(track);
       }
     }
 
-    // Otherwise check tracks repository
     final repo = _effectiveTracksRepo;
     if (repo != null) {
       final res = await repo.getTrackById(mediaId);
@@ -340,7 +599,6 @@ class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
     String mediaId, [
     Map<String, dynamic>? extras,
   ]) async {
-    // 1. Play entire Favorites
     if (mediaId == rootFavoritesId) {
       final repo = _effectiveTracksRepo;
       if (repo != null) {
@@ -354,7 +612,6 @@ class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
       return;
     }
 
-    // 2. Play entire Playlist
     if (mediaId.startsWith('playlist/')) {
       final playlistId = mediaId.substring('playlist/'.length);
       final repo = _effectivePlaylistsRepo;
@@ -369,7 +626,6 @@ class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
       return;
     }
 
-    // 3. Play specific Track ID
     final trackIndex = _queue.state.tracks.indexWhere((t) => t.id == mediaId);
     if (trackIndex >= 0) {
       final track = _queue.skipToIndex(trackIndex);
@@ -379,7 +635,6 @@ class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
       return;
     }
 
-    // Track is not in current queue; load from repository
     final repo = _effectiveTracksRepo;
     if (repo != null) {
       final res = await repo.getTrackById(mediaId);
@@ -410,7 +665,6 @@ class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
       }
     }
 
-    // Fallback search directly in tracks repo
     final tracksRepo = _effectiveTracksRepo;
     if (tracksRepo != null) {
       final res = await tracksRepo.getAllTracks();
@@ -421,9 +675,7 @@ class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
             t.album.toLowerCase().contains(q);
       }).toList();
 
-      return matches
-          .map((t) => _toMediaItem(t, playable: true))
-          .toList();
+      return matches.map((t) => _toMediaItem(t, playable: true)).toList();
     }
 
     return const [];
@@ -447,6 +699,10 @@ class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
   ]) async {
     switch (name) {
       case 'toggleFavorite':
+        if (_onToggleFavoriteRequested != null) {
+          await _onToggleFavoriteRequested!();
+          return;
+        }
         final current = _queue.state.currentTrack;
         if (current != null) {
           final repo = _effectiveTracksRepo;
@@ -462,6 +718,7 @@ class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
         } else {
           _queue.setMode(domain.PlaybackMode.shuffle);
         }
+        _syncPlaybackState(force: true);
         break;
     }
   }

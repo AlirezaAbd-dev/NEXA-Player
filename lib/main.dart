@@ -8,7 +8,10 @@ Future<void> main() async {
 
   // Initialize service locator (SharedPreferences, TalkerLoggingService, etc.)
   // Explicitly ensure demo seeding is disabled in production so the user's library reflects real storage.
-  await configureDependencies(seedDemoData: false);
+  await configureDependencies(
+    seedDemoData: false,
+    initAudioService: true,
+  );
 
   runApp(
     const ProviderScope(

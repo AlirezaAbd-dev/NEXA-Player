@@ -1,18 +1,47 @@
+import 'dart:async';
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/theme_controller.dart';
 import 'router.dart';
+import 'routes.dart';
 
 /// Root application widget for NEXA Player.
 ///
 /// Reactively rebuilds whenever [themeControllerProvider] updates, applying
-/// the selected preset or custom HSL theme with dynamic dark/light brightness.
-class NexaPlayerApp extends ConsumerWidget {
+/// the selected preset or custom HSL theme with dynamic dark/light brightness,
+/// and opens [NowPlayingScreen] when the user taps the OS media notification.
+class NexaPlayerApp extends ConsumerStatefulWidget {
   const NexaPlayerApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NexaPlayerApp> createState() => _NexaPlayerAppState();
+}
+
+class _NexaPlayerAppState extends ConsumerState<NexaPlayerApp> {
+  StreamSubscription<bool>? _notificationClickSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _notificationClickSub = AudioService.notificationClicked.listen((clicked) {
+      if (!clicked || !mounted) return;
+      final currentPath = appRouter.state.uri.path;
+      if (currentPath != AppRoutes.player) {
+        appRouter.push(AppRoutes.player);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _notificationClickSub?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final themeState = ref.watch(themeControllerProvider);
     final systemBrightness = MediaQuery.platformBrightnessOf(context);
 
