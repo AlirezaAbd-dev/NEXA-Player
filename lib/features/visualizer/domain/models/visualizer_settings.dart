@@ -19,38 +19,46 @@ enum VisualizerStyle {
   off,
 }
 
-/// Visualizer settings model for styling, frame limits, and sensitivity.
+/// Visualizer settings model for styling, frame limits, smoothing, and sensitivity.
 class VisualizerSettings {
   const VisualizerSettings({
     this.style = VisualizerStyle.bars,
     this.colorHex = '0xFF00E5FF', // Neon Cyan default
     this.sensitivity = 1.0, // 0.5x to 2.5x
+    this.smoothing = 0.65, // 0.0 to 0.95 ballistic damping
     this.fpsCap = 60, // 30, 60, 120
     this.fftSize = 64, // 32, 64, 128
+    this.coverBreathing = true,
     this.showOnLockScreen = false,
   });
 
   final VisualizerStyle style;
   final String colorHex;
   final double sensitivity;
+  final double smoothing;
   final int fpsCap;
   final int fftSize;
+  final bool coverBreathing;
   final bool showOnLockScreen;
 
   VisualizerSettings copyWith({
     VisualizerStyle? style,
     String? colorHex,
     double? sensitivity,
+    double? smoothing,
     int? fpsCap,
     int? fftSize,
+    bool? coverBreathing,
     bool? showOnLockScreen,
   }) {
     return VisualizerSettings(
       style: style ?? this.style,
       colorHex: colorHex ?? this.colorHex,
       sensitivity: sensitivity ?? this.sensitivity,
+      smoothing: smoothing ?? this.smoothing,
       fpsCap: fpsCap ?? this.fpsCap,
       fftSize: fftSize ?? this.fftSize,
+      coverBreathing: coverBreathing ?? this.coverBreathing,
       showOnLockScreen: showOnLockScreen ?? this.showOnLockScreen,
     );
   }
@@ -59,8 +67,10 @@ class VisualizerSettings {
         'style': style.name,
         'colorHex': colorHex,
         'sensitivity': sensitivity,
+        'smoothing': smoothing,
         'fpsCap': fpsCap,
         'fftSize': fftSize,
+        'coverBreathing': coverBreathing,
         'showOnLockScreen': showOnLockScreen,
       };
 
@@ -72,8 +82,10 @@ class VisualizerSettings {
       ),
       colorHex: json['colorHex'] as String? ?? '0xFF00E5FF',
       sensitivity: (json['sensitivity'] as num?)?.toDouble() ?? 1.0,
+      smoothing: ((json['smoothing'] as num?)?.toDouble() ?? 0.65).clamp(0.0, 0.95),
       fpsCap: (json['fpsCap'] as num?)?.toInt() ?? 60,
       fftSize: (json['fftSize'] as num?)?.toInt() ?? 64,
+      coverBreathing: json['coverBreathing'] as bool? ?? true,
       showOnLockScreen: json['showOnLockScreen'] as bool? ?? false,
     );
   }

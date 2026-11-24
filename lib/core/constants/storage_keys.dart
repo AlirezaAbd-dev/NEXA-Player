@@ -154,6 +154,8 @@ abstract final class StorageKeys {
   static const String visualizerSensitivity = 'nexa_visualizer_sensitivity';
   static const String visualizerFpsCap = 'nexa_visualizer_fps_cap';
   static const String visualizerFftSize = 'nexa_visualizer_fft_size';
+  static const String visualizerSmoothing = 'nexa_visualizer_smoothing';
+  static const String visualizerCoverBreathing = 'nexa_visualizer_cover_breathing';
   static const String visualizerShowOnLockscreen = 'nexa_visualizer_show_lockscreen';
 
   // Dynamic Theme & Widgets (Phase 12)

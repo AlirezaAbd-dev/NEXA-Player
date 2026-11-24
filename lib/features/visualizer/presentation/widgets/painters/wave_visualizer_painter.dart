@@ -19,8 +19,22 @@ class WaveVisualizerPainter extends CustomPainter {
     if (magnitudes.isEmpty || size.width <= 0 || size.height <= 0) return;
 
     final count = magnitudes.length;
-    final stepX = size.width / (count - 1);
+    final stepX = count > 1 ? size.width / (count - 1) : size.width;
     final midY = size.height * 0.7;
+
+    if (count == 1) {
+      final y = (midY - (magnitudes.first * sensitivity * size.height * 0.6))
+          .clamp(4.0, size.height - 4.0);
+      canvas.drawLine(
+        Offset(0, y),
+        Offset(size.width, y),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3.0
+          ..color = primaryColor,
+      );
+      return;
+    }
 
     final path = Path();
     final fillPath = Path();

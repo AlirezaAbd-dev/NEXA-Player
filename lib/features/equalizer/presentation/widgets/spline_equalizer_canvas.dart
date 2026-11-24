@@ -14,6 +14,7 @@ class SplineEqualizerCanvas extends StatefulWidget {
     required this.preamp,
     required this.isEnabled,
     required this.onBandGainChanged,
+    this.fftMagnitudes,
     this.accentColor,
     this.height = 190.0,
   });
@@ -22,6 +23,7 @@ class SplineEqualizerCanvas extends StatefulWidget {
   final double preamp;
   final bool isEnabled;
   final void Function(int index, double gain) onBandGainChanged;
+  final List<double>? fftMagnitudes;
   final Color? accentColor;
   final double height;
 
@@ -112,6 +114,7 @@ class _SplineEqualizerCanvasState extends State<SplineEqualizerCanvas> {
                       preamp: widget.preamp,
                       isEnabled: widget.isEnabled,
                       accentColor: primary,
+                      fftMagnitudes: widget.fftMagnitudes,
                       activeNodeIndex: _activeNodeIndex,
                     ),
                   ),
@@ -169,6 +172,7 @@ class _SplineCanvasPainter extends CustomPainter {
     required this.isEnabled,
     required this.accentColor,
     required this.activeNodeIndex,
+    this.fftMagnitudes,
   });
 
   final List<EqualizerBand> bands;
@@ -176,6 +180,7 @@ class _SplineCanvasPainter extends CustomPainter {
   final bool isEnabled;
   final Color accentColor;
   final int? activeNodeIndex;
+  final List<double>? fftMagnitudes;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -347,6 +352,26 @@ class _SplineCanvasPainter extends CustomPainter {
       ..strokeWidth = 1.5;
 
     final Path fftPath = Path();
+    final liveFft = fftMagnitudes;
+    if (liveFft != null && liveFft.isNotEmpty) {
+      final int count = liveFft.length;
+      for (int i = 0; i < count; i++) {
+        final double fraction = count > 1 ? i / (count - 1) : 0.0;
+        final double x = leftMargin + fraction * plotWidth;
+        final raw = liveFft[i];
+        final double amp = (raw.isNaN || raw.isInfinite) ? 0.0 : raw.clamp(0.0, 1.0);
+        final double y = (centerY + (plotHeight * 0.45) - (amp * plotHeight * 0.85))
+            .clamp(topMargin, topMargin + plotHeight);
+        if (i == 0) {
+          fftPath.moveTo(x, y);
+        } else {
+          fftPath.lineTo(x, y);
+        }
+      }
+      canvas.drawPath(fftPath, fftPaint);
+      return;
+    }
+
     const int steps = 30;
     for (int i = 0; i <= steps; i++) {
       final double fraction = i / steps;
@@ -396,6 +421,7 @@ class _SplineCanvasPainter extends CustomPainter {
         oldDelegate.preamp != preamp ||
         oldDelegate.isEnabled != isEnabled ||
         oldDelegate.activeNodeIndex != activeNodeIndex ||
+        oldDelegate.fftMagnitudes != fftMagnitudes ||
         oldDelegate.accentColor != accentColor;
   }
 }

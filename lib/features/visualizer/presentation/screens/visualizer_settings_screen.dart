@@ -1,7 +1,7 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
-import 'package:nexa_player/core/design_system/app_typography.dart';
 import 'package:nexa_player/features/settings/presentation/widgets/settings_tiles.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
 import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
@@ -13,22 +13,38 @@ import '../widgets/spectrum_visualizer_widget.dart';
 class VisualizerSettingsScreen extends ConsumerWidget {
   const VisualizerSettingsScreen({super.key});
 
+  static const Map<VisualizerStyle, String> _modeLabels = {
+    VisualizerStyle.bars: 'Bars',
+    VisualizerStyle.circle: 'Mandala',
+    VisualizerStyle.wave: 'Wave',
+    VisualizerStyle.spectrogram: 'Heatmap',
+    VisualizerStyle.vuMeter: 'VU',
+  };
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(visualizerSettingsProvider);
     final notifier = ref.read(visualizerSettingsProvider.notifier);
+    final liveMags = ref.watch(liveMagnitudesProvider).valueOrNull;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final surfaceTokens = NexaSurfaceTokens.of(context);
 
-    // Simulated sample magnitudes for preview
-    const previewMagnitudes = [
-      0.85, 0.72, 0.94, 0.65, 0.50, 0.88, 0.60, 0.45,
-      0.30, 0.55, 0.70, 0.82, 0.40, 0.25, 0.60, 0.75,
-      0.50, 0.35, 0.65, 0.80, 0.55, 0.40, 0.30, 0.20,
-    ];
+    // Match preview bar count 1:1 with header resolution when no live audio stream is active.
+    final List<double> previewMagnitudes =
+        (liveMags != null && liveMags.any((v) => v > 0.01))
+            ? liveMags
+            : List<double>.generate(settings.fftSize, (i) {
+                final t = i / math.max(1, settings.fftSize - 1);
+                return (0.22 +
+                        0.55 * math.sin(t * math.pi * 2.4).abs() +
+                        0.20 * math.cos(t * math.pi * 5.2).abs())
+                    .clamp(0.08, 0.96);
+              });
 
     final parsedColor = Color(int.tryParse(settings.colorHex) ?? 0xFF00E5FF);
+    final renderedCount =
+        settings.style == VisualizerStyle.off ? 0 : previewMagnitudes.length;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -42,7 +58,7 @@ class VisualizerSettingsScreen extends ConsumerWidget {
           // Live Preview Card
           Text(
             'LIVE PREVIEW',
-            style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
+            style: surfaceTokens.telemetryTextStyle.copyWith(
               color: colorScheme.primary,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.2,
@@ -60,19 +76,48 @@ class VisualizerSettingsScreen extends ConsumerWidget {
                   NexaSurface(
                     level: NexaSurfaceLevel.l2,
                     borderRadius: BorderRadius.circular(14),
-                    child: SizedBox(
-                      height: 140,
-                      width: double.infinity,
-                      child: Center(
-                        child: SpectrumVisualizerWidget(
-                          magnitudes: previewMagnitudes,
-                          style: settings.style,
-                          accentColor: parsedColor,
-                          secondaryColor: colorScheme.secondary,
-                          sensitivity: settings.sensitivity,
-                          height: 130,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: SizedBox(
+                        height: 140,
+                        width: double.infinity,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Center(
+                            child: SpectrumVisualizerWidget(
+                              magnitudes: previewMagnitudes,
+                              style: settings.style,
+                              accentColor: parsedColor,
+                              secondaryColor: colorScheme.secondary,
+                              sensitivity: settings.sensitivity,
+                              height: 124,
+                            ),
+                          ),
                         ),
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: _modeLabels.entries.map((entry) {
+                        final selected = settings.style == entry.key;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: ChoiceChip(
+                            label: Text(entry.value),
+                            selected: selected,
+                            onSelected: (_) async {
+                              await notifier.update(
+                                settings.copyWith(style: entry.key),
+                              );
+                              await notifier
+                                  .requestLiveFftPermissionIfActivated();
+                            },
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
@@ -81,14 +126,14 @@ class VisualizerSettingsScreen extends ConsumerWidget {
                     children: [
                       Text(
                         'Mode: ${settings.style.name.toUpperCase()}',
-                        style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
-                          color: Colors.white70,
+                        style: surfaceTokens.telemetryTextStyle.copyWith(
+                          color: colorScheme.onSurfaceVariant,
                           fontSize: 11,
                         ),
                       ),
                       Text(
-                        '${settings.fpsCap} FPS • ${settings.fftSize} BANDS',
-                        style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
+                        '${settings.fpsCap} FPS • $renderedCount BANDS',
+                        style: surfaceTokens.telemetryTextStyle.copyWith(
                           color: colorScheme.primary,
                           fontWeight: FontWeight.bold,
                           fontSize: 11,
@@ -120,7 +165,10 @@ class VisualizerSettingsScreen extends ConsumerWidget {
                   VisualizerStyle.vuMeter: 'Analog Dual VU Meter (L / R)',
                   VisualizerStyle.off: 'Disabled',
                 },
-                onSelected: (style) => notifier.update(settings.copyWith(style: style)),
+                onSelected: (style) async {
+                  await notifier.update(settings.copyWith(style: style));
+                  await notifier.requestLiveFftPermissionIfActivated();
+                },
               ),
               SettingsSelectorTile<String>(
                 title: 'Color Accent Glow',
@@ -136,7 +184,8 @@ class VisualizerSettingsScreen extends ConsumerWidget {
                   '0xFF00E676': 'Emerald Neon',
                   '0xFFFF9100': 'Amber Flame',
                 },
-                onSelected: (hex) => notifier.update(settings.copyWith(colorHex: hex)),
+                onSelected: (hex) =>
+                    notifier.update(settings.copyWith(colorHex: hex)),
               ),
               SettingsSliderTile(
                 title: 'Motion Sensitivity',
@@ -148,7 +197,36 @@ class VisualizerSettingsScreen extends ConsumerWidget {
                 max: 2.5,
                 divisions: 8,
                 valueLabel: '${settings.sensitivity.toStringAsFixed(1)}×',
-                onChanged: (val) => notifier.update(settings.copyWith(sensitivity: val)),
+                onChanged: (val) =>
+                    notifier.update(settings.copyWith(sensitivity: val)),
+              ),
+              SettingsSelectorTile<int>(
+                title: 'Ballistic Smoothing',
+                subtitle: 'Peak decay damping between consecutive FFT frames',
+                icon: Icons.tune_rounded,
+                iconColor: parsedColor,
+                selectedValue: (settings.smoothing * 100).round(),
+                options: const {
+                  25: '25% (Fast Attack)',
+                  50: '50% (Balanced)',
+                  65: '65% (Smooth Studio)',
+                  85: '85% (Heavy Damping)',
+                },
+                onSelected: (pct) =>
+                    notifier.update(settings.copyWith(smoothing: pct / 100.0)),
+              ),
+              SettingsSelectorTile<bool>(
+                title: 'Cover Breathing',
+                subtitle: 'Pulse Now Playing artwork softly with 20–80 Hz sub-bass',
+                icon: Icons.album_rounded,
+                iconColor: parsedColor,
+                selectedValue: settings.coverBreathing,
+                options: const {
+                  true: 'Enabled (Sub-Bass Pulse)',
+                  false: 'Disabled',
+                },
+                onSelected: (enabled) =>
+                    notifier.update(settings.copyWith(coverBreathing: enabled)),
               ),
             ],
           ),
@@ -160,7 +238,8 @@ class VisualizerSettingsScreen extends ConsumerWidget {
             children: [
               SettingsSelectorTile<int>(
                 title: 'Frame Rate Cap (FPS)',
-                subtitle: 'Throttle refresh rate to balance smoothness vs battery life',
+                subtitle:
+                    'Throttle refresh rate to balance smoothness vs battery life',
                 icon: Icons.bolt_rounded,
                 iconColor: Colors.amberAccent,
                 selectedValue: settings.fpsCap,
@@ -169,20 +248,22 @@ class VisualizerSettingsScreen extends ConsumerWidget {
                   60: '60 FPS (Silky Smooth)',
                   120: '120 FPS (Ultra ProMotion / High Refresh)',
                 },
-                onSelected: (fps) => notifier.update(settings.copyWith(fpsCap: fps)),
+                onSelected: (fps) =>
+                    notifier.update(settings.copyWith(fpsCap: fps)),
               ),
               SettingsSelectorTile<int>(
                 title: 'FFT Frequency Resolution',
-                subtitle: 'Number of discrete frequency transform bins',
+                subtitle: 'Number of discrete logarithmic frequency bands',
                 icon: Icons.memory_rounded,
                 iconColor: Colors.purpleAccent,
                 selectedValue: settings.fftSize,
                 options: const {
-                  32: '32 Bins (Fast)',
-                  64: '64 Bins (Standard Studio)',
-                  128: '128 Bins (High Definition)',
+                  32: '32 Bands (Fast)',
+                  64: '64 Bands (Standard Studio)',
+                  128: '128 Bands (High Definition)',
                 },
-                onSelected: (size) => notifier.update(settings.copyWith(fftSize: size)),
+                onSelected: (size) =>
+                    notifier.update(settings.copyWith(fftSize: size)),
               ),
               SettingsSwitchTile(
                 title: 'Show on Lock Screen',
@@ -190,7 +271,8 @@ class VisualizerSettingsScreen extends ConsumerWidget {
                 icon: Icons.screen_lock_portrait_rounded,
                 iconColor: Colors.lightGreenAccent,
                 value: settings.showOnLockScreen,
-                onChanged: (val) => notifier.update(settings.copyWith(showOnLockScreen: val)),
+                onChanged: (val) =>
+                    notifier.update(settings.copyWith(showOnLockScreen: val)),
               ),
             ],
           ),

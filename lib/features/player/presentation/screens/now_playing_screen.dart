@@ -172,7 +172,11 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
     if (!getIt.isRegistered<IWaveformPreProcessor>()) return;
     final preProcessor = ref.read(waveformPreProcessorProvider);
     preProcessor
-        .getOrAnalyzeWaveform(trackId: trackId, filePath: filePath ?? '')
+        .getOrAnalyzeWaveform(
+          trackId: trackId,
+          filePath: filePath ?? '',
+          sampleCount: 56,
+        )
         .then((amplitudes) {
       if (mounted && amplitudes.isNotEmpty) {
         setState(() {
@@ -709,6 +713,8 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                                           currentIndex: queueCurrentIndex,
                                           queueVersion: queueState.queueVersion,
                                           isPlaying: isPlaying,
+                                          breathingEnergy:
+                                              ref.watch(subBassEnergyProvider),
                                           size: artworkSize,
                                           onPageSettled: _handlePageSettled,
                                           onPageScrolled: _handlePageScrolled,

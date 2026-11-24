@@ -8,7 +8,7 @@ abstract final class DatabaseSchema {
   DatabaseSchema._();
 
   /// Current database schema version.
-  static const int currentVersion = 4;
+  static const int currentVersion = 5;
 
   // ---------------------------------------------------------------------------
   // Table Names
@@ -20,6 +20,7 @@ abstract final class DatabaseSchema {
   static const String tablePlaylists = 'playlists';
   static const String tablePlaylistTracks = 'playlist_tracks';
   static const String tableScanDirectories = 'scan_directories';
+  static const String tableTrackWaveforms = 'track_waveforms';
 
   // ---------------------------------------------------------------------------
   // Column Names: Common
@@ -213,6 +214,14 @@ CREATE TABLE IF NOT EXISTS $tableScanDirectories (
   $colFileCount INTEGER NOT NULL DEFAULT 0
 );''';
 
+  static const String createTrackWaveformsTable = '''
+CREATE TABLE IF NOT EXISTS $tableTrackWaveforms (
+  $colTrackId TEXT PRIMARY KEY NOT NULL,
+  sample_count INTEGER NOT NULL,
+  amplitudes_json TEXT NOT NULL,
+  $colUpdatedAt INTEGER NOT NULL
+);''';
+
   /// Ordered list of all CREATE TABLE DDL queries.
   ///
   /// Parents are created before children to satisfy initial foreign key definitions.
@@ -224,6 +233,7 @@ CREATE TABLE IF NOT EXISTS $tableScanDirectories (
     createPlaylistsTable,
     createPlaylistTracksTable,
     createScanDirectoriesTable,
+    createTrackWaveformsTable,
   ];
 
   // ---------------------------------------------------------------------------
@@ -359,11 +369,15 @@ CREATE TABLE IF NOT EXISTS $tableScanDirectories (
         db.execute('ALTER TABLE $tableTracks ADD COLUMN $colComment TEXT;');
       }
     }
+    if (oldVersion < 5) {
+      db.execute(createTrackWaveformsTable);
+    }
   }
 
   /// Drops all tables in reverse dependency order. Useful for test teardowns.
   static void dropAll(Database db) {
     db.execute('PRAGMA foreign_keys = OFF;');
+    db.execute('DROP TABLE IF EXISTS $tableTrackWaveforms;');
     db.execute('DROP TABLE IF EXISTS $tablePlaylistTracks;');
     db.execute('DROP TABLE IF EXISTS $tableTracks;');
     db.execute('DROP TABLE IF EXISTS $tableAlbums;');

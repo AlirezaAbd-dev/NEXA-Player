@@ -1,14 +1,17 @@
 package com.nexa.player.nexa_player
 
+import android.Manifest
 import android.app.Activity
 import android.content.ContentUris
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.AudioFormat
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.media.MediaMetadataRetriever
+import android.media.audiofx.Visualizer
 import android.net.Uri
 import android.os.Build
 import android.os.Handler
@@ -16,8 +19,10 @@ import android.os.Looper
 import android.provider.MediaStore
 import android.util.Size
 import androidx.annotation.NonNull
+import androidx.core.content.ContextCompat
 import com.ryanheise.audioservice.AudioServiceActivity
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -25,13 +30,24 @@ import java.io.FileOutputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 class MainActivity : AudioServiceActivity() {
     private val channelName = "com.nexa.player/media_store"
+    private val fftEventChannelName = "com.nexa.player/fft_stream"
+    private val fftControlChannelName = "com.nexa.player/fft_control"
     private val ioExecutor: ExecutorService = Executors.newFixedThreadPool(4)
+    private val fftExecutor: ExecutorService = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
     private var pendingImagePickResult: MethodChannel.Result? = null
+
+    private var fftEventSink: EventChannel.EventSink? = null
+    private var audioVisualizer: Visualizer? = null
+    private var activeSessionId: Int = 0
+    private var activeFpsCap: Int = 60
+    private var captureRequested: Boolean = false
+    private var capturePausedInBackground: Boolean = false
 
     companion object {
         private const val REQUEST_CODE_PICK_COVER = 41029
@@ -112,6 +128,82 @@ class MainActivity : AudioServiceActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+        EventChannel(flutterEngine.dartExecutor.binaryMessenger, fftEventChannelName)
+            .setStreamHandler(object : EventChannel.StreamHandler {
+                override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+                    fftEventSink = events
+                    val args = arguments as? Map<*, *>
+                    val sessionId = (args?.get("audioSessionId") as? Number)?.toInt() ?: activeSessionId
+                    val fpsCap = (args?.get("fpsCap") as? Number)?.toInt() ?: activeFpsCap
+                    captureRequested = true
+                    capturePausedInBackground = false
+                    if (sessionId > 0) {
+                        rebindVisualizer(sessionId, fpsCap, enabled = true)
+                    }
+                }
+
+                override fun onCancel(arguments: Any?) {
+                    captureRequested = false
+                    capturePausedInBackground = false
+                    fftEventSink = null
+                    releaseVisualizerAsync()
+                }
+            })
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, fftControlChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "hasRecordAudioPermission" -> {
+                        val granted = ContextCompat.checkSelfPermission(
+                            this,
+                            Manifest.permission.RECORD_AUDIO
+                        ) == PackageManager.PERMISSION_GRANTED
+                        result.success(granted)
+                    }
+                    "updateSession" -> {
+                        val sessionId = call.argument<Number>("audioSessionId")?.toInt() ?: 0
+                        val fpsCap = call.argument<Number>("fpsCap")?.toInt() ?: activeFpsCap
+                        val enabled = call.argument<Boolean>("enabled") ?: true
+                        captureRequested = enabled
+                        if (sessionId > 0) {
+                            rebindVisualizer(sessionId, fpsCap, enabled = enabled)
+                        } else {
+                            setVisualizerEnabledAsync(false)
+                        }
+                        result.success(true)
+                    }
+                    "setEnabled" -> {
+                        val enabled = call.argument<Boolean>("enabled") ?: false
+                        captureRequested = enabled
+                        setVisualizerEnabledAsync(enabled)
+                        result.success(true)
+                    }
+                    "stopCapture" -> {
+                        captureRequested = false
+                        capturePausedInBackground = false
+                        releaseVisualizerAsync()
+                        result.success(true)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (capturePausedInBackground && captureRequested && activeSessionId > 0 && fftEventSink != null) {
+            capturePausedInBackground = false
+            setVisualizerEnabledAsync(true)
+        }
+    }
+
+    override fun onStop() {
+        if (captureRequested) {
+            capturePausedInBackground = true
+            setVisualizerEnabledAsync(false)
+        }
+        super.onStop()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -156,8 +248,101 @@ class MainActivity : AudioServiceActivity() {
     }
 
     override fun onDestroy() {
+        captureRequested = false
+        releaseVisualizerSync()
+        fftExecutor.shutdownNow()
         ioExecutor.shutdownNow()
         super.onDestroy()
+    }
+
+    private fun rebindVisualizer(sessionId: Int, fpsCap: Int, enabled: Boolean) {
+        activeSessionId = sessionId
+        activeFpsCap = fpsCap.coerceIn(15, 120)
+        fftExecutor.execute {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                mainHandler.post {
+                    fftEventSink?.error(
+                        "PERMISSION_DENIED",
+                        "RECORD_AUDIO permission required for live FFT capture",
+                        null
+                    )
+                }
+                return@execute
+            }
+            try {
+                releaseVisualizerSync()
+                val range = Visualizer.getCaptureSizeRange()
+                val desiredSize = 1024.coerceIn(range[0], range[1])
+                val maxRate = max(1000, Visualizer.getMaxCaptureRate())
+                val desiredRate = min(maxRate, max(1000, activeFpsCap * 1000))
+
+                val vis = Visualizer(sessionId).apply {
+                    captureSize = desiredSize
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                        scalingMode = Visualizer.SCALING_MODE_NORMALIZED
+                    }
+                    setDataCaptureListener(
+                        object : Visualizer.OnDataCaptureListener {
+                            override fun onWaveFormDataCapture(
+                                visualizer: Visualizer?,
+                                waveform: ByteArray?,
+                                samplingRate: Int
+                            ) {}
+
+                            override fun onFftDataCapture(
+                                visualizer: Visualizer?,
+                                fft: ByteArray?,
+                                samplingRate: Int
+                            ) {
+                                if (fft == null || fft.isEmpty()) return
+                                val copy = fft.copyOf()
+                                val payload = mapOf<String, Any>(
+                                    "bytes" to copy,
+                                    "samplingRate" to (samplingRate / 1000).coerceAtLeast(8000),
+                                    "captureSize" to desiredSize
+                                )
+                                mainHandler.post {
+                                    fftEventSink?.success(payload)
+                                }
+                            }
+                        },
+                        desiredRate,
+                        false,
+                        true
+                    )
+                    this.enabled = enabled
+                }
+                audioVisualizer = vis
+            } catch (_: Exception) {
+                releaseVisualizerSync()
+            }
+        }
+    }
+
+    private fun setVisualizerEnabledAsync(enabled: Boolean) {
+        fftExecutor.execute {
+            try {
+                audioVisualizer?.enabled = enabled
+            } catch (_: Exception) {}
+        }
+    }
+
+    private fun releaseVisualizerAsync() {
+        fftExecutor.execute {
+            releaseVisualizerSync()
+        }
+    }
+
+    private fun releaseVisualizerSync() {
+        try {
+            audioVisualizer?.enabled = false
+        } catch (_: Exception) {}
+        try {
+            audioVisualizer?.release()
+        } catch (_: Exception) {}
+        audioVisualizer = null
     }
 
     private fun queryMediaStore(): List<Map<String, Any?>> {

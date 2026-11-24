@@ -40,11 +40,12 @@ class SpectrogramPainter extends CustomPainter {
           paint.color = Colors.white.withOpacity(0.03);
         }
 
+        final gap = cellWidth > 2.0 ? 1.0 : cellWidth * 0.15;
         final rect = Rect.fromLTWH(
-          c * cellWidth + 0.5,
+          c * cellWidth + gap * 0.5,
           rowInverted * cellHeight + 0.5,
-          cellWidth - 1.0,
-          cellHeight - 1.0,
+          (cellWidth - gap).clamp(0.2, cellWidth),
+          (cellHeight - 1.0).clamp(0.2, cellHeight),
         );
         canvas.drawRRect(RRect.fromRectAndRadius(rect, const Radius.circular(1.5)), paint);
       }

@@ -3,6 +3,7 @@ library;
 
 export 'domain/models/visualizer_settings.dart';
 export 'domain/services/fft_engine.dart';
+export 'domain/services/fft_spectrum_processor.dart';
 export 'domain/services/waveform_pre_processor.dart';
 export 'presentation/providers/visualizer_providers.dart';
 export 'presentation/screens/visualizer_settings_screen.dart';

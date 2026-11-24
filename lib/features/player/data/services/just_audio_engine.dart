@@ -6,7 +6,7 @@ import '../../domain/entities/playback_state.dart';
 import '../../domain/services/audio_engine.dart';
 
 /// Implementation of [IAudioEngine] powered by the native `just_audio` pipeline.
-class JustAudioEngine implements IAudioEngine {
+class JustAudioEngine implements IAudioEngine, IAudioSessionProvider {
   JustAudioEngine({
     AudioPlayer? player,
   }) : _player = player ?? AudioPlayer() {
@@ -61,6 +61,12 @@ class JustAudioEngine implements IAudioEngine {
 
   @override
   double get speed => _speed;
+
+  @override
+  int? get androidAudioSessionId => _player.androidAudioSessionId;
+
+  @override
+  Stream<int?> get androidAudioSessionIdStream => _player.androidAudioSessionIdStream;
 
   void _initStreams() {
     _subscriptions.add(

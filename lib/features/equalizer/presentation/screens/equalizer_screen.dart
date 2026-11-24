@@ -5,6 +5,7 @@ import '../../../../core/design_system/app_spacing.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../shared/widgets/surfaces/nexa_surface.dart';
+import '../../../visualizer/visualizer.dart';
 import '../providers/equalizer_providers.dart';
 import '../widgets/eq_band_slider.dart';
 import '../widgets/preset_selector_modal.dart';
@@ -134,6 +135,7 @@ class EqualizerScreen extends ConsumerWidget {
                 bands: eqState.bands,
                 preamp: eqState.preamp,
                 isEnabled: eqState.isEnabled,
+                fftMagnitudes: ref.watch(liveMagnitudesProvider).valueOrNull,
                 accentColor: accentColor,
                 onBandGainChanged: (index, gain) => eqNotifier.setBandGain(index, gain),
               ),

@@ -388,6 +388,7 @@ Future<void> configureDependencies({
       waveformPreProcessor ??
           WaveformPreProcessorImpl(
             getIt<IStorageService>(),
+            database: db,
           ),
     );
   }

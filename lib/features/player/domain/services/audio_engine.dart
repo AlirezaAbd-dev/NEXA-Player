@@ -66,3 +66,10 @@ abstract class IAudioEngine {
   /// Releases all underlying decoders, streams, and platform resources.
   Future<void> dispose();
 }
+
+/// Optional capability exposed by engines tied to an Android audio session ID
+/// (used to bind native `android.media.audiofx.Visualizer` FFT capture).
+abstract interface class IAudioSessionProvider {
+  int? get androidAudioSessionId;
+  Stream<int?> get androidAudioSessionIdStream;
+}

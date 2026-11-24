@@ -100,10 +100,13 @@ class SpectrumVisualizerWidget extends ConsumerWidget {
         return const SizedBox.shrink();
     }
 
-    return RepaintBoundary(
-      child: CustomPaint(
-        size: Size(width, height),
-        painter: painter,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12.0),
+      child: RepaintBoundary(
+        child: CustomPaint(
+          size: Size(width, height),
+          painter: painter,
+        ),
       ),
     );
   }

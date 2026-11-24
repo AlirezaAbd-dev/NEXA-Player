@@ -1,4 +1,24 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+
+/// Computes dynamic bar width and inter-bar gap so [count] bars always fit
+/// cleanly within [width] without right-edge overflow at any viewport size.
+({double barWidth, double gap}) computeVisualizerBarGeometry(
+  double width,
+  int count, {
+  double preferredGap = 2.5,
+}) {
+  if (width <= 0 || count <= 0) {
+    return (barWidth: 0.0, gap: 0.0);
+  }
+  if (count == 1) {
+    return (barWidth: width.clamp(1.0, width), gap: 0.0);
+  }
+  final maxGapBudget = width * 0.35;
+  final gap = math.min(preferredGap, maxGapBudget / (count - 1));
+  final rawBarWidth = (width - (count - 1) * gap) / count;
+  return (barWidth: rawBarWidth.clamp(0.5, width), gap: gap);
+}
 
 /// Renders a modern multi-band bar spectrum with glowing tips and gradients.
 class BarsVisualizerPainter extends CustomPainter {
@@ -19,21 +39,26 @@ class BarsVisualizerPainter extends CustomPainter {
     if (magnitudes.isEmpty || size.width <= 0 || size.height <= 0) return;
 
     final barCount = magnitudes.length;
-    final totalSpacing = (barCount - 1) * 2.5;
-    final barWidth = ((size.width - totalSpacing) / barCount).clamp(2.0, 16.0);
+    final geom = computeVisualizerBarGeometry(size.width, barCount);
+    final barWidth = geom.barWidth;
+    final gap = geom.gap;
+    if (barWidth <= 0) return;
 
     final paint = Paint()..style = PaintingStyle.fill;
     final glowPaint = Paint()..style = PaintingStyle.fill;
 
     for (int i = 0; i < barCount; i++) {
-      final mag = (magnitudes[i] * sensitivity).clamp(0.04, 1.0);
+      final rawMag = magnitudes[i];
+      final safeMag = (rawMag.isNaN || rawMag.isInfinite) ? 0.0 : rawMag;
+      final mag = (safeMag * sensitivity).clamp(0.03, 1.0);
       final barHeight = size.height * mag;
-      final x = i * (barWidth + 2.5);
+      final x = i * (barWidth + gap);
       final y = size.height - barHeight;
+      final radius = math.min(3.0, barWidth * 0.45);
 
       final rect = RRect.fromRectAndRadius(
         Rect.fromLTWH(x, y, barWidth, barHeight),
-        const Radius.circular(3.0),
+        Radius.circular(radius),
       );
 
       paint.shader = LinearGradient(

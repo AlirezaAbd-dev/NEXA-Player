@@ -47,6 +47,7 @@ class HeroArtworkCard extends StatefulWidget {
     this.onDoubleTapSeekBackward,
     this.onPageSettled,
     this.onPageScrolled,
+    this.breathingEnergy = 0.0,
     this.size = 280.0,
   });
 
@@ -61,6 +62,7 @@ class HeroArtworkCard extends StatefulWidget {
   final VoidCallback? onDoubleTapSeekBackward;
   final ValueChanged<int>? onPageSettled;
   final ValueChanged<double>? onPageScrolled;
+  final double breathingEnergy;
   final double size;
 
   @override
@@ -479,30 +481,37 @@ class _HeroArtworkCardState extends State<HeroArtworkCard>
             isCurrent: isCurrent,
           );
 
-    return Container(
-      width: widget.size,
-      height: widget.size,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24.0),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            primary.withOpacity(isDark ? 0.35 : 0.25),
-            isDark ? const Color(0xFF1E2433) : const Color(0xFFE2E8F0),
+    final breathScale = (widget.isPlaying && !MediaQuery.disableAnimationsOf(context))
+        ? 1.0 + (widget.breathingEnergy.clamp(0.0, 1.0) * 0.032)
+        : 1.0;
+
+    return Transform.scale(
+      scale: isCurrent ? breathScale : 1.0,
+      child: Container(
+        width: widget.size,
+        height: widget.size,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24.0),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              primary.withOpacity(isDark ? 0.35 : 0.25),
+              isDark ? const Color(0xFF1E2433) : const Color(0xFFE2E8F0),
+            ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: primary.withOpacity(isDark ? 0.32 : 0.18),
+              blurRadius: 36.0,
+              offset: const Offset(0, 14),
+            ),
           ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: primary.withOpacity(isDark ? 0.32 : 0.18),
-            blurRadius: 36.0,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24.0),
-        child: artworkContent,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24.0),
+          child: artworkContent,
+        ),
       ),
     );
   }
