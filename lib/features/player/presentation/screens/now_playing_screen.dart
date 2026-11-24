@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -58,9 +59,12 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
   bool _showSpectrumVisualizer = false;
   List<double>? _cachedWaveform;
 
-  // Interactive pull-down dismiss gesture state
+  // Interactive pull-down dismiss gesture state with diagonal arbitration
   double _dragY = 0.0;
   bool _isDismissing = false;
+  Offset? _dragStartPoint;
+  bool _verticalDismissLocked = false;
+  bool _diagonalRejected = false;
   late final AnimationController _snapBackController;
   Animation<double>? _snapBackAnimation;
 
@@ -177,13 +181,27 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
 
   void _handlePullDownDragStart(DragStartDetails details) {
     if (_isDismissing) return;
+    _dragStartPoint = details.globalPosition;
+    _verticalDismissLocked = false;
+    _diagonalRejected = false;
     if (_snapBackController.isAnimating) {
       _snapBackController.stop();
     }
   }
 
   void _handlePullDownDragUpdate(DragUpdateDetails details) {
-    if (_isDismissing) return;
+    if (_isDismissing || _diagonalRejected) return;
+    if (!_verticalDismissLocked && _dragStartPoint != null) {
+      final totalDelta = details.globalPosition - _dragStartPoint!;
+      if (totalDelta.distance < 12.0) return;
+      if (totalDelta.dx.abs() > totalDelta.dy.abs()) {
+        _diagonalRejected = true;
+        return;
+      }
+      if (totalDelta.dy > 0) {
+        _verticalDismissLocked = true;
+      }
+    }
     final screenHeight = MediaQuery.of(context).size.height;
     final delta = details.primaryDelta ?? 0.0;
     setState(() {
@@ -192,7 +210,15 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
   }
 
   void _handlePullDownDragEnd(DragEndDetails details) {
+    _dragStartPoint = null;
     if (_isDismissing) return;
+    if (_diagonalRejected) {
+      _diagonalRejected = false;
+      _verticalDismissLocked = false;
+      _animateSnapBack();
+      return;
+    }
+    _verticalDismissLocked = false;
     final velocity = details.primaryVelocity ?? 0.0;
     final shouldDismiss = _dragY > 150.0 || velocity > 800.0;
 
@@ -210,6 +236,9 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
   }
 
   void _handlePullDownDragCancel() {
+    _dragStartPoint = null;
+    _diagonalRejected = false;
+    _verticalDismissLocked = false;
     if (_isDismissing) return;
     _animateSnapBack();
   }
@@ -366,17 +395,23 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                       child: LayoutBuilder(
                         builder: (context, constraints) {
                           final availableHeight = constraints.maxHeight;
-                          final double baseArtSize = _layoutMode == NowPlayingLayoutMode.art ? 300.0 : 260.0;
-                          final double artworkSize = availableHeight < 640.0
-                              ? (availableHeight < 560.0 ? 180.0 : 210.0)
-                              : baseArtSize;
+                          final availableWidth = constraints.maxWidth;
+                          final double maxArt = math.min(
+                            availableWidth - 40.0,
+                            _layoutMode == NowPlayingLayoutMode.art ? 300.0 : 272.0,
+                          );
+                          final double artworkSize =
+                              (availableHeight * 0.39).clamp(132.0, maxArt.clamp(140.0, 310.0));
+                          final isCompactHeight = availableHeight < 640.0;
+                          final playButtonSize = isCompactHeight ? 56.0 : 64.0;
+                          final queueSourceLabel = queueState.queueContext?.collectionTitle ?? albumHeader;
 
                           return Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 6.0),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                // Top Header Region (Grabber Handle Pill + Navigation Bar)
+                                // Zone 1: Top Header Region (~56dp)
                                 GestureDetector(
                                   key: const ValueKey('now_playing_pull_down_header'),
                                   behavior: HitTestBehavior.translucent,
@@ -387,7 +422,6 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      // Top Grabber Handle Pill (36x4dp, borderless L3)
                                       Center(
                                         child: Padding(
                                           padding: const EdgeInsets.only(top: 0.0, bottom: 4.0),
@@ -403,448 +437,523 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                                         ),
                                       ),
 
-                                  // Top Navigation Bar
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 28),
-                                        onPressed: () => context.pop(),
-                                        tooltip: 'Minimize',
-                                        padding: const EdgeInsets.all(6),
-                                        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                                      ),
-                                      Expanded(
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              'PLAYING FROM ALBUM',
-                                              style: surfaceTokens.telemetryTextStyle.copyWith(
-                                                letterSpacing: 1.2,
-                                                color: colorScheme.onSurface.withOpacity(0.6),
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 10.0,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              albumHeader,
-                                              style: AppTypography.titleSmall.copyWith(
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
                                       Row(
-                                        mainAxisSize: MainAxisSize.min,
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
                                           IconButton(
-                                            icon: Icon(
-                                              _layoutMode == NowPlayingLayoutMode.standard
-                                                  ? Icons.view_carousel_rounded
-                                                  : _layoutMode == NowPlayingLayoutMode.vinyl
-                                                      ? Icons.album_rounded
-                                                      : Icons.image_rounded,
-                                              size: 22,
-                                            ),
-                                            onPressed: _cycleLayoutMode,
-                                            tooltip: 'Switch Layout Mode',
+                                            icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 28),
+                                            onPressed: () => context.pop(),
+                                            tooltip: 'Minimize',
                                             padding: const EdgeInsets.all(6),
-                                            constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+                                            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                                           ),
-                                          IconButton(
-                                            icon: Icon(
-                                              _showSpectrumVisualizer
-                                                  ? Icons.graphic_eq_rounded
-                                                  : Icons.waterfall_chart_rounded,
-                                              size: 22,
-                                              color: _showSpectrumVisualizer ? primary : null,
+                                          Expanded(
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  'PLAYING FROM',
+                                                  style: surfaceTokens.telemetryTextStyle.copyWith(
+                                                    letterSpacing: 1.2,
+                                                    color: colorScheme.onSurface.withOpacity(0.6),
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 10.0,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                const SizedBox(height: 2),
+                                                BidiText(
+                                                  queueSourceLabel,
+                                                  style: AppTypography.titleSmall.copyWith(
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ],
                                             ),
-                                            onPressed: () {
-                                              HapticFeedback.selectionClick();
-                                              setState(() {
-                                                _showSpectrumVisualizer = !_showSpectrumVisualizer;
-                                              });
-                                            },
-                                              tooltip: 'Toggle Spectrum Visualizer',
-                                              padding: const EdgeInsets.all(6),
-                                              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                                            ),
-                                            if (currentTrack != null)
+                                          ),
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              IconButton(
+                                                icon: Icon(
+                                                  _layoutMode == NowPlayingLayoutMode.standard
+                                                      ? Icons.view_carousel_rounded
+                                                      : _layoutMode == NowPlayingLayoutMode.vinyl
+                                                          ? Icons.album_rounded
+                                                          : Icons.image_rounded,
+                                                  size: 20,
+                                                ),
+                                                onPressed: _cycleLayoutMode,
+                                                tooltip: 'Switch Layout Mode',
+                                                padding: const EdgeInsets.all(4),
+                                                constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                                              ),
                                               PopupMenuButton<String>(
                                                 key: const ValueKey('now_playing_more_menu'),
                                                 icon: const Icon(Icons.more_vert_rounded, size: 20),
-                                                tooltip: 'Track Actions',
+                                                tooltip: 'More Options',
                                                 padding: const EdgeInsets.all(4),
                                                 onSelected: (value) {
-                                                  if (value == 'add_to_playlist') {
-                                                    AddToPlaylistBottomSheet.show(
-                                                      context,
-                                                      track: currentTrack,
-                                                    );
-                                                  } else if (value == 'edit_tags') {
-                                                    TrackTagEditorModal.show(
-                                                      context,
-                                                      track: currentTrack,
-                                                    );
+                                                  switch (value) {
+                                                    case 'add_to_playlist':
+                                                      if (currentTrack != null) {
+                                                        AddToPlaylistBottomSheet.show(
+                                                          context,
+                                                          track: currentTrack,
+                                                        );
+                                                      }
+                                                      break;
+                                                    case 'edit_tags':
+                                                      if (currentTrack != null) {
+                                                        TrackTagEditorModal.show(
+                                                          context,
+                                                          track: currentTrack,
+                                                        );
+                                                      }
+                                                      break;
+                                                    case 'cast':
+                                                      CastDevicePickerModal.show(context);
+                                                      break;
+                                                    case 'standby':
+                                                      context.push(AppRoutes.standby);
+                                                      break;
+                                                    case 'car':
+                                                      context.push(AppRoutes.carMode);
+                                                      break;
                                                   }
                                                 },
-                                                itemBuilder: (_) => const [
+                                                itemBuilder: (_) => [
+                                                  if (currentTrack != null) ...[
+                                                    const PopupMenuItem(
+                                                      value: 'add_to_playlist',
+                                                      child: Row(
+                                                        children: [
+                                                          Icon(Icons.playlist_add_rounded, size: 18),
+                                                          SizedBox(width: 8),
+                                                          Text('Add to playlist'),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    const PopupMenuItem(
+                                                      value: 'edit_tags',
+                                                      child: Row(
+                                                        children: [
+                                                          Icon(Icons.edit_note_rounded, size: 18),
+                                                          SizedBox(width: 8),
+                                                          Text('Edit tags & cover'),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    const PopupMenuDivider(),
+                                                  ],
                                                   PopupMenuItem(
-                                                    value: 'add_to_playlist',
+                                                    value: 'cast',
                                                     child: Row(
                                                       children: [
-                                                        Icon(Icons.playlist_add_rounded, size: 18),
-                                                        SizedBox(width: 8),
-                                                        Text('Add to playlist'),
+                                                        Icon(
+                                                          isCasting ? Icons.cast_connected_rounded : Icons.cast_rounded,
+                                                          size: 18,
+                                                          color: isCasting ? const Color(0xFF00E676) : null,
+                                                        ),
+                                                        const SizedBox(width: 8),
+                                                        const Text('Cast Audio'),
                                                       ],
                                                     ),
                                                   ),
-                                                  PopupMenuItem(
-                                                    value: 'edit_tags',
+                                                  const PopupMenuItem(
+                                                    value: 'standby',
                                                     child: Row(
                                                       children: [
-                                                        Icon(Icons.edit_note_rounded, size: 18),
+                                                        Icon(Icons.nightlight_round, size: 18),
                                                         SizedBox(width: 8),
-                                                        Text('Edit tags & cover'),
+                                                        Text('Bedside Standby Mode'),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  const PopupMenuItem(
+                                                    value: 'car',
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(Icons.directions_car_rounded, size: 18),
+                                                        SizedBox(width: 8),
+                                                        Text('Car Driving Mode'),
                                                       ],
                                                     ),
                                                   ),
                                                 ],
                                               ),
-                                          ],
-                                        ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
                                     ],
                                   ),
-                                ],
-                              ),
-                            ),
-
-                            // Center Hero Artwork (with 3D Signal Chain Flip, Double-Tap Seek, Pull-Down Dismiss & Stellio 3D Carousel)
-                            Center(
-                              child: GestureDetector(
-                                key: const ValueKey('now_playing_pull_down_artwork'),
-                                behavior: HitTestBehavior.translucent,
-                                onVerticalDragStart: _handlePullDownDragStart,
-                                onVerticalDragUpdate: _handlePullDownDragUpdate,
-                                onVerticalDragEnd: _handlePullDownDragEnd,
-                                onVerticalDragCancel: _handlePullDownDragCancel,
-                                child: Hero(
-                                  tag: 'now_playing_art',
-                                  child: HeroArtworkCard(
-                                    track: currentTrack,
-                                    tracks: effectiveTracks,
-                                    currentIndex: queueCurrentIndex,
-                                    queueVersion: queueState.queueVersion,
-                                    isPlaying: isPlaying,
-                                    size: artworkSize,
-                                    onPageSettled: _handlePageSettled,
-                                    onPageScrolled: _handlePageScrolled,
-                                    onSwipeLeft: () {
-                                      ref.read(playerNotifierProvider.notifier).skipNext();
-                                    },
-                                    onSwipeRight: () {
-                                      ref.read(playerNotifierProvider.notifier).skipPrevious();
-                                    },
-                                    onDoubleTapSeekForward: () => _seekRelative(const Duration(seconds: 10)),
-                                    onDoubleTapSeekBackward: () => _seekRelative(const Duration(seconds: -10)),
-                                  ),
                                 ),
-                              ),
-                            ),
 
-                  // Metadata Row
-                  Column(
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                BidiText(
-                                  title,
-                                  style: AppTypography.headlineMedium.copyWith(
-                                    color: colorScheme.onSurface,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                // Zone 2: Center Hero Artwork with Radial Ambient Wash & Diagonal Arbitration
+                                Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    IgnorePointer(
+                                      child: Container(
+                                        width: artworkSize * 1.15,
+                                        height: artworkSize * 1.15,
+                                        decoration: BoxDecoration(
+                                          gradient: RadialGradient(
+                                            colors: [
+                                              primary.withOpacity(isDark ? 0.22 : 0.14),
+                                              Colors.transparent,
+                                            ],
+                                            stops: const [0.0, 0.72],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    GestureDetector(
+                                      key: const ValueKey('now_playing_pull_down_artwork'),
+                                      behavior: HitTestBehavior.translucent,
+                                      onVerticalDragStart: _handlePullDownDragStart,
+                                      onVerticalDragUpdate: _handlePullDownDragUpdate,
+                                      onVerticalDragEnd: _handlePullDownDragEnd,
+                                      onVerticalDragCancel: _handlePullDownDragCancel,
+                                      child: Hero(
+                                        tag: 'now_playing_art',
+                                        child: HeroArtworkCard(
+                                          track: currentTrack,
+                                          tracks: effectiveTracks,
+                                          currentIndex: queueCurrentIndex,
+                                          queueVersion: queueState.queueVersion,
+                                          isPlaying: isPlaying,
+                                          size: artworkSize,
+                                          onPageSettled: _handlePageSettled,
+                                          onPageScrolled: _handlePageScrolled,
+                                          onSwipeLeft: () {
+                                            ref.read(playerNotifierProvider.notifier).skipNext();
+                                          },
+                                          onSwipeRight: () {
+                                            ref.read(playerNotifierProvider.notifier).skipPrevious();
+                                          },
+                                          onDoubleTapSeekForward: () =>
+                                              _seekRelative(const Duration(seconds: 10)),
+                                          onDoubleTapSeekBackward: () =>
+                                              _seekRelative(const Duration(seconds: -10)),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 2),
-                                BidiText(
-                                  artistAndAlbum,
-                                  style: AppTypography.titleMedium.copyWith(
-                                    color: colorScheme.onSurface.withOpacity(0.70),
+
+                                // Zone 3: Metadata Row + Quality Telemetry Badge
+                                Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      children: [
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              BidiText(
+                                                title,
+                                                style: (isCompactHeight
+                                                        ? AppTypography.titleLarge
+                                                        : AppTypography.headlineMedium)
+                                                    .copyWith(
+                                                  color: colorScheme.onSurface,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              const SizedBox(height: 2),
+                                              BidiText(
+                                                artistAndAlbum,
+                                                style: AppTypography.bodyLarge.copyWith(
+                                                  color: colorScheme.onSurface.withOpacity(0.72),
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        IconButton(
+                                          icon: Icon(
+                                            isFavorite
+                                                ? Icons.favorite_rounded
+                                                : Icons.favorite_border_rounded,
+                                            color: isFavorite
+                                                ? Colors.redAccent.shade200
+                                                : colorScheme.onSurface.withOpacity(0.65),
+                                            size: 26,
+                                          ),
+                                          onPressed: () {
+                                            HapticFeedback.lightImpact();
+                                            ref.read(playerNotifierProvider.notifier).toggleFavorite();
+                                          },
+                                          tooltip: 'Favorite',
+                                          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    NexaSurface(
+                                      level: NexaSurfaceLevel.l2,
+                                      borderRadius: BorderRadius.circular(8.0),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8.0,
+                                          vertical: 3.0,
+                                        ),
+                                        child: Text(
+                                          AudioQualityFormatter.formatNowPlayingBadge(currentTrack),
+                                          style: surfaceTokens.telemetryTextStyle.copyWith(
+                                            color: primary,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 10.0,
+                                            fontFeatures: const [FontFeature.tabularFigures()],
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                // Zone 4: Tactile 56-Bar Waveform / Spectrum Visualizer
+                                _showSpectrumVisualizer
+                                    ? SizedBox(
+                                        height: isCompactHeight ? 52 : 64,
+                                        child: GestureDetector(
+                                          onTap: () => context.push(AppRoutes.visualizerSettings),
+                                          child: SpectrumVisualizerWidget(
+                                            height: isCompactHeight ? 52 : 64,
+                                          ),
+                                        ),
+                                      )
+                                    : WaveformVisualizer(
+                                        position: playerState.position,
+                                        duration: playerState.duration.inSeconds > 0
+                                            ? playerState.duration
+                                            : const Duration(seconds: 230),
+                                        isPlaying: isPlaying,
+                                        trackSeed: currentTrack?.id ?? 'default_seed',
+                                        cachedAmplitudes: _cachedWaveform,
+                                        activeColor: primary,
+                                        height: isCompactHeight ? 44.0 : 52.0,
+                                        onSeek: (newPos) {
+                                          ref.read(playerNotifierProvider.notifier).seek(newPos);
+                                        },
+                                      ),
+
+                                // Zone 5: Primary Playback Controls Row (Thumb Zone)
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(
+                                        isShuffle
+                                            ? Icons.shuffle_on_rounded
+                                            : Icons.shuffle_rounded,
+                                        color: isShuffle
+                                            ? primary
+                                            : colorScheme.onSurface.withOpacity(0.65),
+                                      ),
+                                      onPressed: () {
+                                        HapticFeedback.selectionClick();
+                                        ref.read(playerNotifierProvider.notifier).toggleShuffle();
+                                      },
+                                      tooltip: 'Shuffle',
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.skip_previous_rounded, size: 36),
+                                      onPressed: () {
+                                        HapticFeedback.lightImpact();
+                                        ref.read(playerNotifierProvider.notifier).skipPrevious();
+                                      },
+                                      tooltip: 'Previous',
+                                    ),
+                                    Container(
+                                      width: playButtonSize,
+                                      height: playButtonSize,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: primary,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: primary.withOpacity(0.36),
+                                            blurRadius: 18.0,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: IconButton(
+                                        icon: Icon(
+                                          isPlaying
+                                              ? Icons.pause_rounded
+                                              : Icons.play_arrow_rounded,
+                                          size: isCompactHeight ? 32 : 36,
+                                          color: colorScheme.onPrimary,
+                                        ),
+                                        onPressed: () {
+                                          HapticFeedback.mediumImpact();
+                                          ref
+                                              .read(playerNotifierProvider.notifier)
+                                              .togglePlayPause();
+                                        },
+                                        tooltip: isPlaying ? 'Pause' : 'Play',
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.skip_next_rounded, size: 36),
+                                      onPressed: () {
+                                        HapticFeedback.lightImpact();
+                                        ref.read(playerNotifierProvider.notifier).skipNext();
+                                      },
+                                      tooltip: 'Next',
+                                    ),
+                                    Semantics(
+                                      button: true,
+                                      label: 'Repeat: ${repeatMode.label}',
+                                      hint: 'Tap to cycle repeat mode, long press for options',
+                                      child: Material(
+                                        type: MaterialType.transparency,
+                                        child: InkResponse(
+                                          key: const Key('now_playing_repeat_button'),
+                                          radius: 24.0,
+                                          containedInkWell: false,
+                                          onLongPress: () {
+                                            HapticFeedback.mediumImpact();
+                                            showStellioRepeatPickerSheet(
+                                              context: context,
+                                              activeMode: repeatMode,
+                                              onSelected: (selected) {
+                                                ref
+                                                    .read(playerNotifierProvider.notifier)
+                                                    .setRepeatMode(selected);
+                                                _showEdgeHud(
+                                                  selected.shortLabel,
+                                                  iconForNexaRepeatMode(selected),
+                                                  duration: const Duration(milliseconds: 1600),
+                                                );
+                                              },
+                                            );
+                                          },
+                                          onTap: () {
+                                            HapticFeedback.selectionClick();
+                                            final nextMode = repeatMode.nextMode;
+                                            ref
+                                                .read(playerNotifierProvider.notifier)
+                                                .cycleRepeatMode();
+                                            _showEdgeHud(
+                                              nextMode.shortLabel,
+                                              iconForNexaRepeatMode(nextMode),
+                                              duration: const Duration(milliseconds: 1600),
+                                            );
+                                          },
+                                          child: SizedBox(
+                                            width: 48.0,
+                                            height: 48.0,
+                                            child: Center(
+                                              child: Icon(
+                                                iconForNexaRepeatMode(repeatMode),
+                                                color: repeatMode.isRepeating
+                                                    ? primary
+                                                    : colorScheme.onSurface.withOpacity(0.65),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                // Zone 6: Borderless L2 Bottom Action Dock (No Ratings, Overflow-Safe)
+                                NexaSurface(
+                                  level: NexaSurfaceLevel.l2,
+                                  borderRadius: BorderRadius.circular(20.0),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8.0,
+                                      vertical: 4.0,
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.lyrics_rounded, size: 20),
+                                          onPressed: () => context.push(AppRoutes.lyrics),
+                                          tooltip: 'Lyrics',
+                                          padding: const EdgeInsets.all(6),
+                                          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.equalizer_rounded, size: 20),
+                                          onPressed: () => context.push(AppRoutes.equalizer),
+                                          tooltip: 'Equalizer & DSP',
+                                          padding: const EdgeInsets.all(6),
+                                          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                                        ),
+                                        IconButton(
+                                          icon: Icon(
+                                            _showSpectrumVisualizer
+                                                ? Icons.graphic_eq_rounded
+                                                : Icons.waterfall_chart_rounded,
+                                            size: 20,
+                                            color: _showSpectrumVisualizer ? primary : null,
+                                          ),
+                                          onPressed: () {
+                                            HapticFeedback.selectionClick();
+                                            setState(() {
+                                              _showSpectrumVisualizer = !_showSpectrumVisualizer;
+                                            });
+                                          },
+                                          tooltip: 'Toggle Spectrum Visualizer',
+                                          padding: const EdgeInsets.all(6),
+                                          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.playlist_add_rounded, size: 20),
+                                          onPressed: currentTrack == null
+                                              ? null
+                                              : () => AddToPlaylistBottomSheet.show(
+                                                    context,
+                                                    track: currentTrack,
+                                                  ),
+                                          tooltip: 'Add to Playlist',
+                                          padding: const EdgeInsets.all(6),
+                                          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.bedtime_rounded, size: 20),
+                                          onPressed: () => SleepTimerBottomSheet.show(context),
+                                          tooltip: 'Sleep Timer',
+                                          padding: const EdgeInsets.all(6),
+                                          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.queue_music_rounded, size: 20),
+                                          onPressed: () => QueueBottomSheet.show(context),
+                                          tooltip: 'Queue',
+                                          padding: const EdgeInsets.all(6),
+                                          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ],
                             ),
-                          ),
-                          IconButton(
-                            icon: Icon(
-                              isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                              color: isFavorite ? Colors.redAccent.shade200 : colorScheme.onSurface.withOpacity(0.6),
-                              size: 28,
-                            ),
-                            onPressed: () {
-                              HapticFeedback.lightImpact();
-                              ref.read(playerNotifierProvider.notifier).toggleFavorite();
-                            },
-                            tooltip: 'Favorite',
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-
-                  // Variable-Speed Waveform Gearshift Scrubber
-                  _showSpectrumVisualizer
-                      ? SizedBox(
-                          height: 64,
-                          child: GestureDetector(
-                            onTap: () => context.push(AppRoutes.visualizerSettings),
-                            child: const SpectrumVisualizerWidget(height: 64),
-                          ),
-                        )
-                      : WaveformVisualizer(
-                          position: playerState.position,
-                          duration: playerState.duration.inSeconds > 0
-                              ? playerState.duration
-                              : const Duration(seconds: 230),
-                          isPlaying: isPlaying,
-                          trackSeed: currentTrack?.id ?? 'default_seed',
-                          cachedAmplitudes: _cachedWaveform,
-                          activeColor: primary,
-                          height: 52.0,
-                          onSeek: (newPos) {
-                            ref.read(playerNotifierProvider.notifier).seek(newPos);
-                          },
-                        ),
-
-                  // Primary Playback Controls Row (Thumb Zone)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          isShuffle ? Icons.shuffle_on_rounded : Icons.shuffle_rounded,
-                          color: isShuffle ? primary : colorScheme.onSurface.withOpacity(0.65),
-                        ),
-                        onPressed: () {
-                          HapticFeedback.selectionClick();
-                          ref.read(playerNotifierProvider.notifier).toggleShuffle();
+                          );
                         },
-                        tooltip: 'Shuffle',
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.skip_previous_rounded, size: 38),
-                        onPressed: () {
-                          HapticFeedback.lightImpact();
-                          ref.read(playerNotifierProvider.notifier).skipPrevious();
-                        },
-                        tooltip: 'Previous',
-                      ),
-
-                      // Prominent Center Play/Pause Circle
-                      Container(
-                        width: 64,
-                        height: 64,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: primary,
-                          boxShadow: [
-                            BoxShadow(
-                              color: primary.withOpacity(0.40),
-                              blurRadius: 18.0,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: IconButton(
-                          icon: Icon(
-                            isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                            size: 36,
-                            color: isDark ? const Color(0xFF0A0D14) : Colors.white,
-                          ),
-                          onPressed: () {
-                            HapticFeedback.mediumImpact();
-                            ref.read(playerNotifierProvider.notifier).togglePlayPause();
-                          },
-                          tooltip: isPlaying ? 'Pause' : 'Play',
-                        ),
-                      ),
-
-                      IconButton(
-                        icon: const Icon(Icons.skip_next_rounded, size: 38),
-                        onPressed: () {
-                          HapticFeedback.lightImpact();
-                          ref.read(playerNotifierProvider.notifier).skipNext();
-                        },
-                        tooltip: 'Next',
-                      ),
-                      Semantics(
-                        button: true,
-                        label: 'Repeat: ${repeatMode.label}',
-                        hint: 'Tap to cycle repeat mode, long press for options',
-                        child: Material(
-                          type: MaterialType.transparency,
-                          child: InkResponse(
-                            key: const Key('now_playing_repeat_button'),
-                            radius: 24.0,
-                            containedInkWell: false,
-                            onLongPress: () {
-                              HapticFeedback.mediumImpact();
-                              showStellioRepeatPickerSheet(
-                                context: context,
-                                activeMode: repeatMode,
-                                onSelected: (selected) {
-                                  ref
-                                      .read(playerNotifierProvider.notifier)
-                                      .setRepeatMode(selected);
-                                  _showEdgeHud(
-                                    selected.shortLabel,
-                                    iconForNexaRepeatMode(selected),
-                                    duration: const Duration(milliseconds: 1600),
-                                  );
-                                },
-                              );
-                            },
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              final nextMode = repeatMode.nextMode;
-                              ref
-                                  .read(playerNotifierProvider.notifier)
-                                  .cycleRepeatMode();
-                              _showEdgeHud(
-                                nextMode.shortLabel,
-                                iconForNexaRepeatMode(nextMode),
-                                duration: const Duration(milliseconds: 1600),
-                              );
-                            },
-                            child: SizedBox(
-                              width: 48.0,
-                              height: 48.0,
-                              child: Center(
-                                child: Icon(
-                                  iconForNexaRepeatMode(repeatMode),
-                                  color: repeatMode.isRepeating
-                                      ? primary
-                                      : colorScheme.onSurface.withOpacity(0.65),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  // Compact L2 Bottom Utility Dock
-                  NexaSurface(
-                    level: NexaSurfaceLevel.l2,
-                    borderRadius: BorderRadius.circular(18.0),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7.0, vertical: 2.0),
-                            decoration: BoxDecoration(
-                              color: surfaceTokens.level3,
-                              borderRadius: BorderRadius.circular(6.0),
-                            ),
-                            child: Text(
-                              AudioQualityFormatter.formatNowPlayingBadge(
-                                currentTrack,
-                              ),
-                              style: surfaceTokens.telemetryTextStyle.copyWith(
-                                color: primary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 10.0,
-                                fontFeatures: const [
-                                  FontFeature.tabularFigures(),
-                                ],
-                              ),
-                            ),
-                          ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.lyrics_rounded, size: 20),
-                                onPressed: () => context.push(AppRoutes.lyrics),
-                                tooltip: 'Lyrics',
-                                padding: const EdgeInsets.all(4),
-                                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.equalizer_rounded, size: 20),
-                                onPressed: () => context.push(AppRoutes.equalizer),
-                                tooltip: 'Equalizer & DSP',
-                                padding: const EdgeInsets.all(4),
-                                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.nightlight_round, size: 20),
-                                onPressed: () => context.push(AppRoutes.standby),
-                                tooltip: 'Bedside Standby Mode',
-                                padding: const EdgeInsets.all(4),
-                                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.directions_car_rounded, size: 20),
-                                onPressed: () => context.push(AppRoutes.carMode),
-                                tooltip: 'Car Driving Mode',
-                                padding: const EdgeInsets.all(4),
-                                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                              ),
-                              IconButton(
-                                key: const ValueKey('cast_now_playing_button'),
-                                icon: Icon(
-                                  isCasting ? Icons.cast_connected_rounded : Icons.cast_rounded,
-                                  size: 20,
-                                  color: isCasting ? const Color(0xFF00E676) : null,
-                                ),
-                                onPressed: () => CastDevicePickerModal.show(context),
-                                tooltip: 'Cast Audio',
-                                padding: const EdgeInsets.all(4),
-                                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.bedtime_rounded, size: 20),
-                                onPressed: () => SleepTimerBottomSheet.show(context),
-                                tooltip: 'Sleep Timer',
-                                padding: const EdgeInsets.all(4),
-                                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.queue_music_rounded, size: 20),
-                                onPressed: () => QueueBottomSheet.show(context),
-                                tooltip: 'Queue',
-                                padding: const EdgeInsets.all(4),
-                                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
         ),
       ),
 

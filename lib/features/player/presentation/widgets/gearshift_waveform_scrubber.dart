@@ -20,9 +20,13 @@ enum GearShift {
   final String label;
 }
 
-/// Variable-speed tactile waveform gearshift scrubber.
-/// Dragging horizontally scrubs the track; dragging downward shifts precision
-/// down from 1x -> 0.5x -> 0.1x with real-time HUD pill and tick haptics.
+/// Tactile 56-bar variable-speed waveform gearshift scrubber.
+///
+/// - Dragging horizontally scrubs the track; dragging downward shifts precision
+///   down (`1x -> 0.5x -> 0.1x`) with a transient floating HUD pill visible ONLY
+///   while actively dragging.
+/// - Optional [loopStart] / [loopEnd] pins render in a dedicated 18dp top track
+///   so they never collide with waveform peaks.
 class GearshiftWaveformScrubber extends StatefulWidget {
   const GearshiftWaveformScrubber({
     super.key,
@@ -34,7 +38,9 @@ class GearshiftWaveformScrubber extends StatefulWidget {
     this.activeColor,
     this.onScrubbingStart,
     this.onScrubbingEnd,
-    this.height = 70.0,
+    this.height = 56.0,
+    this.loopStart,
+    this.loopEnd,
   });
 
   final Duration position;
@@ -46,6 +52,8 @@ class GearshiftWaveformScrubber extends StatefulWidget {
   final VoidCallback? onScrubbingStart;
   final VoidCallback? onScrubbingEnd;
   final double height;
+  final Duration? loopStart;
+  final Duration? loopEnd;
 
   @override
   State<GearshiftWaveformScrubber> createState() =>
@@ -125,28 +133,143 @@ class _GearshiftWaveformScrubberState extends State<GearshiftWaveformScrubber> {
 
     final activeDuration = _isDragging ? _dragPosition : widget.position;
     final totalDuration = widget.duration;
-    final progress = totalDuration.inMilliseconds > 0
-        ? (activeDuration.inMilliseconds / totalDuration.inMilliseconds).clamp(0.0, 1.0)
+    final totalMs = totalDuration.inMilliseconds;
+    final progress = totalMs > 0
+        ? (activeDuration.inMilliseconds / totalMs).clamp(0.0, 1.0)
         : 0.0;
+
+    final hasLoopPins =
+        widget.loopStart != null || widget.loopEnd != null;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
 
-        return Column(
-          mainAxisSize: MainAxisSize.min,
+        return Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.topCenter,
           children: [
-            // Floating Gear HUD Indicator (visible when scrubbing)
-            AnimatedOpacity(
-              opacity: _isDragging ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 150),
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 6.0),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (hasLoopPins && totalMs > 0)
+                  SizedBox(
+                    height: 18.0,
+                    width: width,
+                    child: Stack(
+                      children: [
+                        if (widget.loopStart != null)
+                          Positioned(
+                            left: ((widget.loopStart!.inMilliseconds / totalMs)
+                                    .clamp(0.0, 1.0) *
+                                (width - 16.0)),
+                            top: 0,
+                            child: _LoopPinBadge(label: 'A', color: primary),
+                          ),
+                        if (widget.loopEnd != null)
+                          Positioned(
+                            left: ((widget.loopEnd!.inMilliseconds / totalMs)
+                                    .clamp(0.0, 1.0) *
+                                (width - 16.0)),
+                            top: 0,
+                            child: _LoopPinBadge(label: 'B', color: primary),
+                          ),
+                      ],
+                    ),
+                  ),
+
+                // Waveform Scrubber Touch Canvas with Screen Reader Semantics
+                Semantics(
+                  slider: true,
+                  label: 'Waveform scrubber',
+                  value:
+                      '${activeDuration.toMinutesSeconds()} of ${totalDuration.toMinutesSeconds()}',
+                  increasedValue: (activeDuration + const Duration(seconds: 10))
+                      .clamp(Duration.zero, totalDuration)
+                      .toMinutesSeconds(),
+                  decreasedValue: (activeDuration - const Duration(seconds: 10))
+                      .clamp(Duration.zero, totalDuration)
+                      .toMinutesSeconds(),
+                  onIncrease: () {
+                    final next = (widget.position + const Duration(seconds: 10))
+                        .clamp(Duration.zero, widget.duration);
+                    widget.onSeek(next);
+                  },
+                  onDecrease: () {
+                    final prev = (widget.position - const Duration(seconds: 10))
+                        .clamp(Duration.zero, widget.duration);
+                    widget.onSeek(prev);
+                  },
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onHorizontalDragStart: _onPanStart,
+                    onHorizontalDragUpdate: (details) =>
+                        _onPanUpdate(details, width),
+                    onHorizontalDragEnd: _onPanEnd,
+                    onVerticalDragStart: _onPanStart,
+                    onVerticalDragUpdate: (details) =>
+                        _onPanUpdate(details, width),
+                    onVerticalDragEnd: _onPanEnd,
+                    child: SizedBox(
+                      height: widget.height,
+                      width: width,
+                      child: CustomPaint(
+                        painter: _WaveformPainter(
+                          progress: progress,
+                          amplitudes: widget.cachedAmplitudes,
+                          activeColor: primary,
+                          inactiveColor: onSurface.withOpacity(0.18),
+                          thumbColor: primary,
+                          isDragging: _isDragging,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 4.0),
+
+                // Timestamps Row (tabular monospace)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      activeDuration.toMinutesSeconds(),
+                      style: surfaceTokens.telemetryTextStyle.copyWith(
+                        color: _isDragging ? primary : onSurfaceVariant,
+                        fontWeight:
+                            _isDragging ? FontWeight.bold : FontWeight.w500,
+                        fontSize: 11.5,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                    Text(
+                      '-${(totalDuration - activeDuration).toMinutesSeconds()}',
+                      style: surfaceTokens.telemetryTextStyle.copyWith(
+                        color: onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 11.5,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+
+            // Transient Gear HUD Pill (ONLY built while actively scrubbing)
+            if (_isDragging)
+              Positioned(
+                top: -34.0,
                 child: NexaSurface(
+                  key: const ValueKey('gearshift_active_hud'),
                   level: NexaSurfaceLevel.l3,
                   borderRadius: BorderRadius.circular(16.0),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10.0,
+                      vertical: 4.0,
+                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -166,6 +289,7 @@ class _GearshiftWaveformScrubberState extends State<GearshiftWaveformScrubber> {
                             color: primary,
                             fontWeight: FontWeight.bold,
                             fontSize: 11.0,
+                            fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
                       ],
@@ -173,75 +297,40 @@ class _GearshiftWaveformScrubberState extends State<GearshiftWaveformScrubber> {
                   ),
                 ),
               ),
-            ),
-
-            // Waveform Scrubber Touch Canvas with Screen Reader Semantics
-            Semantics(
-              slider: true,
-              label: 'Waveform scrubber',
-              value: '${activeDuration.toMinutesSeconds()} of ${totalDuration.toMinutesSeconds()}',
-              increasedValue: (activeDuration + const Duration(seconds: 10)).clamp(Duration.zero, totalDuration).toMinutesSeconds(),
-              decreasedValue: (activeDuration - const Duration(seconds: 10)).clamp(Duration.zero, totalDuration).toMinutesSeconds(),
-              onIncrease: () {
-                final next = (widget.position + const Duration(seconds: 10)).clamp(Duration.zero, widget.duration);
-                widget.onSeek(next);
-              },
-              onDecrease: () {
-                final prev = (widget.position - const Duration(seconds: 10)).clamp(Duration.zero, widget.duration);
-                widget.onSeek(prev);
-              },
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onHorizontalDragStart: _onPanStart,
-                onHorizontalDragUpdate: (details) => _onPanUpdate(details, width),
-                onHorizontalDragEnd: _onPanEnd,
-                onVerticalDragStart: _onPanStart,
-                onVerticalDragUpdate: (details) => _onPanUpdate(details, width),
-                onVerticalDragEnd: _onPanEnd,
-                child: SizedBox(
-                  height: widget.height,
-                  width: width,
-                  child: CustomPaint(
-                    painter: _WaveformPainter(
-                      progress: progress,
-                      amplitudes: widget.cachedAmplitudes,
-                      activeColor: primary,
-                      inactiveColor: onSurface.withOpacity(0.18),
-                      thumbColor: primary,
-                      isDragging: _isDragging,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 4.0),
-
-            // Timestamps Row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  activeDuration.toMinutesSeconds(),
-                  style: surfaceTokens.telemetryTextStyle.copyWith(
-                    color: _isDragging ? primary : onSurfaceVariant,
-                    fontWeight: _isDragging ? FontWeight.bold : FontWeight.w500,
-                    fontSize: 11.5,
-                  ),
-                ),
-                Text(
-                  '-${(totalDuration - activeDuration).toMinutesSeconds()}',
-                  style: surfaceTokens.telemetryTextStyle.copyWith(
-                    color: onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
-                    fontSize: 11.5,
-                  ),
-                ),
-              ],
-            ),
           ],
         );
       },
+    );
+  }
+}
+
+class _LoopPinBadge extends StatelessWidget {
+  const _LoopPinBadge({
+    required this.label,
+    required this.color,
+  });
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 16.0,
+      height: 16.0,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(4.0),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onPrimary,
+          fontSize: 9.5,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }
@@ -265,7 +354,7 @@ class _WaveformPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    const barCount = 48;
+    const barCount = 56;
     final totalWidth = size.width;
     final barWidth = (totalWidth / barCount) * 0.60;
     final barSpacing = (totalWidth / barCount) * 0.40;
@@ -287,16 +376,20 @@ class _WaveformPainter extends CustomPainter {
 
       double amp = 0.4;
       if (amplitudesList != null && amplitudesList.isNotEmpty) {
-        final sampleIndex = (i * amplitudesList.length ~/ barCount).clamp(0, amplitudesList.length - 1);
+        final sampleIndex =
+            (i * amplitudesList.length ~/ barCount).clamp(0, amplitudesList.length - 1);
         amp = amplitudesList[sampleIndex].clamp(0.15, 1.0);
       } else {
-        // Natural audio aesthetic fallback
         amp = (0.25 + 0.65 * math.sin(i * 0.35).abs()).clamp(0.18, 0.95);
       }
 
       final halfH = (size.height * 0.42 * amp).clamp(3.0, size.height * 0.45);
       final rrect = RRect.fromRectAndRadius(
-        Rect.fromCenter(center: Offset(x, centerY), width: barWidth, height: halfH * 2),
+        Rect.fromCenter(
+          center: Offset(x, centerY),
+          width: barWidth,
+          height: halfH * 2,
+        ),
         const Radius.circular(3.0),
       );
 
@@ -319,6 +412,7 @@ class _WaveformPainter extends CustomPainter {
   bool shouldRepaint(covariant _WaveformPainter oldDelegate) {
     return oldDelegate.progress != progress ||
         oldDelegate.isDragging != isDragging ||
-        oldDelegate.activeColor != activeColor;
+        oldDelegate.activeColor != activeColor ||
+        oldDelegate.amplitudes != amplitudes;
   }
 }
