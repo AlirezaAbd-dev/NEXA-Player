@@ -82,7 +82,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
   void _handlePageSettled(int newIndex) {
     if (mounted) {
       setState(() {
-        _carouselPageOffset = newIndex.toDouble();
+        _carouselPageOffset = null;
       });
     }
     ref.read(playerNotifierProvider.notifier).skipToIndex(newIndex);
@@ -305,10 +305,14 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
     final currentTrack = playerState.currentTrack;
     final isPlaying = playerState.isPlaying;
 
-    final queueState = getIt.isRegistered<IPlaybackQueue>()
-        ? (ref.watch(playbackQueueStateStreamProvider).valueOrNull
-            ?? ref.watch(playbackQueueProvider).state)
-        : const PlaybackQueueState();
+    PlaybackQueueState queueState = const PlaybackQueueState();
+    try {
+      final q = ref.watch(playbackQueueProvider);
+      queueState =
+          ref.watch(playbackQueueStateStreamProvider).valueOrNull ?? q.state;
+    } catch (_) {
+      queueState = const PlaybackQueueState();
+    }
     final queueTracks = queueState.tracks;
     final queueCurrentIndex = (queueState.currentIndex >= 0 && queueState.currentIndex < queueTracks.length)
         ? queueState.currentIndex
@@ -317,27 +321,38 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
         ? queueTracks
         : (currentTrack != null ? [currentTrack] : const <Track>[]);
 
-    final activeOffset = _carouselPageOffset ?? queueCurrentIndex.toDouble();
+    final activeOffset = (_carouselPageOffset ?? queueCurrentIndex.toDouble())
+        .clamp(0.0, effectiveTracks.isEmpty ? 0.0 : (effectiveTracks.length - 1).toDouble());
     ExtractedPalette currentDisplayPalette = dynamicPalette;
-    if (isDynamicEnabled && effectiveTracks.isNotEmpty) {
+    if (effectiveTracks.isNotEmpty) {
       final floorIndex = activeOffset.floor().clamp(0, effectiveTracks.length - 1);
       final ceilIndex = activeOffset.ceil().clamp(0, effectiveTracks.length - 1);
       final t = (activeOffset - floorIndex).clamp(0.0, 1.0);
 
-      final palA = (floorIndex == queueCurrentIndex)
+      final palA = (floorIndex == queueCurrentIndex && isDynamicEnabled)
           ? dynamicPalette
           : const DynamicPaletteService().computeSeedPalette(
               '${effectiveTracks[floorIndex].title} ${effectiveTracks[floorIndex].artist} ${effectiveTracks[floorIndex].album}',
             );
-      final palB = (ceilIndex == queueCurrentIndex)
+      final palB = (ceilIndex == queueCurrentIndex && isDynamicEnabled)
           ? dynamicPalette
           : const DynamicPaletteService().computeSeedPalette(
               '${effectiveTracks[ceilIndex].title} ${effectiveTracks[ceilIndex].artist} ${effectiveTracks[ceilIndex].album}',
             );
-      currentDisplayPalette = ExtractedPalette.lerp(palA, palB, t);
+      if (isDynamicEnabled) {
+        currentDisplayPalette = ExtractedPalette.lerp(palA, palB, t);
+      } else if (_carouselPageOffset != null && floorIndex != ceilIndex) {
+        currentDisplayPalette = ExtractedPalette.lerp(palA, palB, t);
+      }
     }
 
-    final primary = isDynamicEnabled ? currentDisplayPalette.primary : colorScheme.primary;
+    final dragTintPrimary = (_carouselPageOffset != null &&
+            effectiveTracks.length > 1 &&
+            !isDynamicEnabled)
+        ? Color.lerp(colorScheme.primary, currentDisplayPalette.primary, 0.45) ??
+            colorScheme.primary
+        : (isDynamicEnabled ? currentDisplayPalette.primary : colorScheme.primary);
+    final primary = dragTintPrimary;
     final surfaceTokens = NexaSurfaceTokens.of(context);
 
     final title = currentTrack?.title ?? 'Starboy';
@@ -646,7 +661,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                                   ],
                                 ),
 
-                                // Zone 3: Metadata Row + Quality Telemetry Badge
+                                // Zone 3: Synchronized Metadata Parallax Row + Quality Telemetry Badge
                                 Column(
                                   mainAxisSize: MainAxisSize.min,
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -655,32 +670,14 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                                       crossAxisAlignment: CrossAxisAlignment.center,
                                       children: [
                                         Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              BidiText(
-                                                title,
-                                                style: (isCompactHeight
-                                                        ? AppTypography.titleLarge
-                                                        : AppTypography.headlineMedium)
-                                                    .copyWith(
-                                                  color: colorScheme.onSurface,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                              const SizedBox(height: 2),
-                                              BidiText(
-                                                artistAndAlbum,
-                                                style: AppTypography.bodyLarge.copyWith(
-                                                  color: colorScheme.onSurface.withOpacity(0.72),
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ],
+                                          child: _buildSynchronizedMetadataBlock(
+                                            context: context,
+                                            effectiveTracks: effectiveTracks,
+                                            activeOffset: activeOffset,
+                                            fallbackTitle: title,
+                                            fallbackSubtitle: artistAndAlbum,
+                                            isCompactHeight: isCompactHeight,
+                                            onSurface: colorScheme.onSurface,
                                           ),
                                         ),
                                         IconButton(
@@ -1021,5 +1018,87 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
 ),
 ],
 );
+  }
+
+  Widget _buildSynchronizedMetadataBlock({
+    required BuildContext context,
+    required List<Track> effectiveTracks,
+    required double activeOffset,
+    required String fallbackTitle,
+    required String fallbackSubtitle,
+    required bool isCompactHeight,
+    required Color onSurface,
+  }) {
+    final disableAnimations = MediaQuery.disableAnimationsOf(context);
+    final titleStyle =
+        (isCompactHeight ? AppTypography.titleLarge : AppTypography.headlineMedium)
+            .copyWith(
+      color: onSurface,
+      fontWeight: FontWeight.bold,
+    );
+    final subtitleStyle = AppTypography.bodyLarge.copyWith(
+      color: onSurface.withOpacity(0.72),
+    );
+
+    Widget buildPair(String t, String sub) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          BidiText(
+            t,
+            style: titleStyle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          BidiText(
+            sub,
+            style: subtitleStyle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      );
+    }
+
+    if (effectiveTracks.length <= 1) {
+      return buildPair(fallbackTitle, fallbackSubtitle);
+    }
+
+    final floorIdx = activeOffset.floor().clamp(0, effectiveTracks.length - 1);
+    final ceilIdx = activeOffset.ceil().clamp(0, effectiveTracks.length - 1);
+    final frac = (activeOffset - floorIdx).clamp(0.0, 1.0);
+
+    if (floorIdx == ceilIdx || frac == 0.0) {
+      final track = effectiveTracks[floorIdx];
+      return buildPair(track.title, track.artistAndAlbum);
+    }
+
+    final trackA = effectiveTracks[floorIdx];
+    final trackB = effectiveTracks[ceilIdx];
+    final parallaxShiftA = disableAnimations ? 0.0 : -frac * 24.0;
+    final parallaxShiftB = disableAnimations ? 0.0 : (1.0 - frac) * 24.0;
+
+    return Stack(
+      key: const ValueKey('now_playing_metadata_parallax'),
+      clipBehavior: Clip.hardEdge,
+      children: [
+        Transform.translate(
+          offset: Offset(parallaxShiftA, 0.0),
+          child: Opacity(
+            opacity: (1.0 - frac).clamp(0.0, 1.0),
+            child: buildPair(trackA.title, trackA.artistAndAlbum),
+          ),
+        ),
+        Transform.translate(
+          offset: Offset(parallaxShiftB, 0.0),
+          child: Opacity(
+            opacity: frac.clamp(0.0, 1.0),
+            child: buildPair(trackB.title, trackB.artistAndAlbum),
+          ),
+        ),
+      ],
+    );
   }
 }

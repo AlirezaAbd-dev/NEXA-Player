@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +8,23 @@ import 'package:nexa_player/core/utils/audio_quality_formatter.dart';
 import 'package:nexa_player/shared/models/track.dart';
 import 'package:nexa_player/shared/widgets/cards/nexa_artwork_image.dart';
 import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
+
+/// Tuned spring settle physics giving Stellio-style cover flow silky inertia.
+class StellioPageScrollPhysics extends PageScrollPhysics {
+  const StellioPageScrollPhysics({super.parent});
+
+  @override
+  StellioPageScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return StellioPageScrollPhysics(parent: buildParent(ancestor));
+  }
+
+  @override
+  SpringDescription get spring => const SpringDescription(
+        mass: 1.0,
+        stiffness: 220.0,
+        damping: 24.0,
+      );
+}
 
 /// Hero artwork card and Stellio-style 3D Cover Flow Carousel featuring:
 /// - Queue-bound [PageView.builder] carousel synced to [IPlaybackQueue].
@@ -60,6 +78,7 @@ class _HeroArtworkCardState extends State<HeroArtworkCard>
   double _swipeDragDelta = 0.0;
   int _lastCommittedIndex = 0;
   int _pendingPageIndex = 0;
+  int _lastDetentIndex = 0;
   TapDownDetails? _lastTapDown;
 
   bool get _isTest =>
@@ -77,10 +96,15 @@ class _HeroArtworkCardState extends State<HeroArtworkCard>
     super.initState();
     _lastCommittedIndex = widget.currentIndex ?? 0;
     _pendingPageIndex = _lastCommittedIndex;
+    _lastDetentIndex = _lastCommittedIndex;
     _pageController = PageController(
       initialPage: _lastCommittedIndex,
-      viewportFraction: 0.72,
+      viewportFraction: 0.80,
     );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _precacheAdjacentArtworks(_lastCommittedIndex);
+    });
 
     _rotationController = AnimationController(
       vsync: this,
@@ -113,12 +137,16 @@ class _HeroArtworkCardState extends State<HeroArtworkCard>
     if (queueChanged) {
       _lastCommittedIndex = targetIndex;
       _pendingPageIndex = targetIndex;
+      _lastDetentIndex = targetIndex;
       if (_pageController.hasClients) {
         _pageController.jumpToPage(targetIndex);
       }
+      _precacheAdjacentArtworks(targetIndex);
     } else if (widget.currentIndex != null && widget.currentIndex != _lastCommittedIndex) {
       _lastCommittedIndex = widget.currentIndex!;
       _pendingPageIndex = _lastCommittedIndex;
+      _lastDetentIndex = _lastCommittedIndex;
+      _precacheAdjacentArtworks(_lastCommittedIndex);
       if (_pageController.hasClients) {
         final currentPage = _currentPageOffset?.round();
         if (currentPage != widget.currentIndex) {
@@ -143,6 +171,25 @@ class _HeroArtworkCardState extends State<HeroArtworkCard>
         _rotationController.value = 0.2;
       } else {
         _rotationController.stop();
+      }
+    }
+  }
+
+  void _precacheAdjacentArtworks(int centerIndex) {
+    final list = widget.tracks;
+    if (list == null || list.isEmpty || !mounted) return;
+    for (int i = centerIndex - 1; i <= centerIndex + 1; i++) {
+      if (i < 0 || i >= list.length) continue;
+      final uri = list[i].artworkUri;
+      if (uri == null || uri.isEmpty) continue;
+      if (uri.startsWith('http://') || uri.startsWith('https://')) continue;
+      final clean = uri.startsWith('file://') ? uri.substring(7) : uri;
+      final file = File(clean);
+      if (file.existsSync()) {
+        precacheImage(
+          ResizeImage(FileImage(file), width: 720),
+          context,
+        ).catchError((_) {});
       }
     }
   }
@@ -235,10 +282,17 @@ class _HeroArtworkCardState extends State<HeroArtworkCard>
           },
           child: PageView.builder(
             controller: _pageController,
-            physics: const BouncingScrollPhysics(),
+            physics: const StellioPageScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
             itemCount: effectiveTracks.length,
             onPageChanged: (index) {
               _pendingPageIndex = index;
+              if (index != _lastDetentIndex) {
+                _lastDetentIndex = index;
+                HapticFeedback.selectionClick();
+                _precacheAdjacentArtworks(index);
+              }
             },
             itemBuilder: (context, index) {
               return AnimatedBuilder(
@@ -248,16 +302,29 @@ class _HeroArtworkCardState extends State<HeroArtworkCard>
                   final rawValue = (offset != null)
                       ? (offset - index)
                       : ((widget.currentIndex ?? 0).toDouble() - index);
-                  final value = rawValue.clamp(-1.0, 1.0);
+                  final delta = rawValue.clamp(-1.0, 1.0);
+                  final absDelta = delta.abs();
 
-                  final disableAnimations = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
-                  final matrix = Matrix4.identity()..setEntry(3, 2, 0.0014);
-                  if (!disableAnimations) {
-                    matrix.rotateY(-value * (math.pi / 7));
+                  final disableAnimations =
+                      MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+                  final Matrix4 matrix;
+                  final double scale;
+                  final double opacity;
+
+                  if (disableAnimations) {
+                    scale = (1.0 - absDelta * 0.04).clamp(0.92, 1.0);
+                    matrix = Matrix4.identity()..scale(scale, scale, 1.0);
+                    opacity = (1.0 - absDelta * 0.65).clamp(0.0, 1.0);
+                  } else {
+                    final easedAbs = Curves.easeOut.transform(absDelta);
+                    scale = (1.0 - easedAbs * 0.16).clamp(0.70, 1.0);
+                    matrix = Matrix4.identity()
+                      ..setEntry(3, 2, 0.0016)
+                      ..translate(0.0, absDelta * 14.0)
+                      ..rotateY(-delta * 0.42)
+                      ..scale(scale, scale, 1.0);
+                    opacity = (1.0 - absDelta * 0.35).clamp(0.0, 1.0);
                   }
-                  final scale = (1.0 - value.abs() * 0.14).clamp(0.70, 1.0);
-                  matrix.scale(scale, scale, 1.0);
-                  final opacity = (1.0 - value.abs() * 0.25).clamp(0.0, 1.0);
 
                   final isCurrent = index == (_currentPageOffset?.round() ?? widget.currentIndex ?? 0);
 
