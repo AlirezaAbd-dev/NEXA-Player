@@ -37,6 +37,7 @@ class ScaffoldWithNavBar extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
 
   void _onBottomNavTap(int index) {
+    FocusManager.instance.primaryFocus?.unfocus();
     if (index == 0) {
       if (navigationShell.currentIndex > 3) {
         navigationShell.goBranch(0);
@@ -51,6 +52,7 @@ class ScaffoldWithNavBar extends ConsumerWidget {
   }
 
   void _onRailTap(int index) {
+    FocusManager.instance.primaryFocus?.unfocus();
     navigationShell.goBranch(
       index,
       initialLocation: index == navigationShell.currentIndex,

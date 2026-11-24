@@ -255,13 +255,18 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
     if (shouldDismiss) {
       _isDismissing = true;
       HapticFeedback.lightImpact();
-      if (Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      } else {
-        context.pop();
-      }
+      _dismissScreen();
     } else {
       _animateSnapBack();
+    }
+  }
+
+  void _dismissScreen() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      context.pop();
     }
   }
 
@@ -426,7 +431,13 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
     final progress = (screenHeight > 0 ? (_dragY / screenHeight) : 0.0).clamp(0.0, 1.0);
     final scale = (1.0 - progress * 0.04).clamp(0.90, 1.0);
 
-    return Stack(
+    return PopScope(
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) {
+          FocusManager.instance.primaryFocus?.unfocus();
+        }
+      },
+      child: Stack(
       children: [
         // Backdrop dimming scrim modulating over the route barrier
         Positioned.fill(
@@ -513,7 +524,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                                         children: [
                                           IconButton(
                                             icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 28),
-                                            onPressed: () => context.pop(),
+                                            onPressed: _dismissScreen,
                                             tooltip: 'Minimize',
                                             padding: const EdgeInsets.all(6),
                                             constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
@@ -1080,7 +1091,8 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
 ),
 ),
 ],
-);
+),
+    );
   }
 
   Widget _buildSynchronizedMetadataBlock({

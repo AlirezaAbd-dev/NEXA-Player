@@ -25,16 +25,59 @@ import 'shell/scaffold_with_nav_bar.dart';
 final GlobalKey<NavigatorState> _rootNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'root');
 
+/// Unfocuses any active text input across transitions to prevent soft keyboard re-opening
+/// when popping full-screen overlays such as [NowPlayingScreen].
+class FocusDismissNavigatorObserver extends NavigatorObserver {
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    super.didPush(route, previousRoute);
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    super.didPop(route, previousRoute);
+  }
+}
+
+/// Builds the [StatefulShellRoute] container using an [IndexedStack] while excluding
+/// inactive shell branches from focus traversal and focus restoration.
+Widget buildStatefulShellNavigatorContainer(
+  BuildContext context,
+  StatefulNavigationShell navigationShell,
+  List<Widget> children,
+) {
+  return IndexedStack(
+    index: navigationShell.currentIndex,
+    children: [
+      for (int i = 0; i < children.length; i++)
+        Offstage(
+          offstage: i != navigationShell.currentIndex,
+          child: TickerMode(
+            enabled: i == navigationShell.currentIndex,
+            child: ExcludeFocus(
+              excluding: i != navigationShell.currentIndex,
+              child: children[i],
+            ),
+          ),
+        ),
+    ],
+  );
+}
+
 /// Central GoRouter configuration managing shell tabs and full-screen routes.
 final appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: AppRoutes.songs,
+  observers: [FocusDismissNavigatorObserver()],
   routes: [
     // 1. Stateful Shell Route for Persistent Bottom Navigation & Mini-Player
-    StatefulShellRoute.indexedStack(
+    StatefulShellRoute(
       builder: (context, state, navigationShell) {
         return ScaffoldWithNavBar(navigationShell: navigationShell);
       },
+      navigatorContainerBuilder: buildStatefulShellNavigatorContainer,
       branches: [
         // Tab 0: Songs
         StatefulShellBranch(
