@@ -16,6 +16,27 @@ class FolderNode extends Equatable {
   final List<FolderNode> subFolders;
   final List<FileNode> files;
 
+  /// Number of direct child folders inside this folder.
+  int get subFolderCount => subFolders.length;
+
+  /// Number of audio files sitting directly inside this folder.
+  int get directTrackCount => files.length;
+
+  /// Total number of audio files inside this folder and all descendant subfolders.
+  int get recursiveTrackCount =>
+      files.length +
+      subFolders.fold<int>(0, (sum, sub) => sum + sub.recursiveTrackCount);
+
+  /// Finds the [FolderNode] matching [targetPath] anywhere inside this subtree.
+  FolderNode? findByPath(String targetPath) {
+    if (path == targetPath) return this;
+    for (final sub in subFolders) {
+      final match = sub.findByPath(targetPath);
+      if (match != null) return match;
+    }
+    return null;
+  }
+
   @override
   List<Object?> get props => [path, name, subFolders, files];
 }

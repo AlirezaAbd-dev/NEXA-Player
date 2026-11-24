@@ -124,7 +124,21 @@ void main() {
       expect(find.text('Internal › Music › Rock'), findsOneWidget);
       expect(find.text('FLAC'), findsWidgets);
       expect(find.text('SD Card › FLAC'), findsOneWidget);
+      // Root shows folders only (no auto-expanded songs until tapped)
+      expect(find.text('track1.flac'), findsNothing);
+      expect(find.text('audiophile.wav'), findsNothing);
+
+      // Tapping Rock reveals its direct track
+      await tester.tap(find.text('Rock'));
+      await tester.pumpAndSettle();
       expect(find.text('track1.flac'), findsOneWidget);
+      expect(find.text('audiophile.wav'), findsNothing);
+
+      // Navigating back and tapping FLAC reveals audiophile.wav
+      await tester.tap(find.byKey(const ValueKey('folder_navigate_up_btn')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('FLAC'));
+      await tester.pumpAndSettle();
       expect(find.text('audiophile.wav'), findsOneWidget);
     });
 

@@ -5,7 +5,6 @@ import 'package:nexa_player/core/constants/phase2_keys.dart';
 import 'package:nexa_player/core/theme/app_theme.dart';
 import 'package:nexa_player/features/library/domain/repositories/folders_repository.dart';
 import 'package:nexa_player/features/library/presentation/providers/library_providers.dart';
-import 'package:nexa_player/features/library/presentation/screens/artist_detail_screen.dart';
 import 'package:nexa_player/features/library/presentation/screens/artists_tab_screen.dart';
 import 'package:nexa_player/features/library/presentation/screens/folders_tab_screen.dart';
 import 'package:nexa_player/shared/models/artist.dart';
@@ -131,6 +130,11 @@ void main() {
       expect(find.byKey(Phase2Keys.foldersTreeView), findsOneWidget);
       expect(find.byKey(Phase2Keys.folderNode(testFolder.path)), findsOneWidget);
       expect(find.text('Electronic'), findsOneWidget);
+      expect(find.byKey(Phase2Keys.fileNode(testFolder.files.first.path)), findsNothing);
+
+      // Tap folder to enter and see tracks + FLAC extension tag
+      await tester.tap(find.byKey(Phase2Keys.folderNode(testFolder.path)));
+      await tester.pumpAndSettle();
       expect(find.text('FLAC'), findsOneWidget);
       expect(find.byKey(Phase2Keys.fileNode(testFolder.files.first.path)), findsOneWidget);
     });
