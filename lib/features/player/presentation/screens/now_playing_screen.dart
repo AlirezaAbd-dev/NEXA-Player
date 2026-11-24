@@ -315,7 +315,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
         ? currentTrack.album
         : 'Starboy';
 
-    final isFavorite = currentTrack?.isFavorite ?? true;
+    final isFavorite = currentTrack?.isFavorite ?? false;
     final isShuffle = playerState.isShuffled;
     final repeatMode = playerState.repeatMode;
     final isCasting = ref.watch(isCastingActiveProvider);

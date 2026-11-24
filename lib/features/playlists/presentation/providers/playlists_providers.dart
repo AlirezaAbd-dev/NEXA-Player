@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nexa_player/core/di/injection.dart';
 import 'package:nexa_player/features/library/domain/repositories/tracks_repository.dart';
+import 'package:nexa_player/features/library/presentation/providers/library_providers.dart';
+import 'package:nexa_player/features/playlists/data/repositories/sqlite_smart_playlists_repository.dart';
 import 'package:nexa_player/features/playlists/domain/models/smart_playlist.dart';
 import 'package:nexa_player/features/playlists/domain/repositories/playlists_repository.dart';
 import 'package:nexa_player/features/playlists/domain/services/m3u_service.dart';
@@ -104,9 +106,21 @@ final playlistsListNotifierProvider =
   PlaylistsNotifier.new,
 );
 
-/// Provider fetching ordered tracks in a specific playlist.
+/// Provider exposing [ISmartPlaylistsRepository].
+final smartPlaylistsRepositoryProvider =
+    Provider<ISmartPlaylistsRepository?>((ref) {
+  return getIt.isRegistered<ISmartPlaylistsRepository>()
+      ? getIt<ISmartPlaylistsRepository>()
+      : null;
+});
+
+/// Configurable cap (default 30; options 20 / 30 / 50) for the "Recently Added" smart playlist.
+final recentlyAddedLimitProvider = StateProvider<int>((ref) => 30);
+
+/// Reactive provider fetching ordered tracks in a specific user or smart playlist.
 final playlistTracksProvider =
     FutureProvider.family<List<Track>, String>((ref, playlistId) async {
+  ref.watch(librarySyncRevisionProvider);
   if (playlistId.startsWith('smart_')) {
     final typeName = playlistId.substring(6);
     final smartType = SmartPlaylistType.values.firstWhere(
@@ -126,29 +140,42 @@ final smartPlaylistsProvider = Provider<List<SmartPlaylist>>((ref) {
   return SmartPlaylistType.values.map(SmartPlaylist.fromType).toList();
 });
 
-/// Provider fetching tracks dynamically for a [SmartPlaylistType].
+/// Provider fetching tracks dynamically for a [SmartPlaylistType] from SQLite.
 final smartPlaylistTracksProvider =
     FutureProvider.family<List<Track>, SmartPlaylistType>((ref, type) async {
-  final tracksRepo = getIt<ITracksRepository>();
+  ref.watch(librarySyncRevisionProvider);
+  final recentlyAddedLimit = ref.watch(recentlyAddedLimitProvider);
+  final smartRepo = ref.watch(smartPlaylistsRepositoryProvider);
+  if (smartRepo != null) {
+    final res = await smartRepo.getTracksForSmartPlaylist(
+      type,
+      recentlyAddedLimit: recentlyAddedLimit,
+    );
+    return res.valueOrNull ?? [];
+  }
 
+  final tracksRepo = getIt<ITracksRepository>();
   switch (type) {
     case SmartPlaylistType.recentlyAdded:
       final res = await tracksRepo.getAllTracks(
         sortBy: TrackSortBy.dateAdded,
         ascending: false,
       );
-      return res.valueOrNull ?? [];
+      return (res.valueOrNull ?? []).take(recentlyAddedLimit).toList();
 
     case SmartPlaylistType.favorites:
       final res = await tracksRepo.getAllTracks();
-      final all = res.valueOrNull ?? [];
-      return all.where((t) => t.isFavorite).toList();
+      return (res.valueOrNull ?? []).where((t) => t.isFavorite).toList();
 
     case SmartPlaylistType.mostPlayed:
-      final res = await tracksRepo.getAllTracks(
-        sortBy: TrackSortBy.dateAdded,
-        ascending: true,
-      );
-      return res.valueOrNull ?? [];
+      final res = await tracksRepo.getAllTracks();
+      final played = (res.valueOrNull ?? []).where((t) => t.playCount > 0).toList()
+        ..sort((a, b) => b.playCount.compareTo(a.playCount));
+      return played.take(30).toList();
+
+    case SmartPlaylistType.recentlyPlayed:
+      final res = await tracksRepo.getAllTracks();
+      final played = (res.valueOrNull ?? []).where((t) => t.playCount > 0).toList();
+      return played.take(30).toList();
   }
 });

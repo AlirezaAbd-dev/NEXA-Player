@@ -55,11 +55,8 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
   }
 
   Future<void> _toggleFavorite(Track track) async {
-    final repo = ref.read(tracksRepositoryProvider);
-    final res = await repo.toggleFavorite(track.id);
-    if (res.isSuccess) {
-      ref.invalidate(tracksListProvider);
-    }
+    await ref.read(playerNotifierProvider.notifier).toggleFavorite(track);
+    ref.invalidate(tracksListProvider);
   }
 
   @override

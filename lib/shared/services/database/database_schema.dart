@@ -8,7 +8,7 @@ abstract final class DatabaseSchema {
   DatabaseSchema._();
 
   /// Current database schema version.
-  static const int currentVersion = 2;
+  static const int currentVersion = 3;
 
   // ---------------------------------------------------------------------------
   // Table Names
@@ -43,7 +43,9 @@ abstract final class DatabaseSchema {
   static const String colTrackYear = 'year';
   static const String colTrackGenre = 'genre';
   static const String colIsFavorite = 'is_favorite';
+  static const String colFavoritedAt = 'favorited_at';
   static const String colPlayCount = 'play_count';
+  static const String colLastPlayedAt = 'last_played_at';
   static const String colBitrate = 'bitrate';
   static const String colSampleRate = 'sample_rate';
   static const String colBitDepth = 'bit_depth';
@@ -155,7 +157,9 @@ CREATE TABLE IF NOT EXISTS $tableTracks (
   $colTrackYear INTEGER,
   $colTrackGenre TEXT,
   $colIsFavorite INTEGER NOT NULL DEFAULT 0,
+  $colFavoritedAt INTEGER,
   $colPlayCount INTEGER NOT NULL DEFAULT 0,
+  $colLastPlayedAt INTEGER,
   $colBitrate INTEGER,
   $colSampleRate INTEGER,
   $colBitDepth INTEGER,
@@ -334,6 +338,16 @@ CREATE TABLE IF NOT EXISTS $tableScanDirectories (
       }
       if (!existingCols.contains(colCodec)) {
         db.execute('ALTER TABLE $tableTracks ADD COLUMN $colCodec TEXT;');
+      }
+    }
+    if (oldVersion < 3) {
+      final rows = db.select('PRAGMA table_info($tableTracks);');
+      final existingCols = rows.map((r) => r['name'] as String).toSet();
+      if (!existingCols.contains(colFavoritedAt)) {
+        db.execute('ALTER TABLE $tableTracks ADD COLUMN $colFavoritedAt INTEGER;');
+      }
+      if (!existingCols.contains(colLastPlayedAt)) {
+        db.execute('ALTER TABLE $tableTracks ADD COLUMN $colLastPlayedAt INTEGER;');
       }
     }
   }

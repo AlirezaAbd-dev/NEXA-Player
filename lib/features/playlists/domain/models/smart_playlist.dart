@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 enum SmartPlaylistType {
   recentlyAdded('Recently Added', 'Latest 30 tracks added to your library', Icons.schedule_rounded),
   favorites('My Favorites', 'All favorited tracks across your library', Icons.favorite_rounded),
-  mostPlayed('Most Played', 'Your most frequently listened tracks', Icons.local_fire_department_rounded);
+  mostPlayed('Most Played', 'Your most frequently listened tracks', Icons.local_fire_department_rounded),
+  recentlyPlayed('Recently Played', 'Tracks you listened to recently', Icons.history_rounded);
 
   const SmartPlaylistType(this.title, this.description, this.icon);
 

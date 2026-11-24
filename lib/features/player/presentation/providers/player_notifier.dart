@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/storage_keys.dart';
 import '../../../../core/services/audio/audio_telemetry_service.dart';
+import '../../../../core/services/library/library_sync_bus.dart';
 import '../../../../shared/models/track.dart';
 import '../../../../shared/services/storage/storage_service.dart';
 import '../../../library/domain/repositories/tracks_repository.dart';
@@ -23,6 +24,7 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
     IQueueListNavigator? listNavigator,
     IStorageService? storageService,
     IAudioTelemetryService? telemetryService,
+    LibrarySyncBus? syncBus,
   })  : _engine = engine,
         _queue = queue,
         _sleepTimer = sleepTimer,
@@ -30,6 +32,7 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
         _listNavigator = listNavigator,
         _storageService = storageService,
         _telemetryService = telemetryService,
+        _syncBus = syncBus,
         super(_buildInitialState(queue, storageService)) {
     _syncInitialQueueModes();
     _bindStreams();
@@ -63,8 +66,10 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
   final IQueueListNavigator? _listNavigator;
   final IStorageService? _storageService;
   final IAudioTelemetryService? _telemetryService;
+  final LibrarySyncBus? _syncBus;
   final List<StreamSubscription> _subscriptions = [];
   int _loadEpoch = 0;
+  int _recordedPlayEpoch = -1;
 
   void _syncInitialQueueModes() {
     if (_queue.state.repeatMode != state.repeatMode) {
@@ -80,6 +85,7 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
       _engine.statusStream.listen((status) {
         state = state.copyWith(status: status);
         if (status == PlaybackStatus.completed) {
+          _maybeRecordPlayCount(forceOnCompletion: true);
           skipNext();
         }
       }),
@@ -88,6 +94,7 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
     _subscriptions.add(
       _engine.positionStream.listen((pos) {
         state = state.copyWith(position: pos);
+        _maybeRecordPlayCount();
       }),
     );
 
@@ -409,37 +416,35 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
     await _engine.setSpeed(speed);
   }
 
-  /// Toggles favorite status on [track], persisting to repository.
+  void _maybeRecordPlayCount({bool forceOnCompletion = false}) {
+    if (_recordedPlayEpoch == _loadEpoch) return;
+    final track = state.currentTrack;
+    if (track == null || _tracksRepository == null) return;
+
+    final durationMs = state.duration.inMilliseconds > 0
+        ? state.duration.inMilliseconds
+        : track.duration.inMilliseconds;
+    final posMs = state.position.inMilliseconds;
+
+    final reached30Sec = posMs >= 30000;
+    final reached30Pct = durationMs > 0 && posMs >= (durationMs * 0.30).round();
+    if (forceOnCompletion || reached30Sec || reached30Pct) {
+      _recordedPlayEpoch = _loadEpoch;
+      unawaited(_tracksRepository.incrementPlayCount(track.id));
+    }
+  }
+
+  /// Toggles favorite status on [track], persisting to repository and syncing UI.
   Future<void> toggleFavorite([Track? targetTrack]) async {
     final track = targetTrack ?? state.currentTrack;
     if (track == null) return;
 
-    final updatedTrack = Track(
-      id: track.id,
-      title: track.title,
-      artist: track.artist,
-      album: track.album,
-      duration: track.duration,
-      artworkUri: track.artworkUri,
-      filePath: track.filePath,
-      trackNumber: track.trackNumber,
-      discNumber: track.discNumber,
-      year: track.year,
-      genre: track.genre,
-      isFavorite: !track.isFavorite,
-      playCount: track.playCount,
-      bitrate: track.bitrate,
-      fileSize: track.fileSize,
-      dateAdded: track.dateAdded,
-      dateModified: track.dateModified,
-      albumId: track.albumId,
-      artistId: track.artistId,
-      genreId: track.genreId,
-    );
+    final updatedTrack = track.copyWith(isFavorite: !track.isFavorite);
 
     if (_tracksRepository != null) {
       await _tracksRepository.toggleFavorite(track.id);
     }
+    _syncBus?.notifyChanged();
 
     if (state.currentTrack?.id == track.id) {
       state = state.copyWith(currentTrack: updatedTrack);

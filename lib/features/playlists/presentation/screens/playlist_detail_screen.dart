@@ -205,23 +205,56 @@ class PlaylistDetailScreen extends ConsumerWidget {
                           ),
                           if (playlist.isSmart) ...[
                             const SizedBox(height: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: surfaceTokens.level2,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.auto_awesome_rounded, size: 14, color: accent),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Smart Playlist',
-                                    style: AppTypography.labelSmall.copyWith(color: accent),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: surfaceTokens.level2,
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
-                                ],
-                              ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.auto_awesome_rounded, size: 14, color: accent),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Smart Playlist',
+                                        style: AppTypography.labelSmall.copyWith(color: accent),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (playlist.id == 'smart_recentlyAdded')
+                                  for (final opt in const [20, 30, 50])
+                                    InkWell(
+                                      borderRadius: BorderRadius.circular(8),
+                                      onTap: () {
+                                        ref.read(recentlyAddedLimitProvider.notifier).state = opt;
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: ref.watch(recentlyAddedLimitProvider) == opt
+                                              ? accent.withOpacity(0.22)
+                                              : surfaceTokens.level2,
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          'Latest $opt',
+                                          style: AppTypography.labelSmall.copyWith(
+                                            color: ref.watch(recentlyAddedLimitProvider) == opt
+                                                ? accent
+                                                : Colors.white70,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                              ],
                             ),
                           ],
                         ],
@@ -354,7 +387,30 @@ class PlaylistDetailScreen extends ConsumerWidget {
                                             ),
                                           );
                                     },
-                                    trailing: PopupMenuButton<String>(
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          key: Phase2Keys.trackFavoriteToggle(track.id),
+                                          icon: Icon(
+                                            track.isFavorite
+                                                ? Icons.favorite_rounded
+                                                : Icons.favorite_border_rounded,
+                                            color: track.isFavorite
+                                                ? Colors.redAccent.shade200
+                                                : Colors.white54,
+                                            size: 20,
+                                          ),
+                                          onPressed: () {
+                                            ref
+                                                .read(playerNotifierProvider.notifier)
+                                                .toggleFavorite(track);
+                                            ref.invalidate(
+                                              playlistTracksProvider(playlist.id),
+                                            );
+                                          },
+                                        ),
+                                        PopupMenuButton<String>(
                                       icon: const Icon(
                                         Icons.more_vert_rounded,
                                         color: Colors.white54,
@@ -462,6 +518,8 @@ class PlaylistDetailScreen extends ConsumerWidget {
                                             ],
                                           ),
                                         ),
+                                      ],
+                                    ),
                                       ],
                                     ),
                                   ),

@@ -198,7 +198,7 @@ class PlaylistsTabScreen extends ConsumerWidget {
                         },
                         borderRadius: BorderRadius.circular(14),
                         child: Container(
-                          width: 140,
+                          width: 158,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
                             vertical: 10,
@@ -215,15 +215,41 @@ class PlaylistsTabScreen extends ConsumerWidget {
                               ),
                               const SizedBox(width: 10),
                               Expanded(
-                                child: Text(
-                                  sp.title,
-                                  style: TextStyle(
-                                    color: onSurface,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
+                                child: Builder(
+                                  builder: (context) {
+                                    final count = ref
+                                        .watch(smartPlaylistTracksProvider(sp.type))
+                                        .valueOrNull
+                                        ?.length;
+                                    return Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          sp.title,
+                                          style: TextStyle(
+                                            color: onSurface,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        if (count != null) ...[
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            '$count tracks',
+                                            style: TextStyle(
+                                              color: onSurfaceVariant,
+                                              fontSize: 10.5,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ],
+                                    );
+                                  },
                                 ),
                               ),
                             ],

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:get_it/get_it.dart';
 import 'package:nexa_player/core/services/artwork/artwork_resolution_service.dart';
 import 'package:nexa_player/core/services/audio/audio_telemetry_service.dart';
+import 'package:nexa_player/core/services/library/library_sync_bus.dart';
 import 'package:nexa_player/features/equalizer/data/services/pure_dart_equalizer_service.dart';
 import 'package:nexa_player/features/equalizer/domain/services/equalizer_service.dart';
 import 'package:nexa_player/features/lyrics/data/services/lrclib_api_client.dart';
@@ -27,6 +28,7 @@ import 'package:nexa_player/features/player/domain/services/playback_queue.dart'
 import 'package:nexa_player/features/player/domain/services/queue_list_navigator.dart';
 import 'package:nexa_player/features/player/domain/services/sleep_timer_service.dart';
 import 'package:nexa_player/features/playlists/data/repositories/sqlite_playlists_repository.dart';
+import 'package:nexa_player/features/playlists/data/repositories/sqlite_smart_playlists_repository.dart';
 import 'package:nexa_player/features/playlists/data/services/m3u_service_impl.dart';
 import 'package:nexa_player/features/playlists/data/services/ringtone_service_impl.dart';
 import 'package:nexa_player/features/playlists/data/services/share_service_impl.dart';
@@ -194,6 +196,11 @@ Future<void> configureDependencies({
     unawaited(telemetry.backfillMissingTelemetry(batchLimit: 60));
   }
 
+  if (!getIt.isRegistered<LibrarySyncBus>()) {
+    getIt.registerSingleton<LibrarySyncBus>(LibrarySyncBus());
+  }
+  final syncBus = getIt<LibrarySyncBus>();
+
   // 7. IMediaScannerService
   if (!getIt.isRegistered<IMediaScannerService>()) {
     getIt.registerSingleton<IMediaScannerService>(
@@ -202,6 +209,7 @@ Future<void> configureDependencies({
             database: db,
             metadataReader: getIt<IAudioMetadataReader>(),
             artworkService: getIt<IArtworkResolutionService>(),
+            syncBus: syncBus,
           ),
     );
   }
@@ -215,7 +223,7 @@ Future<void> configureDependencies({
 
   if (!getIt.isRegistered<ITracksRepository>()) {
     getIt.registerSingleton<ITracksRepository>(
-      tracksRepository ?? SqliteTracksRepository(db),
+      tracksRepository ?? SqliteTracksRepository(db, syncBus: syncBus),
     );
   }
 
@@ -246,6 +254,12 @@ Future<void> configureDependencies({
   if (!getIt.isRegistered<IPlaylistsRepository>()) {
     getIt.registerSingleton<IPlaylistsRepository>(
       playlistsRepository ?? SqlitePlaylistsRepository(db),
+    );
+  }
+
+  if (!getIt.isRegistered<ISmartPlaylistsRepository>()) {
+    getIt.registerSingleton<ISmartPlaylistsRepository>(
+      SqliteSmartPlaylistsRepository(db),
     );
   }
 

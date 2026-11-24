@@ -1,3 +1,4 @@
+import 'package:nexa_player/core/services/library/library_sync_bus.dart';
 import 'package:nexa_player/core/utils/result.dart';
 import 'package:nexa_player/features/library/domain/repositories/tracks_repository.dart';
 import 'package:nexa_player/shared/models/track.dart';
@@ -6,9 +7,11 @@ import 'package:nexa_player/shared/services/database/database_schema.dart';
 
 /// SQLite implementation of [ITracksRepository].
 class SqliteTracksRepository implements ITracksRepository {
-  SqliteTracksRepository(this.database);
+  SqliteTracksRepository(this.database, {LibrarySyncBus? syncBus})
+      : _syncBus = syncBus;
 
   final IAppDatabase database;
+  final LibrarySyncBus? _syncBus;
 
   @override
   Future<Result<List<Track>, DatabaseFailure>> getAllTracks({
@@ -71,11 +74,14 @@ class SqliteTracksRepository implements ITracksRepository {
   @override
   Future<Result<void, DatabaseFailure>> toggleFavorite(String trackId) async {
     try {
+      final nowMs = DateTime.now().millisecondsSinceEpoch;
       database.execute('''
         UPDATE ${DatabaseSchema.tableTracks}
-        SET ${DatabaseSchema.colIsFavorite} = CASE WHEN ${DatabaseSchema.colIsFavorite} = 1 THEN 0 ELSE 1 END
+        SET ${DatabaseSchema.colIsFavorite} = CASE WHEN ${DatabaseSchema.colIsFavorite} = 1 THEN 0 ELSE 1 END,
+            ${DatabaseSchema.colFavoritedAt} = CASE WHEN ${DatabaseSchema.colIsFavorite} = 1 THEN NULL ELSE ? END
         WHERE ${DatabaseSchema.colId} = ?;
-      ''', [trackId]);
+      ''', [nowMs, trackId]);
+      _syncBus?.notifyChanged();
       return const Result.success(null);
     } catch (e, st) {
       return Result.failure(DatabaseFailure(
@@ -89,11 +95,14 @@ class SqliteTracksRepository implements ITracksRepository {
   @override
   Future<Result<void, DatabaseFailure>> incrementPlayCount(String trackId) async {
     try {
+      final nowMs = DateTime.now().millisecondsSinceEpoch;
       database.execute('''
         UPDATE ${DatabaseSchema.tableTracks}
-        SET ${DatabaseSchema.colPlayCount} = ${DatabaseSchema.colPlayCount} + 1
+        SET ${DatabaseSchema.colPlayCount} = ${DatabaseSchema.colPlayCount} + 1,
+            ${DatabaseSchema.colLastPlayedAt} = ?
         WHERE ${DatabaseSchema.colId} = ?;
-      ''', [trackId]);
+      ''', [nowMs, trackId]);
+      _syncBus?.notifyChanged();
       return const Result.success(null);
     } catch (e, st) {
       return Result.failure(DatabaseFailure(

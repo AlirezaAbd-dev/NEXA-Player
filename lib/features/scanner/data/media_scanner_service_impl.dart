@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'package:nexa_player/core/services/artwork/artwork_resolution_service.dart';
+import 'package:nexa_player/core/services/library/library_sync_bus.dart';
 import 'package:nexa_player/core/utils/audio_quality_formatter.dart';
 import 'package:nexa_player/core/utils/result.dart';
 import 'package:nexa_player/core/utils/tag_encoding_decoder.dart';
@@ -37,12 +38,14 @@ class MediaScannerServiceImpl implements IMediaScannerService {
     required this.database,
     required this.metadataReader,
     this.artworkService,
+    this.syncBus,
   })  : _stateController = StreamController<ScannerState>.broadcast(),
         _state = const ScannerState();
 
   final IAppDatabase database;
   final IAudioMetadataReader metadataReader;
   final IArtworkResolutionService? artworkService;
+  final LibrarySyncBus? syncBus;
   final StreamController<ScannerState> _stateController;
   ScannerState _state;
   bool _stopped = false;
@@ -130,7 +133,8 @@ class MediaScannerServiceImpl implements IMediaScannerService {
                   final artistId = 'art_${artist.hashCode.abs()}';
                   final albumKey = '${album}__$artist';
                   final albumId = 'alb_${albumKey.hashCode.abs()}';
-                  final nowMs = DateTime.now().millisecondsSinceEpoch;
+                  final dateAddedMs = (item['date_added_ms'] as num?)?.toInt() ??
+                      DateTime.now().millisecondsSinceEpoch;
 
                   database.execute('''
                     INSERT INTO ${DatabaseSchema.tableArtists} (
@@ -163,7 +167,7 @@ class MediaScannerServiceImpl implements IMediaScannerService {
                       ${DatabaseSchema.colBitrate} = COALESCE(excluded.${DatabaseSchema.colBitrate}, ${DatabaseSchema.colBitrate}),
                       ${DatabaseSchema.colCodec} = COALESCE(excluded.${DatabaseSchema.colCodec}, ${DatabaseSchema.colCodec});
                   ''', [
-                    trackId, title, artist, album, durationMs, filePath, trackNumber, year, effectiveBitrate, codec, fileSize, nowMs
+                    trackId, title, artist, album, durationMs, filePath, trackNumber, year, effectiveBitrate, codec, fileSize, dateAddedMs
                   ]);
                 }
               }
@@ -289,6 +293,13 @@ class MediaScannerServiceImpl implements IMediaScannerService {
                 ? 'gen_${meta.genre.hashCode.abs()}'
                 : null;
             final nowMs = DateTime.now().millisecondsSinceEpoch;
+            int fileDateAddedMs = nowMs;
+            try {
+              final modified = file.statSync().modified;
+              if (modified.millisecondsSinceEpoch > 0) {
+                fileDateAddedMs = modified.millisecondsSinceEpoch;
+              }
+            } catch (_) {}
 
             // 2c. Upsert Artist
             database.execute('''
@@ -420,7 +431,7 @@ class MediaScannerServiceImpl implements IMediaScannerService {
               meta.channels,
               effectiveCodec,
               fileSize,
-              nowMs,
+              fileDateAddedMs,
               artistId,
               albumId,
               genreId,
@@ -448,6 +459,7 @@ class MediaScannerServiceImpl implements IMediaScannerService {
         progress: 1.0,
         filesScanned: scannedCount,
       ));
+      syncBus?.notifyChanged();
 
       return Result.success(result);
     } catch (e, st) {

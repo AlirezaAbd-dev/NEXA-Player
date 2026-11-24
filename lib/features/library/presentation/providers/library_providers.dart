@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nexa_player/core/di/injection.dart';
+import 'package:nexa_player/core/services/library/library_sync_bus.dart';
 import 'package:nexa_player/features/library/domain/repositories/albums_repository.dart';
 import 'package:nexa_player/features/library/domain/repositories/artists_repository.dart';
 import 'package:nexa_player/features/library/domain/repositories/folders_repository.dart';
@@ -61,9 +62,18 @@ class TrackQueryParams {
       sortBy.hashCode ^ ascending.hashCode ^ (searchQuery?.hashCode ?? 0);
 }
 
+/// Reactive stream provider emitting whenever library track state (favorites, plays, scans, tags) mutates.
+final librarySyncRevisionProvider = StreamProvider<int>((ref) {
+  if (!getIt.isRegistered<LibrarySyncBus>()) {
+    return const Stream.empty();
+  }
+  return getIt<LibrarySyncBus>().stream;
+});
+
 /// Provider fetching tracks dynamically with query parameters.
 final tracksListProvider =
     FutureProvider.family<List<Track>, TrackQueryParams>((ref, params) async {
+  ref.watch(librarySyncRevisionProvider);
   final repo = ref.watch(tracksRepositoryProvider);
   final result = await repo.getAllTracks(
     sortBy: params.sortBy,

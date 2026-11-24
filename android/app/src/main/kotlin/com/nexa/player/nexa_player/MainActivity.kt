@@ -105,6 +105,7 @@ class MainActivity : AudioServiceActivity() {
             MediaStore.Audio.Media.TRACK,
             MediaStore.Audio.Media.YEAR,
             MediaStore.Audio.Media.SIZE,
+            MediaStore.Audio.Media.DATE_ADDED,
             MediaStore.Audio.Media.MIME_TYPE
         )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -130,6 +131,7 @@ class MainActivity : AudioServiceActivity() {
             val trackCol = it.getColumnIndex(MediaStore.Audio.Media.TRACK)
             val yearCol = it.getColumnIndex(MediaStore.Audio.Media.YEAR)
             val sizeCol = it.getColumnIndex(MediaStore.Audio.Media.SIZE)
+            val dateAddedCol = it.getColumnIndex(MediaStore.Audio.Media.DATE_ADDED)
             val mimeCol = it.getColumnIndex(MediaStore.Audio.Media.MIME_TYPE)
             val bitrateCol = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 it.getColumnIndex(MediaStore.Audio.Media.BITRATE)
@@ -152,6 +154,8 @@ class MainActivity : AudioServiceActivity() {
                 val trackNumber = if (trackCol >= 0) it.getInt(trackCol) else 0
                 val year = if (yearCol >= 0) it.getInt(yearCol) else 0
                 val size = if (sizeCol >= 0) it.getLong(sizeCol) else 0L
+                val dateAddedSec = if (dateAddedCol >= 0) it.getLong(dateAddedCol) else 0L
+                val dateAddedMs = if (dateAddedSec > 0L) dateAddedSec * 1000L else System.currentTimeMillis()
                 val mime = if (mimeCol >= 0) it.getString(mimeCol) else null
                 val rawBitrate = if (bitrateCol >= 0) it.getInt(bitrateCol) else 0
 
@@ -185,6 +189,7 @@ class MainActivity : AudioServiceActivity() {
                     "track_number" to trackNumber,
                     "year" to year,
                     "file_size" to size,
+                    "date_added_ms" to dateAddedMs,
                     "bitrate" to kbps,
                     "codec" to codec
                 )
