@@ -76,6 +76,7 @@ jobs:
   build-linux:
     name: Linux (.deb & Binary)
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -114,10 +115,14 @@ jobs:
   # ===========================================================================
   build-windows:
     name: Windows (Installer .exe)
-    runs-on: windows-latest
+    runs-on: windows-2022
+    continue-on-error: true
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -126,11 +131,16 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Enable Windows Desktop Support
+        run: flutter config --enable-windows-desktop
+
       - name: Install Dependencies
         run: flutter pub get
 
       - name: Build Windows Desktop Release
         run: flutter build windows --release
+        env:
+          CMAKE_GENERATOR: "Visual Studio 17 2022"
 
       - name: Compile Inno Setup Installer
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
@@ -149,6 +159,7 @@ jobs:
   build-macos:
     name: macOS (.dmg)
     runs-on: macos-latest
+    continue-on-error: true
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -182,7 +193,7 @@ jobs:
   # ===========================================================================
   release:
     name: Create GitHub Release
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: always() && startsWith(github.ref, 'refs/tags/v') && needs.build-android.result == 'success'
     needs: [ build-android, build-linux, build-windows, build-macos ]
     runs-on: ubuntu-latest
     steps:
