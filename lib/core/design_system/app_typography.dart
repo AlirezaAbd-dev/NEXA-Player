@@ -2,12 +2,24 @@ import 'package:flutter/material.dart';
 
 /// Centralized Material 3 Typography tokens for NEXA Player.
 abstract final class AppTypography {
+  /// System + bundled fallback font stack ensuring crisp Persian (Farsi), Arabic,
+  /// and extended Unicode glyphs on Android 10 (EMUI) and Desktop with zero tofu boxes.
+  static const List<String> persianFontFallback = [
+    'Vazirmatn',
+    'Noto Sans Arabic',
+    'Noto Naskh Arabic',
+    'Noto Kufi Arabic',
+    'Tahoma',
+    'sans-serif',
+  ];
+
   // Display styles (Now Playing track title, large banners)
   static const TextStyle displayLarge = TextStyle(
     fontSize: 32.0,
     fontWeight: FontWeight.w800,
     letterSpacing: -0.5,
     height: 1.2,
+    fontFamilyFallback: persianFontFallback,
   );
 
   static const TextStyle displayMedium = TextStyle(
@@ -15,6 +27,7 @@ abstract final class AppTypography {
     fontWeight: FontWeight.w700,
     letterSpacing: -0.3,
     height: 1.25,
+    fontFamilyFallback: persianFontFallback,
   );
 
   static const TextStyle displaySmall = TextStyle(
@@ -22,6 +35,7 @@ abstract final class AppTypography {
     fontWeight: FontWeight.w700,
     letterSpacing: -0.2,
     height: 1.3,
+    fontFamilyFallback: persianFontFallback,
   );
 
   // Headline styles (Section headers, screen headers)
@@ -30,6 +44,7 @@ abstract final class AppTypography {
     fontWeight: FontWeight.w700,
     letterSpacing: -0.2,
     height: 1.3,
+    fontFamilyFallback: persianFontFallback,
   );
 
   static const TextStyle headlineMedium = TextStyle(
@@ -37,6 +52,7 @@ abstract final class AppTypography {
     fontWeight: FontWeight.w700,
     letterSpacing: -0.2,
     height: 1.3,
+    fontFamilyFallback: persianFontFallback,
   );
 
   static const TextStyle headlineSmall = TextStyle(
@@ -44,6 +60,7 @@ abstract final class AppTypography {
     fontWeight: FontWeight.w600,
     letterSpacing: -0.1,
     height: 1.3,
+    fontFamilyFallback: persianFontFallback,
   );
 
   // Title styles (List item primary text, card titles, app bar titles)
@@ -52,6 +69,7 @@ abstract final class AppTypography {
     fontWeight: FontWeight.w600,
     letterSpacing: 0.0,
     height: 1.35,
+    fontFamilyFallback: persianFontFallback,
   );
 
   static const TextStyle titleMedium = TextStyle(
@@ -59,6 +77,7 @@ abstract final class AppTypography {
     fontWeight: FontWeight.w600,
     letterSpacing: 0.1,
     height: 1.4,
+    fontFamilyFallback: persianFontFallback,
   );
 
   static const TextStyle titleSmall = TextStyle(
@@ -66,6 +85,7 @@ abstract final class AppTypography {
     fontWeight: FontWeight.w600,
     letterSpacing: 0.1,
     height: 1.4,
+    fontFamilyFallback: persianFontFallback,
   );
 
   // Body styles (Metadata, timestamps, lyrics, descriptions)
@@ -74,6 +94,7 @@ abstract final class AppTypography {
     fontWeight: FontWeight.w400,
     letterSpacing: 0.15,
     height: 1.5,
+    fontFamilyFallback: persianFontFallback,
   );
 
   static const TextStyle bodyMedium = TextStyle(
@@ -81,6 +102,7 @@ abstract final class AppTypography {
     fontWeight: FontWeight.w400,
     letterSpacing: 0.15,
     height: 1.45,
+    fontFamilyFallback: persianFontFallback,
   );
 
   static const TextStyle bodySmall = TextStyle(
@@ -88,6 +110,7 @@ abstract final class AppTypography {
     fontWeight: FontWeight.w400,
     letterSpacing: 0.2,
     height: 1.4,
+    fontFamilyFallback: persianFontFallback,
   );
 
   // Label styles (Buttons, chips, tags, navigation items)
@@ -96,6 +119,7 @@ abstract final class AppTypography {
     fontWeight: FontWeight.w600,
     letterSpacing: 0.4,
     height: 1.3,
+    fontFamilyFallback: persianFontFallback,
   );
 
   static const TextStyle labelMedium = TextStyle(
@@ -103,6 +127,7 @@ abstract final class AppTypography {
     fontWeight: FontWeight.w600,
     letterSpacing: 0.5,
     height: 1.3,
+    fontFamilyFallback: persianFontFallback,
   );
 
   static const TextStyle labelSmall = TextStyle(
@@ -110,6 +135,7 @@ abstract final class AppTypography {
     fontWeight: FontWeight.w600,
     letterSpacing: 0.6,
     height: 1.2,
+    fontFamilyFallback: persianFontFallback,
   );
 
   /// Tabular numeric style for telemetry data: timestamps, dB readouts,
@@ -119,6 +145,7 @@ abstract final class AppTypography {
     fontWeight: FontWeight.w600,
     letterSpacing: -0.2,
     fontFeatures: [FontFeature.tabularFigures()],
+    fontFamilyFallback: persianFontFallback,
   );
 
   /// Generates a comprehensive Material 3 [TextTheme] based on these tokens.

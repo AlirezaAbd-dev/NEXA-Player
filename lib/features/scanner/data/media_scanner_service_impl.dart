@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:nexa_player/core/services/artwork/artwork_resolution_service.dart';
 import 'package:nexa_player/core/utils/audio_quality_formatter.dart';
 import 'package:nexa_player/core/utils/result.dart';
+import 'package:nexa_player/core/utils/tag_encoding_decoder.dart';
 import 'package:nexa_player/features/scanner/domain/audio_metadata_reader.dart';
 import 'package:nexa_player/features/scanner/domain/media_scanner_service.dart';
 import 'package:nexa_player/shared/models/track.dart';
@@ -96,9 +97,15 @@ class MediaScannerServiceImpl implements IMediaScannerService {
                 if (item is Map) {
                   final filePath = item['file_path'] as String? ?? '';
                   if (filePath.isEmpty) continue;
-                  final title = item['title'] as String? ?? 'Unknown Title';
-                  final artist = item['artist'] as String? ?? 'Unknown Artist';
-                  final album = item['album'] as String? ?? 'Unknown Album';
+                  final title = TagEncodingDecoder.repairMojibake(
+                    item['title'] as String? ?? 'Unknown Title',
+                  );
+                  final artist = TagEncodingDecoder.repairMojibake(
+                    item['artist'] as String? ?? 'Unknown Artist',
+                  );
+                  final album = TagEncodingDecoder.repairMojibake(
+                    item['album'] as String? ?? 'Unknown Album',
+                  );
                   final durationMs = (item['duration_ms'] as num?)?.toInt() ?? 0;
                   final trackNumber = (item['track_number'] as num?)?.toInt() ?? 0;
                   final year = (item['year'] as num?)?.toInt() ?? 0;

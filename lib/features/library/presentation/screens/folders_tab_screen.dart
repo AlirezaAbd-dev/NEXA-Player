@@ -16,6 +16,7 @@ import '../../../../shared/widgets/glass/app_ambient_background.dart';
 import '../../../../shared/widgets/glass/glass_app_bar.dart';
 import '../../../../shared/widgets/glass/glass_button.dart';
 import '../../../../shared/widgets/surfaces/nexa_surface.dart';
+import '../../../../shared/widgets/typography/bidi_text.dart';
 import '../../../player/domain/entities/playback_state.dart';
 import '../../../player/domain/entities/queue_context.dart';
 import '../../../player/presentation/providers/player_providers.dart';
@@ -321,7 +322,7 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    BidiText(
                       folder.name,
                       style: AppTypography.titleMedium.copyWith(
                         fontWeight: FontWeight.bold,
@@ -532,7 +533,7 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
                         ),
                       ),
                     ),
-                    title: Text(
+                    title: BidiText(
                       file.name,
                       style: AppTypography.bodyMedium.copyWith(
                         color: isActive ? primary : null,

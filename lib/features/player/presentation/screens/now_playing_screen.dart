@@ -14,6 +14,7 @@ import '../../../../core/theme/dynamic_palette_service.dart';
 import '../../../../shared/models/track.dart';
 import '../../../../shared/widgets/glass/app_ambient_background.dart';
 import '../../../../shared/widgets/surfaces/nexa_surface.dart';
+import '../../../../shared/widgets/typography/bidi_text.dart';
 import '../../../cloud/cloud.dart';
 import '../../../visualizer/visualizer.dart';
 import '../../domain/services/playback_queue.dart';
@@ -525,7 +526,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                BidiText(
                                   title,
                                   style: AppTypography.headlineMedium.copyWith(
                                     color: colorScheme.onSurface,
@@ -535,7 +536,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 2),
-                                Text(
+                                BidiText(
                                   artistAndAlbum,
                                   style: AppTypography.titleMedium.copyWith(
                                     color: colorScheme.onSurface.withOpacity(0.70),

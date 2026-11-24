@@ -8,6 +8,7 @@ import '../../../core/design_system/glass_tokens.dart';
 import '../../../core/design_system/nexa_surface_tokens.dart';
 import '../../../core/extensions/duration_x.dart';
 import '../../models/track.dart';
+import '../typography/bidi_text.dart';
 import 'nexa_artwork_image.dart';
 
 /// Context menu actions available on [TrackTile].
@@ -387,7 +388,7 @@ class _TrackTileState extends State<TrackTile> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
+                BidiText(
                   widget.title,
                   style: AppTypography.titleMedium.copyWith(
                     color: widget.isPlaying ? primary : onSurface,
@@ -398,7 +399,7 @@ class _TrackTileState extends State<TrackTile> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 3.0),
-                Text(
+                BidiText(
                   _resolvedSubtitle,
                   style: AppTypography.bodySmall.copyWith(
                     color: onSurfaceVariant,

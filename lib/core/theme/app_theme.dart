@@ -1,5 +1,6 @@
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
+import '../design_system/app_typography.dart';
 import '../design_system/nexa_surface_tokens.dart';
 import 'color_palettes.dart';
 import 'theme_preset.dart';
@@ -75,6 +76,7 @@ abstract final class AppTheme {
       appBarElevation: 0.0,
       useMaterial3: true,
       fontFamily: fontFamily,
+      textTheme: AppTypography.createTextTheme(),
       subThemesData: _subThemesData(),
       visualDensity: VisualDensity.standard,
     ).copyWith(
@@ -132,6 +134,7 @@ abstract final class AppTheme {
       appBarElevation: 0.0,
       useMaterial3: true,
       fontFamily: fontFamily,
+      textTheme: AppTypography.createTextTheme(),
       subThemesData: _subThemesData(),
       visualDensity: VisualDensity.standard,
     ).copyWith(
@@ -214,6 +217,7 @@ abstract final class AppTheme {
             appBarElevation: 0.0,
             useMaterial3: true,
             fontFamily: fontFamily,
+            textTheme: AppTypography.createTextTheme(),
             subThemesData: _subThemesData(),
             visualDensity: VisualDensity.standard,
           ).copyWith(
@@ -229,6 +233,7 @@ abstract final class AppTheme {
             appBarElevation: 0.0,
             useMaterial3: true,
             fontFamily: fontFamily,
+            textTheme: AppTypography.createTextTheme(),
             subThemesData: _subThemesData(),
             visualDensity: VisualDensity.standard,
           ).copyWith(

@@ -23,7 +23,6 @@ class NexaPlayerApp extends ConsumerWidget {
       customPrimary: themeState.customTheme?.primaryColor,
       customSurface: themeState.customTheme?.surfaceColor,
       customBackground: themeState.customTheme?.scaffoldBackgroundColor,
-      fontFamily: 'Roboto',
     );
 
     return MaterialApp.router(

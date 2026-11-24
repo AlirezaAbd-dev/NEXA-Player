@@ -8,6 +8,7 @@ import '../../core/design_system/app_typography.dart';
 import '../../core/design_system/nexa_surface_tokens.dart';
 import '../../features/player/presentation/providers/player_providers.dart';
 import '../../shared/widgets/cards/nexa_artwork_image.dart';
+import '../../shared/widgets/typography/bidi_text.dart';
 import '../routes.dart';
 
 /// Semantic Keys matching ShellNavigationTest and Widget Tests.
@@ -342,7 +343,7 @@ class _MiniPlayerSlotState extends ConsumerState<MiniPlayerSlot>
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text(
+                                    BidiText(
                                       title,
                                       style: AppTypography.titleMedium.copyWith(
                                         color: tokens.onL3,
@@ -352,7 +353,7 @@ class _MiniPlayerSlotState extends ConsumerState<MiniPlayerSlot>
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     const SizedBox(height: 2.0),
-                                    Text(
+                                    BidiText(
                                       artist,
                                       style: AppTypography.bodySmall.copyWith(
                                         color: tokens.onL3.withOpacity(0.68),

@@ -6,6 +6,7 @@ import 'package:nexa_player/core/design_system/glass_tokens.dart';
 import 'package:nexa_player/shared/models/artist.dart';
 import 'package:nexa_player/shared/widgets/cards/nexa_artwork_image.dart';
 import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
+import 'package:nexa_player/shared/widgets/typography/bidi_text.dart';
 
 /// Layout orientation mode for [ArtistCard].
 enum ArtistCardMode {
@@ -193,7 +194,7 @@ class _ArtistCardState extends State<ArtistCard> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  BidiText(
                     widget.name,
                     style: AppTypography.titleMedium.copyWith(
                       fontWeight: FontWeight.bold,
@@ -233,7 +234,7 @@ class _ArtistCardState extends State<ArtistCard> {
             children: [
               avatar,
               const SizedBox(height: AppSpacing.sm),
-              Text(
+              BidiText(
                 widget.name,
                 style: AppTypography.titleMedium.copyWith(
                   fontWeight: FontWeight.bold,

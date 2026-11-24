@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
 import 'package:nexa_player/features/lyrics/domain/models/lyrics.dart';
+import 'package:nexa_player/shared/widgets/typography/bidi_text.dart';
 
 /// Interactive karaoke-style synchronized lyrics viewer.
 ///
@@ -144,7 +145,7 @@ class _SyncedLyricsViewState extends State<SyncedLyricsView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              BidiText(
                 line.text.isEmpty ? '♪' : line.text,
                 style: TextStyle(
                   color: textColor,
@@ -164,7 +165,7 @@ class _SyncedLyricsViewState extends State<SyncedLyricsView> {
               ),
               if (line.translation != null && line.translation!.isNotEmpty) ...[
                 const SizedBox(height: 4),
-                Text(
+                BidiText(
                   line.translation!,
                   style: TextStyle(
                     color: Colors.white.withOpacity(isActive ? 0.8 : 0.35),

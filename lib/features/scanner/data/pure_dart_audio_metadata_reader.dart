@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:nexa_player/core/utils/tag_encoding_decoder.dart';
 import 'package:nexa_player/features/scanner/domain/audio_metadata_reader.dart';
 
 /// Pure Dart audio metadata extractor capable of parsing ID3v2 (including
@@ -49,6 +50,12 @@ class PureDartAudioMetadataReader implements IAudioMetadataReader {
         bytes[6] == 0x79 &&
         bytes[7] == 0x70) {
       return _parseMp4(bytes, fallbackTitle);
+    }
+    if (bytes.length >= 128 &&
+        bytes[bytes.length - 128] == 0x54 &&
+        bytes[bytes.length - 127] == 0x41 &&
+        bytes[bytes.length - 126] == 0x47) {
+      return _parseId3v1(bytes, fallbackTitle);
     }
     return ExtractedMetadata(
       title: fallbackTitle,
@@ -160,20 +167,51 @@ class PureDartAudioMetadataReader implements IAudioMetadataReader {
             : null);
 
     return ExtractedMetadata(
-      title: title,
-      artist: artist,
-      album: album,
+      title: TagEncodingDecoder.repairMojibake(title),
+      artist: TagEncodingDecoder.repairMojibake(artist),
+      album: TagEncodingDecoder.repairMojibake(album),
       duration: duration,
       year: year,
       trackNumber: trackNumber,
       discNumber: discNumber,
-      genre: genre,
+      genre: genre != null ? TagEncodingDecoder.repairMojibake(genre) : null,
       bitrate: (computedKbps != null && computedKbps > 0) ? computedKbps : null,
       sampleRate: mp3AudioInfo.$2,
       bitDepth: 16,
       channels: mp3AudioInfo.$3,
       codec: 'MP3',
       artworkBytes: artwork,
+    );
+  }
+
+  /// Parses trailing 128-byte ID3v1 tag with automatic UTF-8 / Windows-1256 repair.
+  ExtractedMetadata _parseId3v1(Uint8List bytes, String fallbackTitle) {
+    final tagStart = bytes.length - 128;
+    final rawTitle = TagEncodingDecoder.decodeLegacyBytes(
+      bytes.sublist(tagStart + 3, tagStart + 33),
+    );
+    final rawArtist = TagEncodingDecoder.decodeLegacyBytes(
+      bytes.sublist(tagStart + 33, tagStart + 63),
+    );
+    final rawAlbum = TagEncodingDecoder.decodeLegacyBytes(
+      bytes.sublist(tagStart + 63, tagStart + 93),
+    );
+    final rawYear = TagEncodingDecoder.decodeLegacyBytes(
+      bytes.sublist(tagStart + 93, tagStart + 97),
+    );
+    final mp3AudioInfo = _probeMp3AudioFrame(bytes, 0);
+
+    return ExtractedMetadata(
+      title: rawTitle.isNotEmpty ? rawTitle : fallbackTitle,
+      artist: rawArtist.isNotEmpty ? rawArtist : 'Unknown Artist',
+      album: rawAlbum.isNotEmpty ? rawAlbum : 'Unknown Album',
+      duration: const Duration(seconds: 180),
+      year: int.tryParse(rawYear),
+      bitrate: mp3AudioInfo.$1,
+      sampleRate: mp3AudioInfo.$2,
+      bitDepth: 16,
+      channels: mp3AudioInfo.$3,
+      codec: 'MP3',
     );
   }
 
@@ -289,11 +327,7 @@ class PureDartAudioMetadataReader implements IAudioMetadataReader {
   }
 
   String _decodeId3Text(int encoding, Uint8List textData) {
-    if (textData.isEmpty) return '';
-    if (encoding == 0x03) {
-      return utf8.decode(textData, allowMalformed: true).replaceAll('\x00', '').trim();
-    }
-    return ascii.decode(textData, allowInvalid: true).replaceAll('\x00', '').trim();
+    return TagEncodingDecoder.decodeId3Text(encoding, textData);
   }
 
   ExtractedMetadata _parseWav(Uint8List bytes, String fallbackTitle) {

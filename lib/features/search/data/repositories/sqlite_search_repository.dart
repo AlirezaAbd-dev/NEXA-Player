@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:nexa_player/core/constants/storage_keys.dart';
 import 'package:nexa_player/core/utils/result.dart';
+import 'package:nexa_player/core/utils/tag_encoding_decoder.dart';
 import 'package:nexa_player/features/search/domain/models/search_result.dart';
 import 'package:nexa_player/features/search/domain/models/search_result_category.dart';
 import 'package:nexa_player/features/search/domain/repositories/search_repository.dart';
@@ -29,6 +30,11 @@ class SqliteSearchRepository implements ISearchRepository {
 
   static const int _maxRecentSearches = 15;
 
+  /// Builds a SQLite normalization expression unifying Arabic/Persian `ي`/`ی`, `ك`/`ک`,
+  /// `ى`/`ی`, `ة`/`ه`, and `آ/أ/إ -> ا` so queries find matching tracks across keyboards.
+  static String _sqlNorm(String col) =>
+      "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE($col, 'ي', 'ی'), 'ك', 'ک'), 'ى', 'ی'), 'ة', 'ه'), 'آ', 'ا'), 'أ', 'ا'), 'إ', 'ا')";
+
   @override
   Future<Result<SearchResult, DatabaseFailure>> search({
     required String query,
@@ -40,9 +46,12 @@ class SqliteSearchRepository implements ISearchRepository {
       return Result.success(SearchResult.empty(query));
     }
 
+    final normalizedQuery = QueryNormalizer.normalizeForSearch(trimmed);
+    final normForSql = normalizedQuery.isNotEmpty ? normalizedQuery : trimmed;
+
     try {
-      final likeTerm = '%$trimmed%';
-      final prefixTerm = '$trimmed%';
+      final likeTerm = '%$normForSql%';
+      final prefixTerm = '$normForSql%';
 
       var tracks = <Track>[];
       var albums = <Album>[];
@@ -55,15 +64,15 @@ class SqliteSearchRepository implements ISearchRepository {
         final rows = database.select(
           '''
           SELECT * FROM ${DatabaseSchema.tableTracks}
-          WHERE ${DatabaseSchema.colTitle} LIKE ?
-             OR ${DatabaseSchema.colTrackArtist} LIKE ?
-             OR ${DatabaseSchema.colTrackAlbum} LIKE ?
-             OR ${DatabaseSchema.colTrackGenre} LIKE ?
+          WHERE ${_sqlNorm(DatabaseSchema.colTitle)} LIKE ?
+             OR ${_sqlNorm(DatabaseSchema.colTrackArtist)} LIKE ?
+             OR ${_sqlNorm(DatabaseSchema.colTrackAlbum)} LIKE ?
+             OR ${_sqlNorm(DatabaseSchema.colTrackGenre)} LIKE ?
           ORDER BY
             CASE
-              WHEN lower(${DatabaseSchema.colTitle}) LIKE lower(?) THEN 0
-              WHEN lower(${DatabaseSchema.colTrackArtist}) LIKE lower(?) THEN 1
-              WHEN lower(${DatabaseSchema.colTrackAlbum}) LIKE lower(?) THEN 2
+              WHEN lower(${_sqlNorm(DatabaseSchema.colTitle)}) LIKE lower(?) THEN 0
+              WHEN lower(${_sqlNorm(DatabaseSchema.colTrackArtist)}) LIKE lower(?) THEN 1
+              WHEN lower(${_sqlNorm(DatabaseSchema.colTrackAlbum)}) LIKE lower(?) THEN 2
               ELSE 3
             END,
             ${DatabaseSchema.colTitle} COLLATE NOCASE ASC
@@ -72,6 +81,25 @@ class SqliteSearchRepository implements ISearchRepository {
           [likeTerm, likeTerm, likeTerm, likeTerm, prefixTerm, prefixTerm, prefixTerm, limitPerCategory],
         );
         tracks = rows.map((r) => Track.fromMap(r)).toList();
+
+        // Fallback ZWNJ/diacritic scan when normalized SQL didn't catch ZWNJ gaps (e.g. می خواهم vs می‌خواهم)
+        if (tracks.isEmpty && TagEncodingDecoder.containsRtlCharacters(trimmed)) {
+          final allRows = database.select(
+            'SELECT * FROM ${DatabaseSchema.tableTracks} ORDER BY ${DatabaseSchema.colTitle} COLLATE NOCASE ASC;',
+          );
+          tracks = allRows
+              .map((r) => Track.fromMap(r))
+              .where(
+                (t) =>
+                    QueryNormalizer.containsNormalized(t.title, trimmed) ||
+                    QueryNormalizer.containsNormalized(t.artist, trimmed) ||
+                    QueryNormalizer.containsNormalized(t.album, trimmed) ||
+                    (t.genre != null &&
+                        QueryNormalizer.containsNormalized(t.genre!, trimmed)),
+              )
+              .take(limitPerCategory)
+              .toList();
+        }
       }
 
       // 2. Search Albums
@@ -79,12 +107,12 @@ class SqliteSearchRepository implements ISearchRepository {
         final rows = database.select(
           '''
           SELECT * FROM ${DatabaseSchema.tableAlbums}
-          WHERE ${DatabaseSchema.colTitle} LIKE ?
-             OR ${DatabaseSchema.colAlbumArtist} LIKE ?
+          WHERE ${_sqlNorm(DatabaseSchema.colTitle)} LIKE ?
+             OR ${_sqlNorm(DatabaseSchema.colAlbumArtist)} LIKE ?
           ORDER BY
             CASE
-              WHEN lower(${DatabaseSchema.colTitle}) LIKE lower(?) THEN 0
-              WHEN lower(${DatabaseSchema.colAlbumArtist}) LIKE lower(?) THEN 1
+              WHEN lower(${_sqlNorm(DatabaseSchema.colTitle)}) LIKE lower(?) THEN 0
+              WHEN lower(${_sqlNorm(DatabaseSchema.colAlbumArtist)}) LIKE lower(?) THEN 1
               ELSE 2
             END,
             ${DatabaseSchema.colTitle} COLLATE NOCASE ASC
@@ -100,10 +128,10 @@ class SqliteSearchRepository implements ISearchRepository {
         final rows = database.select(
           '''
           SELECT * FROM ${DatabaseSchema.tableArtists}
-          WHERE ${DatabaseSchema.colName} LIKE ?
+          WHERE ${_sqlNorm(DatabaseSchema.colName)} LIKE ?
           ORDER BY
             CASE
-              WHEN lower(${DatabaseSchema.colName}) LIKE lower(?) THEN 0
+              WHEN lower(${_sqlNorm(DatabaseSchema.colName)}) LIKE lower(?) THEN 0
               ELSE 1
             END,
             ${DatabaseSchema.colName} COLLATE NOCASE ASC
@@ -119,11 +147,11 @@ class SqliteSearchRepository implements ISearchRepository {
         final rows = database.select(
           '''
           SELECT * FROM ${DatabaseSchema.tablePlaylists}
-          WHERE ${DatabaseSchema.colName} LIKE ?
-             OR (${DatabaseSchema.colDescription} IS NOT NULL AND ${DatabaseSchema.colDescription} LIKE ?)
+          WHERE ${_sqlNorm(DatabaseSchema.colName)} LIKE ?
+             OR (${DatabaseSchema.colDescription} IS NOT NULL AND ${_sqlNorm(DatabaseSchema.colDescription)} LIKE ?)
           ORDER BY
             CASE
-              WHEN lower(${DatabaseSchema.colName}) LIKE lower(?) THEN 0
+              WHEN lower(${_sqlNorm(DatabaseSchema.colName)}) LIKE lower(?) THEN 0
               ELSE 1
             END,
             ${DatabaseSchema.colName} COLLATE NOCASE ASC
@@ -139,10 +167,10 @@ class SqliteSearchRepository implements ISearchRepository {
         final rows = database.select(
           '''
           SELECT * FROM ${DatabaseSchema.tableGenres}
-          WHERE ${DatabaseSchema.colName} LIKE ?
+          WHERE ${_sqlNorm(DatabaseSchema.colName)} LIKE ?
           ORDER BY
             CASE
-              WHEN lower(${DatabaseSchema.colName}) LIKE lower(?) THEN 0
+              WHEN lower(${_sqlNorm(DatabaseSchema.colName)}) LIKE lower(?) THEN 0
               ELSE 1
             END,
             ${DatabaseSchema.colName} COLLATE NOCASE ASC

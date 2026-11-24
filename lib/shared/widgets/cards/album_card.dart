@@ -6,6 +6,7 @@ import 'package:nexa_player/core/design_system/glass_tokens.dart';
 import 'package:nexa_player/shared/models/album.dart';
 import 'package:nexa_player/shared/widgets/cards/nexa_artwork_image.dart';
 import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
+import 'package:nexa_player/shared/widgets/typography/bidi_text.dart';
 
 /// Layout orientation mode for [AlbumCard].
 enum AlbumCardMode {
@@ -217,7 +218,7 @@ class _AlbumCardState extends State<AlbumCard> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          BidiText(
             widget.title,
             style: AppTypography.titleSmall.copyWith(
               fontWeight: FontWeight.w700,
@@ -228,7 +229,7 @@ class _AlbumCardState extends State<AlbumCard> {
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 3.0),
-          Text(
+          BidiText(
             widget.artist,
             style: AppTypography.bodySmall.copyWith(
               color: onSurfaceVariant,
@@ -300,7 +301,7 @@ class _AlbumCardState extends State<AlbumCard> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      BidiText(
                         widget.title,
                         style: AppTypography.titleMedium.copyWith(
                           fontWeight: FontWeight.bold,
@@ -310,7 +311,7 @@ class _AlbumCardState extends State<AlbumCard> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2.0),
-                      Text(
+                      BidiText(
                         _resolvedSubtitle,
                         style: AppTypography.bodySmall.copyWith(
                           color: onSurfaceVariant,
