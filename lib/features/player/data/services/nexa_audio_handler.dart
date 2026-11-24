@@ -123,7 +123,6 @@ class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
           MediaAction.setRepeatMode,
           MediaAction.playFromMediaId,
           MediaAction.playFromSearch,
-          MediaAction.setRating,
         },
         androidCompactActionIndices: const [0, 1, 2],
         processingState: isBuffering

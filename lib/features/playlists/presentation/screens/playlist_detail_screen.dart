@@ -205,40 +205,23 @@ class PlaylistDetailScreen extends ConsumerWidget {
                           ),
                           if (playlist.isSmart) ...[
                             const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: surfaceTokens.level2,
-                                    borderRadius: BorderRadius.circular(8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: surfaceTokens.level2,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.auto_awesome_rounded, size: 14, color: accent),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Smart Playlist',
+                                    style: AppTypography.labelSmall.copyWith(color: accent),
                                   ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(Icons.star_rounded, size: 14, color: Colors.amber),
-                                      const SizedBox(width: 4),
-                                      Text('≥ 4.5', style: AppTypography.labelSmall.copyWith(color: Colors.amber)),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: surfaceTokens.level2,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.play_arrow_rounded, size: 14, color: accent),
-                                      const SizedBox(width: 4),
-                                      Text('> 10 plays', style: AppTypography.labelSmall.copyWith(color: accent)),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ],
                         ],

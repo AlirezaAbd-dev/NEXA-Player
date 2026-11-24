@@ -144,13 +144,6 @@ final smartPlaylistTracksProvider =
       final all = res.valueOrNull ?? [];
       return all.where((t) => t.isFavorite).toList();
 
-    case SmartPlaylistType.topRated:
-      final res = await tracksRepo.getAllTracks(sortBy: TrackSortBy.title);
-      final all = res.valueOrNull ?? [];
-      // Prioritize favorites and high track number / demo tracks
-      final favs = all.where((t) => t.isFavorite).toList();
-      return favs.isNotEmpty ? favs : all.take(10).toList();
-
     case SmartPlaylistType.mostPlayed:
       final res = await tracksRepo.getAllTracks(
         sortBy: TrackSortBy.dateAdded,

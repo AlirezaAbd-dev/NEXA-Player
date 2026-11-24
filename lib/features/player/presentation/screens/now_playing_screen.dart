@@ -21,7 +21,6 @@ import '../../domain/services/playback_queue.dart';
 import '../providers/player_providers.dart';
 import '../widgets/hero_artwork_card.dart';
 import '../widgets/queue_bottom_sheet.dart';
-import '../widgets/rating_bar_widget.dart';
 import '../widgets/sleep_timer_bottom_sheet.dart';
 import '../widgets/stellio_repeat_picker_sheet.dart';
 import '../widgets/waveform_visualizer.dart';
@@ -715,7 +714,6 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const RatingBarWidget(initialRating: 4, starSize: 15.0),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 7.0, vertical: 2.0),
                             decoration: BoxDecoration(

@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Supported types of dynamically computed smart playlists.
 enum SmartPlaylistType {
-  recentlyAdded('Recently Added', 'Tracks added to your library in the last 30 days', Icons.schedule_rounded),
-  topRated('Top Rated', 'Tracks with high star ratings and favorites', Icons.star_rounded),
+  recentlyAdded('Recently Added', 'Latest 30 tracks added to your library', Icons.schedule_rounded),
   favorites('My Favorites', 'All favorited tracks across your library', Icons.favorite_rounded),
   mostPlayed('Most Played', 'Your most frequently listened tracks', Icons.local_fire_department_rounded);
 

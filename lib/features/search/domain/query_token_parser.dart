@@ -1,7 +1,7 @@
 import 'package:nexa_player/shared/models/track.dart';
 
 /// Parsed representation of a smart search query with format, duration,
-/// rating, and state tokens separated from search terms.
+/// and playback state tokens separated from search terms.
 class ParsedQuery {
   const ParsedQuery({
     required this.rawQuery,
