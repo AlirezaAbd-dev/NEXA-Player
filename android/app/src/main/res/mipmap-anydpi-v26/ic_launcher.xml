@@ -4,7 +4,7 @@
   <foreground>
       <inset
           android:drawable="@drawable/ic_launcher_foreground"
-          android:inset="16%" />
+          android:inset="4%" />
   </foreground>
   <monochrome android:drawable="@drawable/ic_stat_nexa"/>
 </adaptive-icon>

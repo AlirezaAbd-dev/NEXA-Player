@@ -13,6 +13,7 @@ import 'package:nexa_player/features/player/player.dart';
 import 'package:nexa_player/features/scanner/presentation/providers/scanner_providers.dart';
 import 'package:nexa_player/shared/models/track.dart';
 import 'package:nexa_player/shared/widgets/branding/nexa_animated_logo.dart';
+import 'package:nexa_player/shared/widgets/branding/nexa_header_brand_lockup.dart';
 import 'package:nexa_player/shared/widgets/cards/track_actions_helper.dart';
 import 'package:nexa_player/shared/widgets/cards/track_tile.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
@@ -75,7 +76,8 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
       backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
       appBar: GlassAppBar(
-        titleText: 'Songs',
+        title: const NexaHeaderBrandLockup(sectionTitle: 'Songs'),
+        titleSpacing: 12.0,
         automaticallyImplyLeading: false,
         actions: [
           PopupMenuButton<TrackSortBy>(
