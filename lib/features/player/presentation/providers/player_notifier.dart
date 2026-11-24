@@ -1,34 +1,75 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/constants/storage_keys.dart';
 import '../../../../shared/models/track.dart';
+import '../../../../shared/services/storage/storage_service.dart';
 import '../../../library/domain/repositories/tracks_repository.dart';
 import '../../domain/entities/playback_state.dart';
+import '../../domain/entities/queue_context.dart';
 import '../../domain/services/audio_engine.dart';
 import '../../domain/services/playback_queue.dart';
+import '../../domain/services/queue_list_navigator.dart';
 import '../../domain/services/sleep_timer_service.dart';
 
 /// State notifier managing playback lifecycle, queue interactions,
-/// engine synchronization, and track state persistence.
+/// engine synchronization, Stellio 5-mode repeat, and state persistence.
 class PlayerNotifier extends StateNotifier<PlaybackState> {
   PlayerNotifier({
     required IAudioEngine engine,
     required IPlaybackQueue queue,
     required ISleepTimerService sleepTimer,
     ITracksRepository? tracksRepository,
+    IQueueListNavigator? listNavigator,
+    IStorageService? storageService,
   })  : _engine = engine,
         _queue = queue,
         _sleepTimer = sleepTimer,
         _tracksRepository = tracksRepository,
-        super(const PlaybackState()) {
+        _listNavigator = listNavigator,
+        _storageService = storageService,
+        super(_buildInitialState(queue, storageService)) {
+    _syncInitialQueueModes();
     _bindStreams();
+  }
+
+  static PlaybackState _buildInitialState(
+    IPlaybackQueue queue,
+    IStorageService? storageService,
+  ) {
+    final storedRepeat =
+        storageService?.getString(StorageKeys.repeatMode).valueOrNull;
+    final initialRepeat = storedRepeat != null
+        ? NexaRepeatMode.fromStorage(storedRepeat)
+        : queue.state.repeatMode;
+    final storedShuffle =
+        storageService?.getBool(StorageKeys.shuffleEnabled).valueOrNull ??
+            queue.state.isShuffled;
+    return PlaybackState(
+      repeatMode: initialRepeat,
+      isShuffled: storedShuffle,
+      playbackMode:
+          initialRepeat.toLegacyPlaybackMode(isShuffled: storedShuffle),
+      queueVersion: queue.state.queueVersion,
+    );
   }
 
   final IAudioEngine _engine;
   final IPlaybackQueue _queue;
   final ISleepTimerService _sleepTimer;
   final ITracksRepository? _tracksRepository;
+  final IQueueListNavigator? _listNavigator;
+  final IStorageService? _storageService;
   final List<StreamSubscription> _subscriptions = [];
   int _loadEpoch = 0;
+
+  void _syncInitialQueueModes() {
+    if (_queue.state.repeatMode != state.repeatMode) {
+      _queue.setRepeatMode(state.repeatMode);
+    }
+    if (_queue.state.isShuffled != state.isShuffled) {
+      _queue.setShuffle(state.isShuffled);
+    }
+  }
 
   void _bindStreams() {
     _subscriptions.add(
@@ -75,6 +116,8 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
         state = state.copyWith(
           currentTrack: qState.currentTrack,
           playbackMode: qState.mode,
+          repeatMode: qState.repeatMode,
+          isShuffled: qState.isShuffled,
           queueVersion: qState.queueVersion,
           clearCurrentTrack: qState.currentTrack == null,
         );
@@ -88,10 +131,18 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
     List<Track> tracks, {
     int initialIndex = 0,
     PlaybackMode? mode,
+    NexaRepeatMode? repeatMode,
+    QueueContext? queueContext,
   }) async {
     if (tracks.isEmpty) return;
     final clampedIndex = initialIndex.clamp(0, tracks.length - 1);
-    _queue.setQueue(tracks, initialIndex: clampedIndex, mode: mode);
+    _queue.setQueue(
+      tracks,
+      initialIndex: clampedIndex,
+      mode: mode,
+      repeatMode: repeatMode,
+      queueContext: queueContext,
+    );
     final activeTrack = _queue.state.currentTrack ?? tracks[clampedIndex];
     await _loadAndPlay(activeTrack);
   }
@@ -104,13 +155,18 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
     Track track, {
     List<Track>? queue,
     int? initialIndex,
+    QueueContext? queueContext,
   }) async {
     if (queue != null && queue.isNotEmpty) {
       final index = initialIndex ?? queue.indexWhere((t) => t.id == track.id);
       final resolvedIndex = index >= 0 ? index.clamp(0, queue.length - 1) : 0;
-      _queue.setQueue(queue, initialIndex: resolvedIndex);
+      _queue.setQueue(
+        queue,
+        initialIndex: resolvedIndex,
+        queueContext: queueContext,
+      );
     } else if (_queue.state.isEmpty || _queue.state.currentTrack?.id != track.id) {
-      _queue.setQueue([track], initialIndex: 0);
+      _queue.setQueue([track], initialIndex: 0, queueContext: queueContext);
     }
 
     final activeTrack = _queue.state.currentTrack ?? track;
@@ -171,14 +227,36 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
     await _engine.seek(position);
   }
 
-  /// Advances to the next track in the queue.
+  /// Advances to the next track in the queue or transitions to the next
+  /// list when a Stellio cross-list repeat mode reaches the queue boundary.
   Future<void> skipNext() async {
     final nextTrack = _queue.next();
     if (nextTrack != null) {
       await _loadAndPlay(nextTrack);
-    } else {
-      await stop();
+      return;
     }
+
+    final activeRepeat = _queue.state.repeatMode;
+    final ctx = _queue.state.queueContext;
+    if (activeRepeat.jumpsToNextList && _listNavigator != null && ctx != null) {
+      final transition = await _listNavigator.nextList(
+        ctx,
+        wrapToFirst: activeRepeat == NexaRepeatMode.nextListRepeatFirst,
+      );
+      if (transition != null && transition.tracks.isNotEmpty) {
+        _queue.setQueue(
+          transition.tracks,
+          initialIndex: transition.initialIndex,
+          queueContext: transition.context,
+        );
+        final next = _queue.state.currentTrack ??
+            transition.tracks[transition.initialIndex];
+        await _loadAndPlay(next);
+        return;
+      }
+    }
+
+    await stop();
   }
 
   /// Skips directly to the track at [index] in the active queue and plays it.
@@ -199,7 +277,8 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
     _queue.addTrack(track);
   }
 
-  /// Returns to previous track or restarts current track if elapsed > 3s.
+  /// Returns to previous track or previous list (in cross-list modes), or
+  /// restarts current track if elapsed > 3s.
   Future<void> skipPrevious() async {
     if (state.position > const Duration(seconds: 3)) {
       await seek(Duration.zero);
@@ -209,42 +288,95 @@ class PlayerNotifier extends StateNotifier<PlaybackState> {
     final prevTrack = _queue.previous();
     if (prevTrack != null) {
       await _loadAndPlay(prevTrack);
-    } else {
-      await seek(Duration.zero);
+      return;
     }
+
+    final activeRepeat = _queue.state.repeatMode;
+    final ctx = _queue.state.queueContext;
+    if (activeRepeat.jumpsToNextList && _listNavigator != null && ctx != null) {
+      final transition = await _listNavigator.previousList(
+        ctx,
+        wrapToLast: activeRepeat == NexaRepeatMode.nextListRepeatFirst,
+      );
+      if (transition != null && transition.tracks.isNotEmpty) {
+        _queue.setQueue(
+          transition.tracks,
+          initialIndex: transition.initialIndex,
+          queueContext: transition.context,
+        );
+        final prev = _queue.state.currentTrack ??
+            transition.tracks[transition.initialIndex];
+        await _loadAndPlay(prev);
+        return;
+      }
+    }
+
+    await seek(Duration.zero);
   }
 
-  /// Updates queue progression mode.
+  /// Updates queue progression mode (legacy enum support).
   void setPlaybackMode(PlaybackMode mode) {
     _queue.setMode(mode);
-    state = state.copyWith(playbackMode: mode);
+    final updated = _queue.state;
+    state = state.copyWith(
+      playbackMode: updated.mode,
+      repeatMode: updated.repeatMode,
+      isShuffled: updated.isShuffled,
+    );
+    unawaited(
+      _storageService?.setString(
+        StorageKeys.repeatMode,
+        updated.repeatMode.storageValue,
+      ),
+    );
+    unawaited(
+      _storageService?.setBool(
+        StorageKeys.shuffleEnabled,
+        updated.isShuffled,
+      ),
+    );
   }
 
-  /// Toggles between shuffle and ordered sequence.
+  /// Toggles shuffle independently without altering the active 5-mode repeat setting.
   void toggleShuffle() {
-    if (state.playbackMode == PlaybackMode.shuffle) {
-      setPlaybackMode(PlaybackMode.ordered);
-    } else {
-      setPlaybackMode(PlaybackMode.shuffle);
-    }
+    final nextShuffle = !state.isShuffled;
+    _queue.setShuffle(nextShuffle);
+    final updated = _queue.state;
+    state = state.copyWith(
+      isShuffled: updated.isShuffled,
+      repeatMode: updated.repeatMode,
+      playbackMode: updated.mode,
+    );
+    unawaited(
+      _storageService?.setBool(
+        StorageKeys.shuffleEnabled,
+        updated.isShuffled,
+      ),
+    );
   }
 
-  /// Cycles repetition modes: ordered -> repeatAll -> repeatOne -> ordered.
+  /// Directly selects a Stellio 5-mode repeat setting and persists it cleanly
+  /// without disturbing active shuffle state or re-triggering track playback.
+  void setRepeatMode(NexaRepeatMode repeatMode) {
+    _queue.setRepeatMode(repeatMode);
+    final updated = _queue.state;
+    state = state.copyWith(
+      repeatMode: updated.repeatMode,
+      isShuffled: updated.isShuffled,
+      playbackMode: updated.mode,
+    );
+    unawaited(
+      _storageService?.setString(
+        StorageKeys.repeatMode,
+        repeatMode.storageValue,
+      ),
+    );
+  }
+
+  /// Cycles sequentially through all 5 Stellio repeat modes:
+  /// stopOnLastTrack -> repeatList -> repeatSelectedTrack -> nextListStopOnLast -> nextListRepeatFirst.
   void cycleRepeatMode() {
-    switch (state.playbackMode) {
-      case PlaybackMode.ordered:
-        setPlaybackMode(PlaybackMode.repeatAll);
-        break;
-      case PlaybackMode.repeatAll:
-        setPlaybackMode(PlaybackMode.repeatOne);
-        break;
-      case PlaybackMode.repeatOne:
-        setPlaybackMode(PlaybackMode.ordered);
-        break;
-      case PlaybackMode.shuffle:
-        setPlaybackMode(PlaybackMode.repeatAll);
-        break;
-    }
+    setRepeatMode(state.repeatMode.nextMode);
   }
 
   /// Updates playback volume.

@@ -294,6 +294,7 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
                                     track,
                                     queue: tracks,
                                     initialIndex: index,
+                                    queueContext: const QueueContext.allSongs(),
                                   );
                             },
                             trailing: Row(

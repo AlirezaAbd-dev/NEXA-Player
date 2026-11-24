@@ -16,6 +16,7 @@ import '../../../../shared/widgets/glass/glass_app_bar.dart';
 import '../../../../shared/widgets/glass/glass_button.dart';
 import '../../../../shared/widgets/surfaces/nexa_surface.dart';
 import '../../../player/domain/entities/playback_state.dart';
+import '../../../player/domain/entities/queue_context.dart';
 import '../../../player/presentation/providers/player_providers.dart';
 import '../../../scanner/presentation/providers/scanner_providers.dart';
 import '../../domain/repositories/folders_repository.dart';
@@ -148,6 +149,7 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
             folderTracks,
             initialIndex: initialIndex.clamp(0, folderTracks.length - 1),
             mode: shuffle ? PlaybackMode.shuffle : null,
+            queueContext: QueueContext.folder(folder.path, title: folder.name),
           );
     }
   }

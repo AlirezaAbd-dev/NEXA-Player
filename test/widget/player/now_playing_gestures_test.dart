@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nexa_player/core/theme/app_theme.dart';
 import 'package:nexa_player/features/player/domain/entities/playback_state.dart';
+import 'package:nexa_player/features/player/domain/entities/queue_context.dart';
 import 'package:nexa_player/features/player/presentation/providers/player_notifier.dart';
 import 'package:nexa_player/features/player/presentation/providers/player_providers.dart';
 import 'package:nexa_player/features/player/presentation/screens/now_playing_screen.dart';
@@ -140,10 +141,17 @@ class _FakePlayerNotifier extends StateNotifier<PlaybackState>
     List<Track> tracks, {
     int initialIndex = 0,
     PlaybackMode? mode,
+    NexaRepeatMode? repeatMode,
+    QueueContext? queueContext,
   }) async {}
 
   @override
-  Future<void> playTrack(Track track, {List<Track>? queue, int? initialIndex}) async {}
+  Future<void> playTrack(
+    Track track, {
+    List<Track>? queue,
+    int? initialIndex,
+    QueueContext? queueContext,
+  }) async {}
 
   @override
   Future<void> togglePlayPause() async {
@@ -186,6 +194,9 @@ class _FakePlayerNotifier extends StateNotifier<PlaybackState>
 
   @override
   void toggleShuffle() {}
+
+  @override
+  void setRepeatMode(NexaRepeatMode repeatMode) {}
 
   @override
   void cycleRepeatMode() {}

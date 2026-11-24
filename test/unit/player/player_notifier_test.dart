@@ -253,22 +253,37 @@ void main() {
       expect(engine.loadedTrack?.id, 'trk-2');
     });
 
-    test('toggleShuffle and cycleRepeatMode alter playback modes', () {
+    test('toggleShuffle and cycleRepeatMode alter playback modes independently', () {
       expect(notifier.state.playbackMode, PlaybackMode.ordered);
+      expect(notifier.state.repeatMode, NexaRepeatMode.stopOnLastTrack);
+      expect(notifier.state.isShuffled, isFalse);
 
       notifier.toggleShuffle();
+      expect(notifier.state.isShuffled, isTrue);
       expect(notifier.state.playbackMode, PlaybackMode.shuffle);
-
-      notifier.toggleShuffle();
-      expect(notifier.state.playbackMode, PlaybackMode.ordered);
+      expect(notifier.state.repeatMode, NexaRepeatMode.stopOnLastTrack);
 
       notifier.cycleRepeatMode();
+      expect(notifier.state.repeatMode, NexaRepeatMode.repeatList);
+      expect(notifier.state.isShuffled, isTrue);
+
+      notifier.toggleShuffle();
+      expect(notifier.state.isShuffled, isFalse);
+      expect(notifier.state.repeatMode, NexaRepeatMode.repeatList);
       expect(notifier.state.playbackMode, PlaybackMode.repeatAll);
 
       notifier.cycleRepeatMode();
+      expect(notifier.state.repeatMode, NexaRepeatMode.repeatSelectedTrack);
       expect(notifier.state.playbackMode, PlaybackMode.repeatOne);
 
       notifier.cycleRepeatMode();
+      expect(notifier.state.repeatMode, NexaRepeatMode.nextListStopOnLast);
+
+      notifier.cycleRepeatMode();
+      expect(notifier.state.repeatMode, NexaRepeatMode.nextListRepeatFirst);
+
+      notifier.cycleRepeatMode();
+      expect(notifier.state.repeatMode, NexaRepeatMode.stopOnLastTrack);
       expect(notifier.state.playbackMode, PlaybackMode.ordered);
     });
 

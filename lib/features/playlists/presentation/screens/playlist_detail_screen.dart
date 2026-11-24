@@ -7,6 +7,7 @@ import 'package:nexa_player/core/constants/phase2_keys.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
 import 'package:nexa_player/features/player/domain/entities/playback_state.dart';
+import 'package:nexa_player/features/player/domain/entities/queue_context.dart';
 import 'package:nexa_player/features/player/presentation/providers/player_providers.dart';
 import 'package:nexa_player/features/playlists/presentation/providers/playlists_providers.dart';
 import 'package:nexa_player/features/playlists/presentation/widgets/track_tag_editor_modal.dart';
@@ -41,7 +42,14 @@ class PlaylistDetailScreen extends ConsumerWidget {
   void _handlePlayAll(BuildContext context, WidgetRef ref, List<Track> tracks) {
     if (tracks.isEmpty) return;
     HapticFeedback.selectionClick();
-    ref.read(playerNotifierProvider.notifier).playQueue(tracks, initialIndex: 0);
+    ref.read(playerNotifierProvider.notifier).playQueue(
+          tracks,
+          initialIndex: 0,
+          queueContext: QueueContext.playlist(
+            playlist.id,
+            title: playlist.name,
+          ),
+        );
   }
 
   void _handleShuffle(BuildContext context, WidgetRef ref, List<Track> tracks) {
@@ -51,6 +59,10 @@ class PlaylistDetailScreen extends ConsumerWidget {
           tracks,
           initialIndex: 0,
           mode: PlaybackMode.shuffle,
+          queueContext: QueueContext.playlist(
+            playlist.id,
+            title: playlist.name,
+          ),
         );
   }
 
@@ -350,7 +362,14 @@ class PlaylistDetailScreen extends ConsumerWidget {
                                     onTap: () {
                                       ref
                                           .read(playerNotifierProvider.notifier)
-                                          .playQueue(tracks, initialIndex: index);
+                                          .playQueue(
+                                            tracks,
+                                            initialIndex: index,
+                                            queueContext: QueueContext.playlist(
+                                              playlist.id,
+                                              title: playlist.name,
+                                            ),
+                                          );
                                     },
                                     trailing: PopupMenuButton<String>(
                                       icon: const Icon(

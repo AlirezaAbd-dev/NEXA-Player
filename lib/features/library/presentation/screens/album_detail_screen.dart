@@ -5,6 +5,7 @@ import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
 import 'package:nexa_player/features/library/presentation/providers/library_providers.dart';
 import 'package:nexa_player/features/player/domain/entities/playback_state.dart';
+import 'package:nexa_player/features/player/domain/entities/queue_context.dart';
 import 'package:nexa_player/features/player/presentation/providers/player_providers.dart';
 import 'package:nexa_player/shared/models/album.dart';
 import 'package:nexa_player/shared/widgets/cards/track_tile.dart';
@@ -156,9 +157,14 @@ class AlbumDetailScreen extends ConsumerWidget {
                       onPressed: () {
                         final tracks = tracksAsync.valueOrNull;
                         if (tracks != null && tracks.isNotEmpty) {
-                          ref
-                              .read(playerNotifierProvider.notifier)
-                              .playQueue(tracks, initialIndex: 0);
+                          ref.read(playerNotifierProvider.notifier).playQueue(
+                                tracks,
+                                initialIndex: 0,
+                                queueContext: QueueContext.album(
+                                  album.id,
+                                  title: album.title,
+                                ),
+                              );
                         }
                       },
                     ),
@@ -177,6 +183,10 @@ class AlbumDetailScreen extends ConsumerWidget {
                                   tracks,
                                   initialIndex: 0,
                                   mode: PlaybackMode.shuffle,
+                                  queueContext: QueueContext.album(
+                                    album.id,
+                                    title: album.title,
+                                  ),
                                 );
                           }
                         },
@@ -216,7 +226,14 @@ class AlbumDetailScreen extends ConsumerWidget {
                               onTap: () {
                                 ref
                                     .read(playerNotifierProvider.notifier)
-                                    .playQueue(tracks, initialIndex: index);
+                                    .playQueue(
+                                      tracks,
+                                      initialIndex: index,
+                                      queueContext: QueueContext.album(
+                                        album.id,
+                                        title: album.title,
+                                      ),
+                                    );
                               },
                             ),
                           );

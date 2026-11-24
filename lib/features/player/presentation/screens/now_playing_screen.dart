@@ -15,13 +15,13 @@ import '../../../../shared/widgets/glass/app_ambient_background.dart';
 import '../../../../shared/widgets/surfaces/nexa_surface.dart';
 import '../../../cloud/cloud.dart';
 import '../../../visualizer/visualizer.dart';
-import '../../domain/entities/playback_state.dart';
 import '../../domain/services/playback_queue.dart';
 import '../providers/player_providers.dart';
 import '../widgets/hero_artwork_card.dart';
 import '../widgets/queue_bottom_sheet.dart';
 import '../widgets/rating_bar_widget.dart';
 import '../widgets/sleep_timer_bottom_sheet.dart';
+import '../widgets/stellio_repeat_picker_sheet.dart';
 import '../widgets/waveform_visualizer.dart';
 
 /// Layout modes supported by the Now Playing hero screen.
@@ -86,13 +86,17 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
   IconData? _edgeHudIcon;
   Timer? _edgeHudTimer;
 
-  void _showEdgeHud(String text, IconData icon) {
+  void _showEdgeHud(
+    String text,
+    IconData icon, {
+    Duration duration = const Duration(milliseconds: 1400),
+  }) {
     _edgeHudTimer?.cancel();
     setState(() {
       _edgeHudText = text;
       _edgeHudIcon = icon;
     });
-    _edgeHudTimer = Timer(const Duration(milliseconds: 1400), () {
+    _edgeHudTimer = Timer(duration, () {
       if (mounted) {
         setState(() {
           _edgeHudText = null;
@@ -311,8 +315,8 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
         : 'Starboy';
 
     final isFavorite = currentTrack?.isFavorite ?? true;
-    final isShuffle = playerState.playbackMode == PlaybackMode.shuffle;
-    final playbackMode = playerState.playbackMode;
+    final isShuffle = playerState.isShuffled;
+    final repeatMode = playerState.repeatMode;
     final isCasting = ref.watch(isCastingActiveProvider);
 
     final screenHeight = MediaQuery.of(context).size.height;
@@ -643,20 +647,59 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                         },
                         tooltip: 'Next',
                       ),
-                      IconButton(
-                        icon: Icon(
-                          playbackMode == PlaybackMode.repeatOne
-                              ? Icons.repeat_one_rounded
-                              : playbackMode == PlaybackMode.repeatAll
-                                  ? Icons.repeat_on_rounded
-                                  : Icons.repeat_rounded,
-                          color: playbackMode.isRepeating ? primary : colorScheme.onSurface.withOpacity(0.65),
+                      Semantics(
+                        button: true,
+                        label: 'Repeat: ${repeatMode.label}',
+                        hint: 'Tap to cycle repeat mode, long press for options',
+                        child: Material(
+                          type: MaterialType.transparency,
+                          child: InkResponse(
+                            key: const Key('now_playing_repeat_button'),
+                            radius: 24.0,
+                            containedInkWell: false,
+                            onLongPress: () {
+                              HapticFeedback.mediumImpact();
+                              showStellioRepeatPickerSheet(
+                                context: context,
+                                activeMode: repeatMode,
+                                onSelected: (selected) {
+                                  ref
+                                      .read(playerNotifierProvider.notifier)
+                                      .setRepeatMode(selected);
+                                  _showEdgeHud(
+                                    selected.shortLabel,
+                                    iconForNexaRepeatMode(selected),
+                                    duration: const Duration(milliseconds: 1600),
+                                  );
+                                },
+                              );
+                            },
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              final nextMode = repeatMode.nextMode;
+                              ref
+                                  .read(playerNotifierProvider.notifier)
+                                  .cycleRepeatMode();
+                              _showEdgeHud(
+                                nextMode.shortLabel,
+                                iconForNexaRepeatMode(nextMode),
+                                duration: const Duration(milliseconds: 1600),
+                              );
+                            },
+                            child: SizedBox(
+                              width: 48.0,
+                              height: 48.0,
+                              child: Center(
+                                child: Icon(
+                                  iconForNexaRepeatMode(repeatMode),
+                                  color: repeatMode.isRepeating
+                                      ? primary
+                                      : colorScheme.onSurface.withOpacity(0.65),
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
-                        onPressed: () {
-                          HapticFeedback.selectionClick();
-                          ref.read(playerNotifierProvider.notifier).cycleRepeatMode();
-                        },
-                        tooltip: 'Repeat',
                       ),
                     ],
                   ),

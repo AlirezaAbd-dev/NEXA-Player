@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../shared/models/track.dart';
+import '../../../../shared/services/storage/storage_service.dart';
 import '../../../library/domain/repositories/tracks_repository.dart';
 import '../../domain/entities/playback_state.dart';
 import '../../domain/services/audio_engine.dart';
 import '../../domain/services/playback_queue.dart';
+import '../../domain/services/queue_list_navigator.dart';
 import '../../domain/services/sleep_timer_service.dart';
 import 'player_notifier.dart';
 
@@ -21,6 +23,13 @@ final playbackQueueProvider = Provider<IPlaybackQueue>((ref) {
 /// Exposes the active [ISleepTimerService] instance from dependency injection.
 final sleepTimerServiceProvider = Provider<ISleepTimerService>((ref) {
   return getIt<ISleepTimerService>();
+});
+
+/// Exposes optional [IQueueListNavigator] for cross-list Stellio repeat modes.
+final queueListNavigatorProvider = Provider<IQueueListNavigator?>((ref) {
+  return getIt.isRegistered<IQueueListNavigator>()
+      ? getIt<IQueueListNavigator>()
+      : null;
 });
 
 /// Stream provider for real-time queue state updates.
@@ -44,12 +53,18 @@ final playerNotifierProvider =
   final tracksRepo = getIt.isRegistered<ITracksRepository>()
       ? getIt<ITracksRepository>()
       : null;
+  final listNavigator = ref.watch(queueListNavigatorProvider);
+  final storage = getIt.isRegistered<IStorageService>()
+      ? getIt<IStorageService>()
+      : null;
 
   return PlayerNotifier(
     engine: engine,
     queue: queue,
     sleepTimer: sleepTimer,
     tracksRepository: tracksRepo,
+    listNavigator: listNavigator,
+    storageService: storage,
   );
 });
 
@@ -68,7 +83,12 @@ final playbackProgressProvider = Provider<double>((ref) {
   return ref.watch(playerNotifierProvider.select((s) => s.progress));
 });
 
-/// Selected provider for playback mode.
+/// Selected provider for legacy playback mode.
 final playbackModeProvider = Provider<PlaybackMode>((ref) {
   return ref.watch(playerNotifierProvider.select((s) => s.playbackMode));
+});
+
+/// Selected provider for Stellio 5-mode repeat setting.
+final repeatModeProvider = Provider<NexaRepeatMode>((ref) {
+  return ref.watch(playerNotifierProvider.select((s) => s.repeatMode));
 });

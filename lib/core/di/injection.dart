@@ -21,6 +21,7 @@ import 'package:nexa_player/features/player/data/services/playback_queue_impl.da
 import 'package:nexa_player/features/player/data/services/sleep_timer_service_impl.dart';
 import 'package:nexa_player/features/player/domain/services/audio_engine.dart';
 import 'package:nexa_player/features/player/domain/services/playback_queue.dart';
+import 'package:nexa_player/features/player/domain/services/queue_list_navigator.dart';
 import 'package:nexa_player/features/player/domain/services/sleep_timer_service.dart';
 import 'package:nexa_player/features/playlists/data/repositories/sqlite_playlists_repository.dart';
 import 'package:nexa_player/features/playlists/data/services/m3u_service_impl.dart';
@@ -221,6 +222,18 @@ Future<void> configureDependencies({
   if (!getIt.isRegistered<IPlaybackQueue>()) {
     getIt.registerSingleton<IPlaybackQueue>(
       playbackQueue ?? PlaybackQueueImpl(),
+    );
+  }
+
+  if (!getIt.isRegistered<IQueueListNavigator>()) {
+    getIt.registerSingleton<IQueueListNavigator>(
+      LibraryQueueListNavigator(
+        foldersRepository: getIt<IFoldersRepository>(),
+        tracksRepository: getIt<ITracksRepository>(),
+        albumsRepository: getIt<IAlbumsRepository>(),
+        artistsRepository: getIt<IArtistsRepository>(),
+        playlistsRepository: getIt<IPlaylistsRepository>(),
+      ),
     );
   }
 

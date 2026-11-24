@@ -2,8 +2,10 @@
 library;
 
 export 'domain/entities/playback_state.dart';
+export 'domain/entities/queue_context.dart';
 export 'domain/services/audio_engine.dart';
 export 'domain/services/playback_queue.dart';
+export 'domain/services/queue_list_navigator.dart';
 export 'domain/services/sleep_timer_service.dart';
 export 'data/services/playback_queue_impl.dart';
 export 'data/services/sleep_timer_service_impl.dart';

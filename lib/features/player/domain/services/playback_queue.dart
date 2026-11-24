@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import '../../../../shared/models/track.dart';
 import '../entities/playback_state.dart';
+import '../entities/queue_context.dart';
 
 /// Immutable state snapshot of the active playback queue.
 class PlaybackQueueState extends Equatable {
@@ -10,6 +11,9 @@ class PlaybackQueueState extends Equatable {
     this.originalTracks = const [],
     this.currentIndex = -1,
     this.mode = PlaybackMode.ordered,
+    this.repeatMode = NexaRepeatMode.stopOnLastTrack,
+    this.isShuffled = false,
+    this.queueContext,
     this.queueVersion = 0,
   });
 
@@ -22,8 +26,17 @@ class PlaybackQueueState extends Equatable {
   /// Index of the currently active track in [tracks].
   final int currentIndex;
 
-  /// Queue iteration mode.
+  /// Legacy queue iteration mode view.
   final PlaybackMode mode;
+
+  /// Decoupled Stellio 5-mode repeat setting.
+  final NexaRepeatMode repeatMode;
+
+  /// Decoupled shuffle toggle state.
+  final bool isShuffled;
+
+  /// Optional metadata identifying the originating library list/folder/album.
+  final QueueContext? queueContext;
 
   /// Monotonically incremented revision counter whenever the active queue is replaced or cleared.
   final int queueVersion;
@@ -36,37 +49,40 @@ class PlaybackQueueState extends Equatable {
     return null;
   }
 
-  /// Whether there is a subsequent track in queue or if repetition allows looping.
+  /// Whether there is a subsequent track inside this queue without jumping lists.
   bool get hasNext {
     if (tracks.isEmpty) return false;
-    if (mode == PlaybackMode.repeatOne || mode == PlaybackMode.repeatAll) return true;
+    if (repeatMode == NexaRepeatMode.repeatSelectedTrack ||
+        repeatMode == NexaRepeatMode.repeatList) {
+      return true;
+    }
     return currentIndex < tracks.length - 1;
   }
 
-  /// Whether there is a preceding track in queue or if repeat-all allows wrapping.
+  /// Whether there is a preceding track inside this queue without jumping lists.
   bool get hasPrevious {
     if (tracks.isEmpty) return false;
-    if (mode == PlaybackMode.repeatAll) return true;
+    if (repeatMode == NexaRepeatMode.repeatList) return true;
     return currentIndex > 0;
   }
 
-  /// The next upcoming track, or null if queue end is reached without repetition.
+  /// The next upcoming track in this queue, or null if list boundary reached.
   Track? get nextTrack {
     if (tracks.isEmpty) return null;
-    if (mode == PlaybackMode.repeatOne) return currentTrack;
+    if (repeatMode == NexaRepeatMode.repeatSelectedTrack) return currentTrack;
     final nextIndex = currentIndex + 1;
     if (nextIndex < tracks.length) return tracks[nextIndex];
-    if (mode == PlaybackMode.repeatAll) return tracks.first;
+    if (repeatMode == NexaRepeatMode.repeatList) return tracks.first;
     return null;
   }
 
-  /// The previous track, or null if at beginning without repeat-all.
+  /// The previous track in this queue, or null if list start reached.
   Track? get previousTrack {
     if (tracks.isEmpty) return null;
-    if (mode == PlaybackMode.repeatOne) return currentTrack;
+    if (repeatMode == NexaRepeatMode.repeatSelectedTrack) return currentTrack;
     final prevIndex = currentIndex - 1;
     if (prevIndex >= 0) return tracks[prevIndex];
-    if (mode == PlaybackMode.repeatAll) return tracks.last;
+    if (repeatMode == NexaRepeatMode.repeatList) return tracks.last;
     return null;
   }
 
@@ -85,6 +101,10 @@ class PlaybackQueueState extends Equatable {
     List<Track>? originalTracks,
     int? currentIndex,
     PlaybackMode? mode,
+    NexaRepeatMode? repeatMode,
+    bool? isShuffled,
+    QueueContext? queueContext,
+    bool clearQueueContext = false,
     int? queueVersion,
   }) {
     return PlaybackQueueState(
@@ -92,12 +112,25 @@ class PlaybackQueueState extends Equatable {
       originalTracks: originalTracks ?? this.originalTracks,
       currentIndex: currentIndex ?? this.currentIndex,
       mode: mode ?? this.mode,
+      repeatMode: repeatMode ?? this.repeatMode,
+      isShuffled: isShuffled ?? this.isShuffled,
+      queueContext:
+          clearQueueContext ? null : (queueContext ?? this.queueContext),
       queueVersion: queueVersion ?? this.queueVersion,
     );
   }
 
   @override
-  List<Object?> get props => [tracks, originalTracks, currentIndex, mode, queueVersion];
+  List<Object?> get props => [
+        tracks,
+        originalTracks,
+        currentIndex,
+        mode,
+        repeatMode,
+        isShuffled,
+        queueContext,
+        queueVersion,
+      ];
 }
 
 /// Interface for queue sequencing, shuffle algorithms, and track management.
@@ -113,10 +146,19 @@ abstract class IPlaybackQueue {
     List<Track> tracks, {
     int initialIndex = 0,
     PlaybackMode? mode,
+    NexaRepeatMode? repeatMode,
+    bool? isShuffled,
+    QueueContext? queueContext,
   });
 
-  /// Updates queue playback mode (ordered, shuffle, repeat).
+  /// Updates queue playback mode (legacy ordered, shuffle, repeat).
   void setMode(PlaybackMode mode);
+
+  /// Updates the Stellio 5-mode repeat setting without disturbing shuffle or current track.
+  void setRepeatMode(NexaRepeatMode repeatMode);
+
+  /// Updates shuffle state independently without altering [repeatMode].
+  void setShuffle(bool enabled);
 
   /// Advances to the next track according to current mode, or returns null.
   Track? next();

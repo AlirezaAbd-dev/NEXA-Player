@@ -5,6 +5,7 @@ import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
 import 'package:nexa_player/features/library/presentation/providers/library_providers.dart';
 import 'package:nexa_player/features/player/domain/entities/playback_state.dart';
+import 'package:nexa_player/features/player/domain/entities/queue_context.dart';
 import 'package:nexa_player/features/player/presentation/providers/player_providers.dart';
 import 'package:nexa_player/shared/models/artist.dart';
 import 'package:nexa_player/shared/widgets/cards/track_tile.dart';
@@ -135,9 +136,14 @@ class ArtistDetailScreen extends ConsumerWidget {
                       onPressed: () {
                         final tracks = tracksAsync.valueOrNull;
                         if (tracks != null && tracks.isNotEmpty) {
-                          ref
-                              .read(playerNotifierProvider.notifier)
-                              .playQueue(tracks, initialIndex: 0);
+                          ref.read(playerNotifierProvider.notifier).playQueue(
+                                tracks,
+                                initialIndex: 0,
+                                queueContext: QueueContext.artist(
+                                  artist.id,
+                                  title: artist.name,
+                                ),
+                              );
                         }
                       },
                     ),
@@ -155,6 +161,10 @@ class ArtistDetailScreen extends ConsumerWidget {
                                   tracks,
                                   initialIndex: 0,
                                   mode: PlaybackMode.shuffle,
+                                  queueContext: QueueContext.artist(
+                                    artist.id,
+                                    title: artist.name,
+                                  ),
                                 );
                           }
                         },
@@ -192,7 +202,14 @@ class ArtistDetailScreen extends ConsumerWidget {
                               onTap: () {
                                 ref
                                     .read(playerNotifierProvider.notifier)
-                                    .playQueue(tracks, initialIndex: index);
+                                    .playQueue(
+                                      tracks,
+                                      initialIndex: index,
+                                      queueContext: QueueContext.artist(
+                                        artist.id,
+                                        title: artist.name,
+                                      ),
+                                    );
                               },
                             ),
                           );
