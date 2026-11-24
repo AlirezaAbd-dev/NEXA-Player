@@ -23,7 +23,7 @@ import '../../../visualizer/visualizer.dart';
 import '../../domain/services/playback_queue.dart';
 import '../providers/player_providers.dart';
 import '../widgets/hero_artwork_card.dart';
-import '../widgets/queue_bottom_sheet.dart';
+import '../widgets/playing_queue_sheet.dart';
 import '../widgets/sleep_timer_bottom_sheet.dart';
 import '../widgets/stellio_repeat_picker_sheet.dart';
 import '../widgets/waveform_visualizer.dart';
@@ -59,12 +59,15 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
   bool _showSpectrumVisualizer = false;
   List<double>? _cachedWaveform;
 
-  // Interactive pull-down dismiss gesture state with diagonal arbitration
+  // Interactive pull-down dismiss & drag-up queue gesture state with diagonal arbitration
   double _dragY = 0.0;
+  double _upDragY = 0.0;
   bool _isDismissing = false;
   Offset? _dragStartPoint;
   bool _verticalDismissLocked = false;
+  bool _verticalQueueLocked = false;
   bool _diagonalRejected = false;
+  bool _queueOpenedForDrag = false;
   late final AnimationController _snapBackController;
   Animation<double>? _snapBackAnimation;
 
@@ -183,7 +186,10 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
     if (_isDismissing) return;
     _dragStartPoint = details.globalPosition;
     _verticalDismissLocked = false;
+    _verticalQueueLocked = false;
     _diagonalRejected = false;
+    _queueOpenedForDrag = false;
+    _upDragY = 0.0;
     if (_snapBackController.isAnimating) {
       _snapBackController.stop();
     }
@@ -191,7 +197,9 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
 
   void _handlePullDownDragUpdate(DragUpdateDetails details) {
     if (_isDismissing || _diagonalRejected) return;
-    if (!_verticalDismissLocked && _dragStartPoint != null) {
+    if (!_verticalDismissLocked &&
+        !_verticalQueueLocked &&
+        _dragStartPoint != null) {
       final totalDelta = details.globalPosition - _dragStartPoint!;
       if (totalDelta.distance < 12.0) return;
       if (totalDelta.dx.abs() > totalDelta.dy.abs()) {
@@ -200,7 +208,18 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
       }
       if (totalDelta.dy > 0) {
         _verticalDismissLocked = true;
+      } else if (totalDelta.dy < 0) {
+        _verticalQueueLocked = true;
       }
+    }
+    if (_verticalQueueLocked) {
+      _upDragY += details.primaryDelta ?? 0.0;
+      if (_upDragY < -40.0 && !_queueOpenedForDrag) {
+        _queueOpenedForDrag = true;
+        HapticFeedback.lightImpact();
+        PlayingQueueSheet.show(context);
+      }
+      return;
     }
     final screenHeight = MediaQuery.of(context).size.height;
     final delta = details.primaryDelta ?? 0.0;
@@ -212,6 +231,17 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
   void _handlePullDownDragEnd(DragEndDetails details) {
     _dragStartPoint = null;
     if (_isDismissing) return;
+    if (_verticalQueueLocked) {
+      final velocity = details.primaryVelocity ?? 0.0;
+      if (!_queueOpenedForDrag && (velocity < -600.0 || _upDragY < -40.0)) {
+        _queueOpenedForDrag = true;
+        HapticFeedback.lightImpact();
+        PlayingQueueSheet.show(context);
+      }
+      _verticalQueueLocked = false;
+      _upDragY = 0.0;
+      return;
+    }
     if (_diagonalRejected) {
       _diagonalRejected = false;
       _verticalDismissLocked = false;
@@ -239,8 +269,34 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
     _dragStartPoint = null;
     _diagonalRejected = false;
     _verticalDismissLocked = false;
+    _verticalQueueLocked = false;
+    _upDragY = 0.0;
     if (_isDismissing) return;
     _animateSnapBack();
+  }
+
+  void _handleDockUpDragStart(DragStartDetails details) {
+    _upDragY = 0.0;
+    _queueOpenedForDrag = false;
+  }
+
+  void _handleDockUpDragUpdate(DragUpdateDetails details) {
+    _upDragY += details.primaryDelta ?? 0.0;
+    if (_upDragY < -40.0 && !_queueOpenedForDrag) {
+      _queueOpenedForDrag = true;
+      HapticFeedback.lightImpact();
+      PlayingQueueSheet.show(context);
+    }
+  }
+
+  void _handleDockUpDragEnd(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0.0;
+    if (!_queueOpenedForDrag && (velocity < -600.0 || _upDragY < -40.0)) {
+      _queueOpenedForDrag = true;
+      HapticFeedback.lightImpact();
+      PlayingQueueSheet.show(context);
+    }
+    _upDragY = 0.0;
   }
 
   void _animateSnapBack() {
@@ -873,77 +929,84 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                                   ],
                                 ),
 
-                                // Zone 6: Borderless L2 Bottom Action Dock (No Ratings, Overflow-Safe)
-                                NexaSurface(
-                                  level: NexaSurfaceLevel.l2,
-                                  borderRadius: BorderRadius.circular(20.0),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8.0,
-                                      vertical: 4.0,
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                      children: [
-                                        IconButton(
-                                          icon: const Icon(Icons.lyrics_rounded, size: 20),
-                                          onPressed: () => context.push(AppRoutes.lyrics),
-                                          tooltip: 'Lyrics',
-                                          padding: const EdgeInsets.all(6),
-                                          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.equalizer_rounded, size: 20),
-                                          onPressed: () => context.push(AppRoutes.equalizer),
-                                          tooltip: 'Equalizer & DSP',
-                                          padding: const EdgeInsets.all(6),
-                                          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                                        ),
-                                        IconButton(
-                                          icon: Icon(
-                                            _showSpectrumVisualizer
-                                                ? Icons.graphic_eq_rounded
-                                                : Icons.waterfall_chart_rounded,
-                                            size: 20,
-                                            color: _showSpectrumVisualizer ? primary : null,
+                                // Zone 6: Borderless L2 Bottom Action Dock (Drag-Up Opens Queue Sheet)
+                                GestureDetector(
+                                  key: const ValueKey('now_playing_drag_up_dock'),
+                                  behavior: HitTestBehavior.translucent,
+                                  onVerticalDragStart: _handleDockUpDragStart,
+                                  onVerticalDragUpdate: _handleDockUpDragUpdate,
+                                  onVerticalDragEnd: _handleDockUpDragEnd,
+                                  child: NexaSurface(
+                                    level: NexaSurfaceLevel.l2,
+                                    borderRadius: BorderRadius.circular(20.0),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8.0,
+                                        vertical: 4.0,
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                        children: [
+                                          IconButton(
+                                            icon: const Icon(Icons.lyrics_rounded, size: 20),
+                                            onPressed: () => context.push(AppRoutes.lyrics),
+                                            tooltip: 'Lyrics',
+                                            padding: const EdgeInsets.all(6),
+                                            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                                           ),
-                                          onPressed: () {
-                                            HapticFeedback.selectionClick();
-                                            setState(() {
-                                              _showSpectrumVisualizer = !_showSpectrumVisualizer;
-                                            });
-                                          },
-                                          tooltip: 'Toggle Spectrum Visualizer',
-                                          padding: const EdgeInsets.all(6),
-                                          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.playlist_add_rounded, size: 20),
-                                          onPressed: currentTrack == null
-                                              ? null
-                                              : () => AddToPlaylistBottomSheet.show(
-                                                    context,
-                                                    track: currentTrack,
-                                                  ),
-                                          tooltip: 'Add to Playlist',
-                                          padding: const EdgeInsets.all(6),
-                                          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.bedtime_rounded, size: 20),
-                                          onPressed: () => SleepTimerBottomSheet.show(context),
-                                          tooltip: 'Sleep Timer',
-                                          padding: const EdgeInsets.all(6),
-                                          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.queue_music_rounded, size: 20),
-                                          onPressed: () => QueueBottomSheet.show(context),
-                                          tooltip: 'Queue',
-                                          padding: const EdgeInsets.all(6),
-                                          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                                        ),
-                                      ],
+                                          IconButton(
+                                            icon: const Icon(Icons.equalizer_rounded, size: 20),
+                                            onPressed: () => context.push(AppRoutes.equalizer),
+                                            tooltip: 'Equalizer & DSP',
+                                            padding: const EdgeInsets.all(6),
+                                            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                                          ),
+                                          IconButton(
+                                            icon: Icon(
+                                              _showSpectrumVisualizer
+                                                  ? Icons.graphic_eq_rounded
+                                                  : Icons.waterfall_chart_rounded,
+                                              size: 20,
+                                              color: _showSpectrumVisualizer ? primary : null,
+                                            ),
+                                            onPressed: () {
+                                              HapticFeedback.selectionClick();
+                                              setState(() {
+                                                _showSpectrumVisualizer = !_showSpectrumVisualizer;
+                                              });
+                                            },
+                                            tooltip: 'Toggle Spectrum Visualizer',
+                                            padding: const EdgeInsets.all(6),
+                                            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.playlist_add_rounded, size: 20),
+                                            onPressed: currentTrack == null
+                                                ? null
+                                                : () => AddToPlaylistBottomSheet.show(
+                                                      context,
+                                                      track: currentTrack,
+                                                    ),
+                                            tooltip: 'Add to Playlist',
+                                            padding: const EdgeInsets.all(6),
+                                            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.bedtime_rounded, size: 20),
+                                            onPressed: () => SleepTimerBottomSheet.show(context),
+                                            tooltip: 'Sleep Timer',
+                                            padding: const EdgeInsets.all(6),
+                                            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.queue_music_rounded, size: 20),
+                                            onPressed: () => PlayingQueueSheet.show(context),
+                                            tooltip: 'Queue',
+                                            padding: const EdgeInsets.all(6),
+                                            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),

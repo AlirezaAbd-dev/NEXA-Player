@@ -213,7 +213,12 @@ class PlaybackQueueImpl implements IPlaybackQueue {
 
     final nextIndex = _state.currentIndex + 1;
     if (nextIndex < _state.tracks.length) {
-      _emit(_state.copyWith(currentIndex: nextIndex));
+      final targetId = _state.tracks[nextIndex].id;
+      final nextPlayNext = Set<String>.from(_state.playNextIds)..remove(targetId);
+      _emit(_state.copyWith(
+        currentIndex: nextIndex,
+        playNextIds: nextPlayNext,
+      ));
       return _state.currentTrack;
     }
 
@@ -253,7 +258,12 @@ class PlaybackQueueImpl implements IPlaybackQueue {
   @override
   Track? skipToIndex(int index) {
     if (index < 0 || index >= _state.tracks.length) return null;
-    _emit(_state.copyWith(currentIndex: index));
+    final targetId = _state.tracks[index].id;
+    final nextPlayNext = Set<String>.from(_state.playNextIds)..remove(targetId);
+    _emit(_state.copyWith(
+      currentIndex: index,
+      playNextIds: nextPlayNext,
+    ));
     return _state.currentTrack;
   }
 
@@ -283,10 +293,53 @@ class PlaybackQueueImpl implements IPlaybackQueue {
     final insertIdx = _state.currentIndex + 1;
     updatedTracks.insert(insertIdx, track);
     updatedOriginal.add(track);
+    final nextPlayNext = Set<String>.from(_state.playNextIds)..add(track.id);
 
     _emit(_state.copyWith(
       tracks: updatedTracks,
       originalTracks: updatedOriginal,
+      playNextIds: nextPlayNext,
+    ));
+  }
+
+  @override
+  void insertTrackAt(int index, Track track) {
+    final updatedTracks = List<Track>.from(_state.tracks);
+    final clampedIndex = index.clamp(0, updatedTracks.length);
+    updatedTracks.insert(clampedIndex, track);
+    final updatedOriginal = List<Track>.from(_state.originalTracks);
+    if (!updatedOriginal.any((t) => t.id == track.id)) {
+      updatedOriginal.add(track);
+    }
+
+    int newCurrentIndex = _state.currentIndex;
+    if (updatedTracks.length == 1) {
+      newCurrentIndex = 0;
+    } else if (clampedIndex <= _state.currentIndex && _state.currentIndex >= 0) {
+      newCurrentIndex = _state.currentIndex + 1;
+    }
+
+    _emit(_state.copyWith(
+      tracks: updatedTracks,
+      originalTracks: updatedOriginal,
+      currentIndex: newCurrentIndex,
+    ));
+  }
+
+  @override
+  void clearUpNext() {
+    if (_state.tracks.isEmpty || _state.currentIndex < 0) return;
+    if (_state.currentIndex >= _state.tracks.length - 1) return;
+
+    final keptTracks = _state.tracks.sublist(0, _state.currentIndex + 1);
+    final keptIds = keptTracks.map((t) => t.id).toSet();
+    final updatedOriginal =
+        _state.originalTracks.where((t) => keptIds.contains(t.id)).toList();
+
+    _emit(_state.copyWith(
+      tracks: keptTracks,
+      originalTracks: updatedOriginal,
+      playNextIds: const {},
     ));
   }
 
@@ -298,6 +351,8 @@ class PlaybackQueueImpl implements IPlaybackQueue {
     final updatedTracks = List<Track>.from(_state.tracks)..removeAt(index);
     final updatedOriginal = List<Track>.from(_state.originalTracks)
       ..removeWhere((t) => t.id == targetTrack.id);
+    final nextPlayNext = Set<String>.from(_state.playNextIds)
+      ..remove(targetTrack.id);
 
     int newIndex = _state.currentIndex;
     if (updatedTracks.isEmpty) {
@@ -312,6 +367,7 @@ class PlaybackQueueImpl implements IPlaybackQueue {
       tracks: updatedTracks,
       originalTracks: updatedOriginal,
       currentIndex: newIndex,
+      playNextIds: nextPlayNext,
     ));
   }
 

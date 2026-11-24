@@ -15,6 +15,7 @@ class PlaybackQueueState extends Equatable {
     this.isShuffled = false,
     this.queueContext,
     this.queueVersion = 0,
+    this.playNextIds = const {},
   });
 
   /// Currently active sequence of tracks (may be shuffled).
@@ -40,6 +41,9 @@ class PlaybackQueueState extends Equatable {
 
   /// Monotonically incremented revision counter whenever the active queue is replaced or cleared.
   final int queueVersion;
+
+  /// Track IDs explicitly queued via "Play Next" for subtle "Up Next" badge rendering.
+  final Set<String> playNextIds;
 
   /// Currently playing track, or null if the queue is empty or index invalid.
   Track? get currentTrack {
@@ -106,6 +110,7 @@ class PlaybackQueueState extends Equatable {
     QueueContext? queueContext,
     bool clearQueueContext = false,
     int? queueVersion,
+    Set<String>? playNextIds,
   }) {
     return PlaybackQueueState(
       tracks: tracks ?? this.tracks,
@@ -117,6 +122,7 @@ class PlaybackQueueState extends Equatable {
       queueContext:
           clearQueueContext ? null : (queueContext ?? this.queueContext),
       queueVersion: queueVersion ?? this.queueVersion,
+      playNextIds: playNextIds ?? this.playNextIds,
     );
   }
 
@@ -130,6 +136,7 @@ class PlaybackQueueState extends Equatable {
         isShuffled,
         queueContext,
         queueVersion,
+        playNextIds,
       ];
 }
 
@@ -174,6 +181,12 @@ abstract class IPlaybackQueue {
 
   /// Inserts [track] immediately following the currently active track.
   void addNext(Track track);
+
+  /// Inserts [track] at a specific [index] (used by undo actions).
+  void insertTrackAt(int index, Track track);
+
+  /// Removes all tracks queued after [PlaybackQueueState.currentIndex].
+  void clearUpNext();
 
   /// Removes track at [index] from the queue.
   void removeAt(int index);
