@@ -29,18 +29,6 @@ import '../widgets/sleep_timer_bottom_sheet.dart';
 import '../widgets/stellio_repeat_picker_sheet.dart';
 import '../widgets/waveform_visualizer.dart';
 
-/// Layout modes supported by the Now Playing hero screen.
-enum NowPlayingLayoutMode {
-  /// Standard modern layout with hero artwork, waveform seeker, and controls.
-  standard,
-
-  /// Full-size vinyl turntable display with rotating grooves.
-  vinyl,
-
-  /// Clean immersive artwork layout with floating controls.
-  art,
-}
-
 /// Full-screen showstopper Now Playing screen featuring:
 /// - Edge-slide gestures: Right edge = DVC volume, Left edge = playback speed.
 /// - Variable-speed tactile waveform gearshift scrubber (1x -> 0.5x -> 0.1x).
@@ -150,19 +138,30 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
 
   void _cycleLayoutMode() {
     HapticFeedback.selectionClick();
+    final NowPlayingLayoutMode nextMode;
+    final String label;
+    final IconData icon;
+    switch (_layoutMode) {
+      case NowPlayingLayoutMode.standard:
+        nextMode = NowPlayingLayoutMode.vinyl;
+        label = 'Layout: Vinyl';
+        icon = Icons.album_rounded;
+        break;
+      case NowPlayingLayoutMode.vinyl:
+        nextMode = NowPlayingLayoutMode.art;
+        label = 'Layout: Full Art';
+        icon = Icons.image_rounded;
+        break;
+      case NowPlayingLayoutMode.art:
+        nextMode = NowPlayingLayoutMode.standard;
+        label = 'Layout: Standard';
+        icon = Icons.view_carousel_rounded;
+        break;
+    }
     setState(() {
-      switch (_layoutMode) {
-        case NowPlayingLayoutMode.standard:
-          _layoutMode = NowPlayingLayoutMode.vinyl;
-          break;
-        case NowPlayingLayoutMode.vinyl:
-          _layoutMode = NowPlayingLayoutMode.art;
-          break;
-        case NowPlayingLayoutMode.art:
-          _layoutMode = NowPlayingLayoutMode.standard;
-          break;
-      }
+      _layoutMode = nextMode;
     });
+    _showEdgeHud(label, icon);
   }
 
   void _showDisplayModesSheet(BuildContext context, bool isCasting) {
@@ -494,11 +493,13 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                           final availableHeight = constraints.maxHeight;
                           final availableWidth = constraints.maxWidth;
                           final double maxArt = math.min(
-                            availableWidth - 40.0,
-                            _layoutMode == NowPlayingLayoutMode.art ? 300.0 : 272.0,
+                            availableWidth - (_layoutMode == NowPlayingLayoutMode.art ? 16.0 : 40.0),
+                            _layoutMode == NowPlayingLayoutMode.art ? 340.0 : 272.0,
                           );
+                          final double heightFactor =
+                              _layoutMode == NowPlayingLayoutMode.art ? 0.43 : 0.39;
                           final double artworkSize =
-                              (availableHeight * 0.39).clamp(132.0, maxArt.clamp(140.0, 310.0));
+                              (availableHeight * heightFactor).clamp(132.0, maxArt.clamp(140.0, 340.0));
                           final isCompactHeight = availableHeight < 640.0;
                           final playButtonSize = isCompactHeight ? 56.0 : 64.0;
                           final queueSourceLabel = queueState.queueContext?.collectionTitle ?? albumHeader;
@@ -700,6 +701,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                                           breathingEnergy:
                                               ref.watch(subBassEnergyProvider),
                                           size: artworkSize,
+                                          layoutMode: _layoutMode,
                                           onPageSettled: _handlePageSettled,
                                           onPageScrolled: _handlePageScrolled,
                                           onSwipeLeft: () {

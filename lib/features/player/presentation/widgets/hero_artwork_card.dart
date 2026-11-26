@@ -9,6 +9,13 @@ import 'package:nexa_player/shared/models/track.dart';
 import 'package:nexa_player/shared/widgets/cards/nexa_artwork_image.dart';
 import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
 
+/// Visual presentation modes for [HeroArtworkCard].
+enum NowPlayingLayoutMode {
+  standard,
+  vinyl,
+  art,
+}
+
 /// Tuned spring settle physics giving Stellio-style cover flow silky inertia.
 class StellioPageScrollPhysics extends PageScrollPhysics {
   const StellioPageScrollPhysics({super.parent});
@@ -49,6 +56,7 @@ class HeroArtworkCard extends StatefulWidget {
     this.onPageScrolled,
     this.breathingEnergy = 0.0,
     this.size = 280.0,
+    this.layoutMode = NowPlayingLayoutMode.standard,
   });
 
   final Track? track;
@@ -64,6 +72,7 @@ class HeroArtworkCard extends StatefulWidget {
   final ValueChanged<double>? onPageScrolled;
   final double breathingEnergy;
   final double size;
+  final NowPlayingLayoutMode layoutMode;
 
   @override
   State<HeroArtworkCard> createState() => _HeroArtworkCardState();
@@ -488,13 +497,106 @@ class _HeroArtworkCardState extends State<HeroArtworkCard>
         ? 1.0 + (widget.breathingEnergy.clamp(0.0, 1.0) * 0.032)
         : 1.0;
 
+    if (widget.layoutMode == NowPlayingLayoutMode.vinyl) {
+      return Transform.scale(
+        scale: isCurrent ? breathScale : 1.0,
+        child: RotationTransition(
+          key: const ValueKey('hero_artwork_vinyl_disc'),
+          turns: (isCurrent && widget.isPlaying)
+              ? _rotationController
+              : const AlwaysStoppedAnimation(0.08),
+          child: Container(
+            width: widget.size,
+            height: widget.size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isDark ? const Color(0xFF0F172A) : const Color(0xFF1E293B),
+              border: Border.all(
+                color: primary.withOpacity(0.35),
+                width: 3.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: primary.withOpacity(isDark ? 0.34 : 0.20),
+                  blurRadius: 34.0,
+                  offset: const Offset(0, 12),
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  artworkContent,
+                  // Concentric vinyl grooves
+                  IgnorePointer(
+                    child: Container(
+                      margin: const EdgeInsets.all(18.0),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.16),
+                          width: 1.0,
+                        ),
+                      ),
+                    ),
+                  ),
+                  IgnorePointer(
+                    child: Container(
+                      margin: const EdgeInsets.all(40.0),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.12),
+                          width: 1.0,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Center vinyl spindle label + hole
+                  Center(
+                    child: Container(
+                      width: 44.0,
+                      height: 44.0,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: primary.withOpacity(0.92),
+                        border: Border.all(
+                          color: Colors.black.withOpacity(0.45),
+                          width: 2.0,
+                        ),
+                      ),
+                      child: Center(
+                        child: Container(
+                          width: 14.0,
+                          height: 14.0,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isDark ? const Color(0xFF020617) : Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final isFullArt = widget.layoutMode == NowPlayingLayoutMode.art;
+    final radius = isFullArt ? 14.0 : 24.0;
+
     return Transform.scale(
       scale: isCurrent ? breathScale : 1.0,
       child: Container(
+        key: ValueKey(isFullArt ? 'hero_artwork_full_art' : 'hero_artwork_standard'),
         width: widget.size,
         height: widget.size,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24.0),
+          borderRadius: BorderRadius.circular(radius),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -505,15 +607,37 @@ class _HeroArtworkCardState extends State<HeroArtworkCard>
           ),
           boxShadow: [
             BoxShadow(
-              color: primary.withOpacity(isDark ? 0.32 : 0.18),
-              blurRadius: 36.0,
+              color: primary.withOpacity(isDark ? (isFullArt ? 0.42 : 0.32) : 0.18),
+              blurRadius: isFullArt ? 42.0 : 36.0,
               offset: const Offset(0, 14),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(24.0),
-          child: artworkContent,
+          borderRadius: BorderRadius.circular(radius),
+          child: isFullArt
+              ? Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    artworkContent,
+                    IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withOpacity(0.28),
+                            ],
+                            stops: const [0.65, 1.0],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : artworkContent,
         ),
       ),
     );
