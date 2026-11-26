@@ -258,5 +258,56 @@ void main() {
         await tester.binding.setSurfaceSize(null);
       },
     );
+
+    testWidgets(
+      'opening PlayingQueueSheet auto-scrolls currently playing track into view in a long queue',
+      (tester) async {
+        final longTracks = List<Track>.generate(
+          50,
+          (i) => Track(
+            id: 't$i',
+            title: 'Long Queue Track $i',
+            artist: 'Artist $i',
+            duration: const Duration(minutes: 3),
+          ),
+        );
+        final queue = PlaybackQueueImpl();
+        addTearDown(queue.dispose);
+        queue.setQueue(longTracks, initialIndex: 35);
+
+        final notifier = _QueueTestNotifier(
+          PlaybackState(
+            currentTrack: longTracks[35],
+            status: PlaybackStatus.paused,
+            duration: const Duration(minutes: 3),
+          ),
+          queue,
+        );
+
+        await tester.binding.setSurfaceSize(const Size(390, 844));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(
+          buildNowPlaying(
+            queue: queue,
+            notifier: notifier,
+            size: const Size(390, 844),
+            textScale: 1.0,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byTooltip('Queue'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(PlayingQueueSheet), findsOneWidget);
+        final currentTile = find.byKey(const ValueKey('queue_tile_t35_35'));
+        expect(currentTile, findsOneWidget);
+        final tileTop = tester.getTopLeft(currentTile).dy;
+        final sheetTop = tester.getTopLeft(find.byType(PlayingQueueSheet)).dy;
+        expect(tileTop, greaterThanOrEqualTo(sheetTop));
+        expect(tileTop, lessThan(844.0));
+      },
+    );
   });
 }

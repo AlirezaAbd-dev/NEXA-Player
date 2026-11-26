@@ -51,7 +51,7 @@ class PlayingQueueSheet extends ConsumerStatefulWidget {
 class _PlayingQueueSheetState extends ConsumerState<PlayingQueueSheet> {
   final DraggableScrollableController _sheetController =
       DraggableScrollableController();
-  final ScrollController _fallbackScrollController = ScrollController();
+  final GlobalKey _currentItemKey = GlobalKey();
   String? _lastAutoCenteredKey;
   Track? _pendingUndoTrack;
   int? _pendingUndoIndex;
@@ -61,7 +61,6 @@ class _PlayingQueueSheetState extends ConsumerState<PlayingQueueSheet> {
   void dispose() {
     _undoTimer?.cancel();
     _sheetController.dispose();
-    _fallbackScrollController.dispose();
     super.dispose();
   }
 
@@ -85,26 +84,49 @@ class _PlayingQueueSheetState extends ConsumerState<PlayingQueueSheet> {
     ScrollController? controller,
     int currentIndex,
     int queueLength,
-    String? currentTrackId,
-  ) {
-    if (controller == null || !controller.hasClients) return;
+    String? currentTrackId, {
+    int attempt = 0,
+  }) {
+    if (!mounted || controller == null || !controller.hasClients) return;
     if (currentIndex < 0 || currentIndex >= queueLength) return;
     final key = '${currentTrackId ?? ''}_$currentIndex';
     if (_lastAutoCenteredKey == key) return;
+
+    final pos = controller.position;
+    // Wait until DraggableScrollableSheet & ReorderableListView finish initial layout.
+    if (!pos.hasContentDimensions ||
+        !pos.hasViewportDimension ||
+        pos.viewportDimension <= 0 ||
+        (queueLength > 8 && pos.maxScrollExtent <= 0)) {
+      if (attempt < 5) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToCurrentIfNeeded(
+            controller,
+            currentIndex,
+            queueLength,
+            currentTrackId,
+            attempt: attempt + 1,
+          );
+        });
+      }
+      return;
+    }
+
     _lastAutoCenteredKey = key;
 
-    final scroller = ActiveTrackAutoScroller(itemExtent: 68.0);
-    final pos = controller.position;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final scroller = ActiveTrackAutoScroller(itemExtent: 72.0);
     final target = scroller.computeTargetOffset(
       itemIndex: currentIndex,
       currentPixels: pos.pixels,
       viewportDimension: pos.viewportDimension,
       maxScrollExtent: pos.maxScrollExtent,
       bottomOcclusionClearance: 32.0,
-      forceScroll: true,
+      forceScroll: false,
     );
     if (target == null) return;
-    if (MediaQuery.disableAnimationsOf(context)) {
+
+    if (reduceMotion) {
       controller.jumpTo(target);
     } else {
       controller.animateTo(
@@ -113,6 +135,22 @@ class _PlayingQueueSheetState extends ConsumerState<PlayingQueueSheet> {
         curve: Curves.easeOutCubic,
       );
     }
+
+    // Refine with Scrollable.ensureVisible once the target item is built in view.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final itemCtx = _currentItemKey.currentContext;
+      if (itemCtx != null) {
+        Scrollable.ensureVisible(
+          itemCtx,
+          alignment: 0.35,
+          duration: reduceMotion
+              ? Duration.zero
+              : const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+        );
+      }
+    });
   }
 
   Future<void> _handleSaveAsPlaylist(List<Track> tracks) async {
@@ -417,6 +455,7 @@ class _PlayingQueueSheetState extends ConsumerState<PlayingQueueSheet> {
                             final rowTile = Opacity(
                               opacity: isPrevious ? 0.55 : 1.0,
                               child: Container(
+                                key: isCurrent ? _currentItemKey : null,
                                 margin: const EdgeInsets.only(bottom: 4.0),
                                 decoration: BoxDecoration(
                                   color: isCurrent
