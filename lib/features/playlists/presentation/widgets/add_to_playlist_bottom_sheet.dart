@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
 import 'package:nexa_player/core/di/injection.dart';
+import 'package:nexa_player/core/l10n/locale_controller.dart';
 import 'package:nexa_player/core/services/library/library_sync_bus.dart';
+import 'package:nexa_player/features/player/presentation/providers/player_providers.dart';
+import 'package:nexa_player/features/playlists/domain/models/smart_playlist.dart';
 import 'package:nexa_player/features/playlists/presentation/providers/playlists_providers.dart';
 import 'package:nexa_player/shared/models/playlist.dart';
 import 'package:nexa_player/shared/models/track.dart';
@@ -193,6 +196,12 @@ class _AddToPlaylistBottomSheetState
   @override
   Widget build(BuildContext context) {
     final playlistsAsync = ref.watch(playlistsListNotifierProvider);
+    final favTracks = ref
+            .watch(smartPlaylistTracksProvider(SmartPlaylistType.favorites))
+            .valueOrNull ??
+        const <Track>[];
+    final isFavorite = favTracks.any((t) => t.id == widget.track.id) ||
+        widget.track.isFavorite;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final surfaceTokens = NexaSurfaceTokens.of(context);
@@ -328,6 +337,86 @@ class _AddToPlaylistBottomSheetState
               ),
             ],
             const SizedBox(height: 10),
+            // Quick toggle for Dynamic "My Favorites" Smart Playlist
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: NexaSurface(
+                level: isFavorite ? NexaSurfaceLevel.l2 : NexaSurfaceLevel.l1,
+                borderRadius: BorderRadius.circular(14),
+                child: InkWell(
+                  key: const ValueKey('add_to_favorites_toggle'),
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: () async {
+                    final navigator = Navigator.of(context);
+                    await ref
+                        .read(playerNotifierProvider.notifier)
+                        .toggleFavorite(widget.track);
+                    ref.invalidate(
+                      smartPlaylistTracksProvider(SmartPlaylistType.favorites),
+                    );
+                    if (mounted) {
+                      navigator.pop();
+                    }
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: Colors.redAccent.withOpacity(0.16),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                            isFavorite
+                                ? Icons.favorite_rounded
+                                : Icons.favorite_border_rounded,
+                            color: Colors.redAccent.shade200,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                context.l10n.favorites,
+                                style: AppTypography.titleSmall.copyWith(
+                                  color: colorScheme.onSurface,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                context.l10n.tracksCount(favTracks.length),
+                                style: AppTypography.bodySmall.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          isFavorite
+                              ? Icons.check_circle_rounded
+                              : Icons.add_circle_outline_rounded,
+                          color: isFavorite
+                              ? Colors.redAccent.shade200
+                              : colorScheme.onSurfaceVariant,
+                          size: 22,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
             Flexible(
               child: playlistsAsync.when(
                 data: (playlists) {
@@ -370,6 +459,12 @@ class _AddToPlaylistBottomSheetState
                         (t) => t.id == widget.track.id,
                       );
 
+                      final liveCount = tracksAsync.hasValue
+                          ? plTracks.length
+                          : pl.trackCount;
+                      final countLabel = liveCount == 1
+                          ? '1 track'
+                          : '$liveCount tracks';
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 8),
                         child: NexaSurface(
@@ -416,8 +511,8 @@ class _AddToPlaylistBottomSheetState
                                         const SizedBox(height: 2),
                                         Text(
                                           alreadyContains
-                                              ? '${pl.trackCountLabel} • Added'
-                                              : pl.trackCountLabel,
+                                              ? '$countLabel • Added'
+                                              : countLabel,
                                           style: AppTypography.bodySmall
                                               .copyWith(
                                             color: alreadyContains

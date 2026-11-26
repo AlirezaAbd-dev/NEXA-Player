@@ -14,11 +14,23 @@ class SqlitePlaylistsRepository implements IPlaylistsRepository {
   @override
   Future<Result<List<Playlist>, DatabaseFailure>> getAllPlaylists() async {
     try {
-      final rows = database.select(
-        'SELECT * FROM ${DatabaseSchema.tablePlaylists} '
-        'ORDER BY ${DatabaseSchema.colName} COLLATE NOCASE ASC',
-      );
-      final playlists = rows.map((r) => Playlist.fromMap(r)).toList();
+      final rows = database.select('''
+        SELECT p.*,
+               COALESCE((
+                 SELECT COUNT(*)
+                 FROM ${DatabaseSchema.tablePlaylistTracks} pt
+                 INNER JOIN ${DatabaseSchema.tableTracks} t
+                   ON t.${DatabaseSchema.colId} = pt.${DatabaseSchema.colTrackId}
+                 WHERE pt.${DatabaseSchema.colPlaylistId} = p.${DatabaseSchema.colId}
+               ), 0) AS live_track_count
+        FROM ${DatabaseSchema.tablePlaylists} p
+        ORDER BY p.${DatabaseSchema.colName} COLLATE NOCASE ASC
+      ''');
+      final playlists = rows.map((r) {
+        final map = Map<String, Object?>.from(r);
+        map[DatabaseSchema.colTrackCount] = r['live_track_count'] ?? 0;
+        return Playlist.fromMap(map);
+      }).toList();
       return Result.success(playlists);
     } catch (e, st) {
       return Result.failure(DatabaseFailure(

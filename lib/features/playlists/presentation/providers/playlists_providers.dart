@@ -42,6 +42,7 @@ final shareServiceProvider = Provider<IShareService>((ref) {
 class PlaylistsNotifier extends AsyncNotifier<List<Playlist>> {
   @override
   FutureOr<List<Playlist>> build() async {
+    ref.watch(librarySyncRevisionProvider);
     final repo = ref.watch(playlistsRepositoryProvider);
     final res = await repo.getAllPlaylists();
     return res.valueOrNull ?? [];

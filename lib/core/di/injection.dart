@@ -446,7 +446,7 @@ Future<void> configureDependencies({
 
 void _purgeMockDataIfPresent(IAppDatabase db, SharedPreferences prefs) {
   try {
-    const key = 'demo_purged_v1';
+    const key = 'demo_purged_v2';
     if (prefs.getBool(key) == true) return;
 
     db.transaction(() {
@@ -467,6 +467,27 @@ void _purgeMockDataIfPresent(IAppDatabase db, SharedPreferences prefs) {
         db.execute('DELETE FROM playlist_tracks WHERE track_id IN ($inClause);');
         db.execute('DELETE FROM tracks WHERE id IN ($inClause);');
       }
+
+      // Remove orphaned playlist_tracks pointing to non-existent tracks
+      db.execute(
+        'DELETE FROM playlist_tracks WHERE track_id NOT IN (SELECT id FROM tracks);',
+      );
+
+      // Remove leftover seeded demo playlists that now have zero real tracks
+      db.execute('''
+        DELETE FROM playlists
+        WHERE id IN ('pl-smart', 'pl-favorites')
+          AND id NOT IN (SELECT DISTINCT playlist_id FROM playlist_tracks);
+      ''');
+
+      // Reconcile cached track_count on all remaining playlists
+      db.execute('''
+        UPDATE playlists
+        SET track_count = (
+          SELECT COUNT(*) FROM playlist_tracks
+          WHERE playlist_id = playlists.id
+        );
+      ''');
 
       // Sweep orphaned demo albums
       db.execute('''
