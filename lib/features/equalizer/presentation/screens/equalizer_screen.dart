@@ -451,20 +451,23 @@ class EqualizerScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 8),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                children: List.generate(
-                  eqState.bands.length,
-                  (index) => SizedBox(
-                    width: 52,
-                    child: EqBandSlider(
-                      band: eqState.bands[index],
-                      isEnabled: eqState.isEnabled,
-                      accentColor: accentColor,
-                      onGainChanged: (gain) => onGainChanged(index, gain),
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Row(
+                  children: List.generate(
+                    eqState.bands.length,
+                    (index) => SizedBox(
+                      width: 52,
+                      child: EqBandSlider(
+                        band: eqState.bands[index],
+                        isEnabled: eqState.isEnabled,
+                        accentColor: accentColor,
+                        onGainChanged: (gain) => onGainChanged(index, gain),
+                      ),
                     ),
                   ),
                 ),

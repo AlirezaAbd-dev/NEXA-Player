@@ -69,10 +69,13 @@ class EqBandSlider extends StatelessWidget {
                 ),
               ),
 
-              // Rotated Slider (Quarter turns = 3 makes up = increase gain)
-              RotatedBox(
-                quarterTurns: 3,
-                child: SliderTheme(
+              // Rotated Slider (Quarter turns = 3 makes up = increase gain).
+              // Force LTR so RTL locales don't invert min/max along the vertical axis.
+              Directionality(
+                textDirection: TextDirection.ltr,
+                child: RotatedBox(
+                  quarterTurns: 3,
+                  child: SliderTheme(
                   data: SliderTheme.of(context).copyWith(
                     trackHeight: 3.0,
                     activeTrackColor: isEnabled
@@ -106,6 +109,7 @@ class EqBandSlider extends StatelessWidget {
                           }
                         : null,
                   ),
+                ),
                 ),
               ),
             ],
