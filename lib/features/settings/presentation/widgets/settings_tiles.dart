@@ -292,15 +292,25 @@ class SettingsSelectorTile<T> extends StatelessWidget {
 
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (ctx) => NexaSurface(
-        tier: NexaSurfaceTier.l2,
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(GlassTokens.radiusCard),
+      builder: (ctx) => ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(ctx).height * 0.85,
         ),
-        child: Column(
+        child: NexaSurface(
+          tier: NexaSurfaceTier.l2,
+          padding: EdgeInsets.fromLTRB(
+            16,
+            16,
+            16,
+            24 + MediaQuery.paddingOf(ctx).bottom,
+          ),
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(GlassTokens.radiusCard),
+          ),
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -377,6 +387,7 @@ class SettingsSelectorTile<T> extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }
