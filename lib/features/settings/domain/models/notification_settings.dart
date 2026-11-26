@@ -12,6 +12,7 @@ class NotificationSettings {
     this.widgetFormat = '4x1', // 2x2, 4x1, 4x2
     this.androidAuto = true,
     this.wearOs = false,
+    this.lockScreenPlayer = false,
   });
 
   final bool showPlaybackNotification;
@@ -19,6 +20,7 @@ class NotificationSettings {
   final String widgetFormat;
   final bool androidAuto;
   final bool wearOs;
+  final bool lockScreenPlayer;
 
   NotificationSettings copyWith({
     bool? showPlaybackNotification,
@@ -26,6 +28,7 @@ class NotificationSettings {
     String? widgetFormat,
     bool? androidAuto,
     bool? wearOs,
+    bool? lockScreenPlayer,
   }) {
     return NotificationSettings(
       showPlaybackNotification:
@@ -35,6 +38,7 @@ class NotificationSettings {
       widgetFormat: widgetFormat ?? this.widgetFormat,
       androidAuto: androidAuto ?? this.androidAuto,
       wearOs: wearOs ?? this.wearOs,
+      lockScreenPlayer: lockScreenPlayer ?? this.lockScreenPlayer,
     );
   }
 
@@ -44,6 +48,7 @@ class NotificationSettings {
         'widgetFormat': widgetFormat,
         'androidAuto': androidAuto,
         'wearOs': wearOs,
+        'lockScreenPlayer': lockScreenPlayer,
       };
 
   factory NotificationSettings.fromJson(Map<String, dynamic> json) =>
@@ -63,5 +68,6 @@ class NotificationSettings {
         widgetFormat: json['widgetFormat'] as String? ?? '4x1',
         androidAuto: json['androidAuto'] as bool? ?? true,
         wearOs: json['wearOs'] as bool? ?? false,
+        lockScreenPlayer: json['lockScreenPlayer'] as bool? ?? false,
       );
 }

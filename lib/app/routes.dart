@@ -34,6 +34,7 @@ abstract final class AppRoutes {
   static const String nowPlaying = '/player';
   static const String widgets = '/widgets';
   static const String standby = '/standby';
+  static const String lockscreen = '/lockscreen';
   static const String carMode = '/car-mode';
   static const String wear = '/wear';
 

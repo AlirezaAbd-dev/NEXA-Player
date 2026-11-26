@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
+import 'package:nexa_player/core/l10n/locale_controller.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
 import '../providers/settings_providers.dart';
 import '../widgets/settings_tiles.dart';
@@ -35,6 +36,16 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                 value: notif.showPlaybackNotification,
                 onChanged: (val) => notifier.update(
                   notif.copyWith(showPlaybackNotification: val),
+                ),
+              ),
+              SettingsSwitchTile(
+                title: context.l10n.lockScreenPlayerTitle,
+                subtitle: context.l10n.lockScreenPlayerSubtitle,
+                icon: Icons.screen_lock_portrait_rounded,
+                iconColor: Colors.tealAccent,
+                value: notif.lockScreenPlayer,
+                onChanged: (val) => notifier.update(
+                  notif.copyWith(lockScreenPlayer: val),
                 ),
               ),
               SettingsSelectorTile<String>(

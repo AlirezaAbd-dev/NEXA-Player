@@ -84,5 +84,9 @@
   "systemAndStorage": "سیستم و حافظه",
   "playbackAndControls": "پخش و کنترل‌ها",
   "audioSettings": "تنظیمات صدا",
-  "scannerSettings": "تنظیمات اسکنر"
+  "scannerSettings": "تنظیمات اسکنر",
+  "lockScreenPlayerTitle": "پخش‌کننده صفحه قفل",
+  "lockScreenPlayerSubtitle": "نمایش پخش‌کننده تمام‌صفحه روی صفحه قفل هنگام پخش موسیقی",
+  "unlockToDismiss": "باز کردن قفل و بستن",
+  "swipeToUnlock": "برای بستن به بالا بکشید یا دکمه بستن را بزنید"
 }

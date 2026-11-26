@@ -2,8 +2,12 @@ package com.nexa.player.nexa_player
 
 import android.Manifest
 import android.app.Activity
+import android.app.KeyguardManager
+import android.content.BroadcastReceiver
 import android.content.ContentUris
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -25,6 +29,7 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.util.Size
+import android.view.WindowManager
 import androidx.annotation.NonNull
 import androidx.core.content.ContextCompat
 import com.ryanheise.audioservice.AudioServiceActivity
@@ -46,6 +51,11 @@ class MainActivity : AudioServiceActivity() {
     private val fftEventChannelName = "com.nexa.player/fft_stream"
     private val fftControlChannelName = "com.nexa.player/fft_control"
     private val eqChannelName = "com.nexa.player/equalizer"
+    private val lockscreenChannelName = "com.nexa.player/lockscreen"
+    private var lockscreenChannel: MethodChannel? = null
+    private var lockscreenEnabled: Boolean = false
+    private var lockscreenPlaybackActive: Boolean = false
+    private var screenOnReceiver: BroadcastReceiver? = null
     private val ioExecutor: ExecutorService = Executors.newFixedThreadPool(4)
     private val fftExecutor: ExecutorService = Executors.newSingleThreadExecutor()
     private val eqExecutor: ExecutorService = Executors.newSingleThreadExecutor()
@@ -246,6 +256,62 @@ class MainActivity : AudioServiceActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+        val lsChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, lockscreenChannelName)
+        lockscreenChannel = lsChannel
+        lsChannel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "setLockscreenConfig" -> {
+                    lockscreenEnabled = call.argument<Boolean>("enabled") ?: false
+                    lockscreenPlaybackActive = call.argument<Boolean>("isPlaying") ?: false
+                    updateLockscreenWindowFlags(lockscreenEnabled && lockscreenPlaybackActive)
+                    result.success(true)
+                }
+                "dismissLockscreen" -> {
+                    updateLockscreenWindowFlags(false)
+                    result.success(true)
+                }
+                else -> result.notImplemented()
+            }
+        }
+        registerScreenOnReceiver()
+    }
+
+    private fun updateLockscreenWindowFlags(allowOverLockscreen: Boolean) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(allowOverLockscreen)
+        } else {
+            @Suppress("DEPRECATION")
+            if (allowOverLockscreen) {
+                window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
+            } else {
+                window.clearFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
+            }
+        }
+    }
+
+    private fun registerScreenOnReceiver() {
+        if (screenOnReceiver != null) return
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent?.action != Intent.ACTION_SCREEN_ON) return
+                if (!lockscreenEnabled || !lockscreenPlaybackActive) return
+                val km = getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
+                if (km?.isKeyguardLocked == true) {
+                    updateLockscreenWindowFlags(true)
+                    mainHandler.post {
+                        lockscreenChannel?.invokeMethod("openLockscreen", null)
+                    }
+                }
+            }
+        }
+        screenOnReceiver = receiver
+        val filter = IntentFilter(Intent.ACTION_SCREEN_ON)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(receiver, filter)
+        }
     }
 
     override fun onStart() {
@@ -306,6 +372,10 @@ class MainActivity : AudioServiceActivity() {
     }
 
     override fun onDestroy() {
+        screenOnReceiver?.let {
+            try { unregisterReceiver(it) } catch (_: Exception) {}
+        }
+        screenOnReceiver = null
         captureRequested = false
         releaseVisualizerSync()
         releaseEqualizerSync()

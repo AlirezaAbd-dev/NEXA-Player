@@ -604,6 +604,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Scanner Settings'**
   String get scannerSettings;
+
+  /// No description provided for @lockScreenPlayerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lockscreen Player'**
+  String get lockScreenPlayerTitle;
+
+  /// No description provided for @lockScreenPlayerSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show full-screen player over the lock screen while music is playing'**
+  String get lockScreenPlayerSubtitle;
+
+  /// No description provided for @unlockToDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock & Close'**
+  String get unlockToDismiss;
+
+  /// No description provided for @swipeToUnlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Swipe up or tap close to dismiss'**
+  String get swipeToUnlock;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

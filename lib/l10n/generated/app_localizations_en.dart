@@ -272,4 +272,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get scannerSettings => 'Scanner Settings';
+
+  @override
+  String get lockScreenPlayerTitle => 'Lockscreen Player';
+
+  @override
+  String get lockScreenPlayerSubtitle => 'Show full-screen player over the lock screen while music is playing';
+
+  @override
+  String get unlockToDismiss => 'Unlock & Close';
+
+  @override
+  String get swipeToUnlock => 'Swipe up or tap close to dismiss';
 }

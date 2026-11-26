@@ -126,5 +126,9 @@
   "systemAndStorage": "SYSTEM & STORAGE",
   "playbackAndControls": "Playback & Controls",
   "audioSettings": "Audio Settings",
-  "scannerSettings": "Scanner Settings"
+  "scannerSettings": "Scanner Settings",
+  "lockScreenPlayerTitle": "Lockscreen Player",
+  "lockScreenPlayerSubtitle": "Show full-screen player over the lock screen while music is playing",
+  "unlockToDismiss": "Unlock & Close",
+  "swipeToUnlock": "Swipe up or tap close to dismiss"
 }

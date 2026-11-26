@@ -8,6 +8,7 @@ import '../features/library/presentation/screens/artists_tab_screen.dart';
 import '../features/library/presentation/screens/folders_tab_screen.dart';
 import '../features/library/presentation/screens/songs_tab_screen.dart';
 import '../features/lyrics/lyrics.dart';
+import '../features/player/presentation/screens/lockscreen_player_screen.dart';
 import '../features/player/presentation/screens/now_playing_screen.dart';
 import '../features/player/presentation/screens/standby_mode_screen.dart';
 import '../features/playlists/presentation/screens/playlist_detail_screen.dart';
@@ -342,6 +343,13 @@ final appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       path: AppRoutes.standby,
       builder: (context, state) => const StandbyModeScreen(),
+    ),
+
+    // 8b. Stellio-Style Full-Screen Lockscreen Player Modal
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: AppRoutes.lockscreen,
+      builder: (context, state) => const LockscreenPlayerScreen(),
     ),
 
     // 9. In-App Driving Car Mode HUD

@@ -5,6 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/l10n/locale_controller.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/theme_controller.dart';
+import '../features/player/data/services/lockscreen_service.dart';
+import '../features/player/presentation/providers/player_providers.dart';
+import '../features/settings/presentation/providers/settings_providers.dart';
 import '../l10n/generated/app_localizations.dart';
 import 'router.dart';
 import 'routes.dart';
@@ -34,10 +37,20 @@ class _NexaPlayerAppState extends ConsumerState<NexaPlayerApp> {
         appRouter.push(AppRoutes.player);
       }
     });
+    LockscreenService.registerOpenHandler(() {
+      if (!mounted) return;
+      final playerState = ref.read(playerNotifierProvider);
+      if (playerState.currentTrack == null) return;
+      final currentPath = appRouter.state.uri.path;
+      if (currentPath != AppRoutes.lockscreen) {
+        appRouter.push(AppRoutes.lockscreen);
+      }
+    });
   }
 
   @override
   void dispose() {
+    LockscreenService.unregisterOpenHandler();
     _notificationClickSub?.cancel();
     super.dispose();
   }
@@ -46,6 +59,16 @@ class _NexaPlayerAppState extends ConsumerState<NexaPlayerApp> {
   Widget build(BuildContext context) {
     final themeState = ref.watch(themeControllerProvider);
     final localePref = ref.watch(localeControllerProvider);
+    final lockscreenEnabled = ref.watch(
+      notificationSettingsProvider.select((s) => s.lockScreenPlayer),
+    );
+    final isPlaying = ref.watch(isPlayingProvider);
+    unawaited(
+      LockscreenService.syncConfig(
+        enabled: lockscreenEnabled,
+        isPlaying: isPlaying,
+      ),
+    );
     final systemBrightness = MediaQuery.platformBrightnessOf(context);
 
     final effectiveTheme = AppTheme.buildTheme(

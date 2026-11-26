@@ -272,4 +272,16 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get scannerSettings => 'تنظیمات اسکنر';
+
+  @override
+  String get lockScreenPlayerTitle => 'پخش‌کننده صفحه قفل';
+
+  @override
+  String get lockScreenPlayerSubtitle => 'نمایش پخش‌کننده تمام‌صفحه روی صفحه قفل هنگام پخش موسیقی';
+
+  @override
+  String get unlockToDismiss => 'باز کردن قفل و بستن';
+
+  @override
+  String get swipeToUnlock => 'برای بستن به بالا بکشید یا دکمه بستن را بزنید';
 }
