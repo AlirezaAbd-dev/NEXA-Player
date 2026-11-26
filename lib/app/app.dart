@@ -70,6 +70,10 @@ class _NexaPlayerAppState extends ConsumerState<NexaPlayerApp> {
       ),
     );
     final systemBrightness = MediaQuery.platformBrightnessOf(context);
+    final isFarsi = localePref == AppLocalePreference.fa ||
+        (localePref == AppLocalePreference.system &&
+            WidgetsBinding.instance.platformDispatcher.locale.languageCode ==
+                'fa');
 
     final effectiveTheme = AppTheme.buildTheme(
       preset: themeState.preset,
@@ -78,6 +82,7 @@ class _NexaPlayerAppState extends ConsumerState<NexaPlayerApp> {
       customPrimary: themeState.customTheme?.primaryColor,
       customSurface: themeState.customTheme?.surfaceColor,
       customBackground: themeState.customTheme?.scaffoldBackgroundColor,
+      fontFamily: isFarsi ? 'Vazirmatn' : null,
     );
 
     return MaterialApp.router(
