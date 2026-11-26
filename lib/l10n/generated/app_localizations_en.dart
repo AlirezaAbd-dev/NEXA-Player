@@ -284,4 +284,147 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get swipeToUnlock => 'Swipe up or tap close to dismiss';
+
+  @override
+  String matchingSettingsCount(int count) {
+    return 'MATCHING SETTINGS ($count)';
+  }
+
+  @override
+  String noSettingsFoundFor(String query) {
+    return 'No settings found for \"$query\"';
+  }
+
+  @override
+  String get statusOn => 'ON';
+
+  @override
+  String get statusOff => 'OFF';
+
+  @override
+  String get playbackAndControlsSubtitle => 'Telephony resume, Focus ducking, Gestures, Car mode';
+
+  @override
+  String get homescreenWidgetsAndStandby => 'Homescreen Widgets & Standby';
+
+  @override
+  String get homescreenWidgetsAndStandbySubtitle => '4×1, 4×2 Hero Vinyl, 2×2, 4×3 Karaoke & OLED Bedside';
+
+  @override
+  String get audioSettingsSubtitle => 'Bit-perfect Hi-Res, Gapless, DVC, Sample rate';
+
+  @override
+  String get equalizerAndDspSubtitle => '10-Band Parametric EQ, Z-Bass, Reverb, Presets';
+
+  @override
+  String get visualizerAndSpectrum => 'Visualizer & Spectrum';
+
+  @override
+  String get visualizerAndSpectrumSubtitle => 'FFT Bars, Circle, Wave, Spectrogram, VU Meter';
+
+  @override
+  String get autoAndWearables => 'Auto & Wearables';
+
+  @override
+  String get autoAndWearablesSubtitle => 'Android Auto, Car Mode HUD, Galaxy/Pixel Watch companion';
+
+  @override
+  String get cloudAndNetworkStreaming => 'Cloud & Network Streaming';
+
+  @override
+  String get cloudAndNetworkStreamingSubtitle => 'UPnP/DLNA Casting, WebDAV/NAS sync, Lossless Web Radio';
+
+  @override
+  String get scannerSettingsSubtitle => 'Included folders, skip rules, tag encoding, database';
+
+  @override
+  String get albumArtTitle => 'Album Art';
+
+  @override
+  String get albumArtSubtitle => 'Online cover download, quality, priority, cache wipe';
+
+  @override
+  String get lyricsAndMetadataTitle => 'Lyrics & Metadata';
+
+  @override
+  String get lyricsAndMetadataSubtitle => 'LRCLIB auto-fetch, karaoke font size, tag writeback';
+
+  @override
+  String get powerSavingTitle => 'Power Saving';
+
+  @override
+  String get powerSavingSubtitle => 'Battery saving threshold, animations reduction, wake locks';
+
+  @override
+  String get notificationsAndWidgetsTitle => 'Notifications & Widgets';
+
+  @override
+  String get notificationsAndWidgetsSubtitle => 'Media notification layout, Android Auto, Wear OS';
+
+  @override
+  String get privacyAndStorageTitle => 'Privacy & Storage';
+
+  @override
+  String get privacyAndStorageSubtitle => 'JSON settings export/import, search history purge';
+
+  @override
+  String get designSystemShowcaseTitle => 'Design System Showcase';
+
+  @override
+  String get designSystemShowcaseSubtitle => 'Live tactile interactive widget lab';
+
+  @override
+  String get aboutNexaTitle => 'About NEXA';
+
+  @override
+  String get aboutNexaSubtitle => 'v1.0.0 Obsidian, changelog, legal licenses, credits';
+
+  @override
+  String get eqActive => 'ACTIVE';
+
+  @override
+  String get eqBypass => 'BYPASS';
+
+  @override
+  String get soundPresetLabel => 'SOUND PRESET';
+
+  @override
+  String get preampLabel => 'PREAMP';
+
+  @override
+  String get parametricFilterLabel => '10-BAND PARAMETRIC FILTER';
+
+  @override
+  String get psychoacousticDspEffects => 'PSYCHOACOUSTIC DSP EFFECTS';
+
+  @override
+  String get bassBoostLabel => 'BASS BOOST';
+
+  @override
+  String get virtualizer3dLabel => '3D VIRTUALIZER';
+
+  @override
+  String get acousticReverbLabel => 'ACOUSTIC REVERB';
+
+  @override
+  String playingNextSnack(String title) {
+    return 'Playing next: $title';
+  }
+
+  @override
+  String addedToQueueSnack(String title) {
+    return 'Added to queue: $title';
+  }
+
+  @override
+  String get playNextAction => 'Play next';
+
+  @override
+  String get addToQueueAction => 'Add to queue';
+
+  @override
+  String get addToPlaylistAction => 'Add to playlist';
+
+  @override
+  String get editTagsAndCoverAction => 'Edit tags & cover';
 }

@@ -130,5 +130,70 @@
   "lockScreenPlayerTitle": "Lockscreen Player",
   "lockScreenPlayerSubtitle": "Show full-screen player over the lock screen while music is playing",
   "unlockToDismiss": "Unlock & Close",
-  "swipeToUnlock": "Swipe up or tap close to dismiss"
+  "swipeToUnlock": "Swipe up or tap close to dismiss",
+  "matchingSettingsCount": "MATCHING SETTINGS ({count})",
+  "@matchingSettingsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "noSettingsFoundFor": "No settings found for \"{query}\"",
+  "@noSettingsFoundFor": {
+    "placeholders": {
+      "query": { "type": "String" }
+    }
+  },
+  "statusOn": "ON",
+  "statusOff": "OFF",
+  "playbackAndControlsSubtitle": "Telephony resume, Focus ducking, Gestures, Car mode",
+  "homescreenWidgetsAndStandby": "Homescreen Widgets & Standby",
+  "homescreenWidgetsAndStandbySubtitle": "4×1, 4×2 Hero Vinyl, 2×2, 4×3 Karaoke & OLED Bedside",
+  "audioSettingsSubtitle": "Bit-perfect Hi-Res, Gapless, DVC, Sample rate",
+  "equalizerAndDspSubtitle": "10-Band Parametric EQ, Z-Bass, Reverb, Presets",
+  "visualizerAndSpectrum": "Visualizer & Spectrum",
+  "visualizerAndSpectrumSubtitle": "FFT Bars, Circle, Wave, Spectrogram, VU Meter",
+  "autoAndWearables": "Auto & Wearables",
+  "autoAndWearablesSubtitle": "Android Auto, Car Mode HUD, Galaxy/Pixel Watch companion",
+  "cloudAndNetworkStreaming": "Cloud & Network Streaming",
+  "cloudAndNetworkStreamingSubtitle": "UPnP/DLNA Casting, WebDAV/NAS sync, Lossless Web Radio",
+  "scannerSettingsSubtitle": "Included folders, skip rules, tag encoding, database",
+  "albumArtTitle": "Album Art",
+  "albumArtSubtitle": "Online cover download, quality, priority, cache wipe",
+  "lyricsAndMetadataTitle": "Lyrics & Metadata",
+  "lyricsAndMetadataSubtitle": "LRCLIB auto-fetch, karaoke font size, tag writeback",
+  "powerSavingTitle": "Power Saving",
+  "powerSavingSubtitle": "Battery saving threshold, animations reduction, wake locks",
+  "notificationsAndWidgetsTitle": "Notifications & Widgets",
+  "notificationsAndWidgetsSubtitle": "Media notification layout, Android Auto, Wear OS",
+  "privacyAndStorageTitle": "Privacy & Storage",
+  "privacyAndStorageSubtitle": "JSON settings export/import, search history purge",
+  "designSystemShowcaseTitle": "Design System Showcase",
+  "designSystemShowcaseSubtitle": "Live tactile interactive widget lab",
+  "aboutNexaTitle": "About NEXA",
+  "aboutNexaSubtitle": "v1.0.0 Obsidian, changelog, legal licenses, credits",
+  "eqActive": "ACTIVE",
+  "eqBypass": "BYPASS",
+  "soundPresetLabel": "SOUND PRESET",
+  "preampLabel": "PREAMP",
+  "parametricFilterLabel": "10-BAND PARAMETRIC FILTER",
+  "psychoacousticDspEffects": "PSYCHOACOUSTIC DSP EFFECTS",
+  "bassBoostLabel": "BASS BOOST",
+  "virtualizer3dLabel": "3D VIRTUALIZER",
+  "acousticReverbLabel": "ACOUSTIC REVERB",
+  "playingNextSnack": "Playing next: {title}",
+  "@playingNextSnack": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
+  "addedToQueueSnack": "Added to queue: {title}",
+  "@addedToQueueSnack": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
+  "playNextAction": "Play next",
+  "addToQueueAction": "Add to queue",
+  "addToPlaylistAction": "Add to playlist",
+  "editTagsAndCoverAction": "Edit tags & cover"
 }

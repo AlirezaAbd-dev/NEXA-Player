@@ -782,14 +782,14 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
                                   action: action,
                                 );
                               },
-                              itemBuilder: (_) => const [
+                              itemBuilder: (_) => [
                                 PopupMenuItem(
                                   value: TrackTileMenuAction.playNext,
                                   child: Row(
                                     children: [
-                                      Icon(Icons.playlist_play_rounded),
-                                      SizedBox(width: 8),
-                                      Text('Play next'),
+                                      const Icon(Icons.playlist_play_rounded),
+                                      const SizedBox(width: 8),
+                                      Text(context.l10n.playNextAction),
                                     ],
                                   ),
                                 ),
@@ -797,9 +797,9 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
                                   value: TrackTileMenuAction.addToQueue,
                                   child: Row(
                                     children: [
-                                      Icon(Icons.queue_music_rounded),
-                                      SizedBox(width: 8),
-                                      Text('Add to queue'),
+                                      const Icon(Icons.queue_music_rounded),
+                                      const SizedBox(width: 8),
+                                      Text(context.l10n.addToQueueAction),
                                     ],
                                   ),
                                 ),
@@ -807,9 +807,9 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
                                   value: TrackTileMenuAction.addToPlaylist,
                                   child: Row(
                                     children: [
-                                      Icon(Icons.playlist_add_rounded),
-                                      SizedBox(width: 8),
-                                      Text('Add to playlist'),
+                                      const Icon(Icons.playlist_add_rounded),
+                                      const SizedBox(width: 8),
+                                      Text(context.l10n.addToPlaylistAction),
                                     ],
                                   ),
                                 ),
@@ -817,9 +817,9 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
                                   value: TrackTileMenuAction.editTags,
                                   child: Row(
                                     children: [
-                                      Icon(Icons.edit_note_rounded),
-                                      SizedBox(width: 8),
-                                      Text('Edit tags & cover'),
+                                      const Icon(Icons.edit_note_rounded),
+                                      const SizedBox(width: 8),
+                                      Text(context.l10n.editTagsAndCoverAction),
                                     ],
                                   ),
                                 ),

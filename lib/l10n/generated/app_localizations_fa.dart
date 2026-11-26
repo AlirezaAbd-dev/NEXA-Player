@@ -284,4 +284,147 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get swipeToUnlock => 'برای بستن به بالا بکشید یا دکمه بستن را بزنید';
+
+  @override
+  String matchingSettingsCount(int count) {
+    return 'تنظیمات یافت‌شده ($count)';
+  }
+
+  @override
+  String noSettingsFoundFor(String query) {
+    return 'تنظیمی برای «$query» پیدا نشد';
+  }
+
+  @override
+  String get statusOn => 'روشن';
+
+  @override
+  String get statusOff => 'خاموش';
+
+  @override
+  String get playbackAndControlsSubtitle => 'ادامه پس از تماس، کاهش صدا، ژست‌ها، حالت خودرو';
+
+  @override
+  String get homescreenWidgetsAndStandby => 'ویجت‌های صفحه اصلی و حالت شب';
+
+  @override
+  String get homescreenWidgetsAndStandbySubtitle => 'ویجت ۴×۱، ۴×۲ وینیل، ۲×۲، ۴×۳ کارائوکه و ساعت کنار تخت';
+
+  @override
+  String get audioSettingsSubtitle => 'پخش Hi-Res بدون افت، بدون وقفه، DVC و نرخ نمونه‌برداری';
+
+  @override
+  String get equalizerAndDspSubtitle => 'اکولایزر ۱۰ بانده، تقویت باس، اکو و پیش‌تنظیم‌ها';
+
+  @override
+  String get visualizerAndSpectrum => 'ویژوالایزر و طیف صدا';
+
+  @override
+  String get visualizerAndSpectrumSubtitle => 'میله‌های FFT، دایره، موج، طیف‌نگار و VU متر';
+
+  @override
+  String get autoAndWearables => 'خودرو و ساعت هوشمند';
+
+  @override
+  String get autoAndWearablesSubtitle => 'Android Auto، حالت رانندگی و همراه ساعت هوشمند';
+
+  @override
+  String get cloudAndNetworkStreaming => 'پخش ابری و شبکه';
+
+  @override
+  String get cloudAndNetworkStreamingSubtitle => 'پخش UPnP/DLNA، همگام‌سازی WebDAV/NAS و رادیو';
+
+  @override
+  String get scannerSettingsSubtitle => 'پوشه‌های اسکن، قوانین فیلتر، کدگذاری تگ و پایگاه داده';
+
+  @override
+  String get albumArtTitle => 'کاور آلبوم';
+
+  @override
+  String get albumArtSubtitle => 'دانلود آنلاین کاور، کیفیت، اولویت و پاک‌سازی کش';
+
+  @override
+  String get lyricsAndMetadataTitle => 'متن آهنگ و ابرداده';
+
+  @override
+  String get lyricsAndMetadataSubtitle => 'دریافت خودکار LRCLIB، اندازه فونت کارائوکه و ویرایش تگ';
+
+  @override
+  String get powerSavingTitle => 'صرفه‌جویی در باتری';
+
+  @override
+  String get powerSavingSubtitle => 'آستانه مصرف باتری، کاهش انیمیشن و قفل بیداری';
+
+  @override
+  String get notificationsAndWidgetsTitle => 'اعلان‌ها و ویجت‌ها';
+
+  @override
+  String get notificationsAndWidgetsSubtitle => 'چیدمان اعلان پخش، Android Auto و Wear OS';
+
+  @override
+  String get privacyAndStorageTitle => 'حریم خصوصی و ذخیره‌سازی';
+
+  @override
+  String get privacyAndStorageSubtitle => 'خروجی و ورودی JSON تنظیمات، پاک کردن تاریخچه جستجو';
+
+  @override
+  String get designSystemShowcaseTitle => 'نمایشگاه سیستم طراحی';
+
+  @override
+  String get designSystemShowcaseSubtitle => 'آزمایشگاه زنده ویجت‌ها و سطوح لمسی';
+
+  @override
+  String get aboutNexaTitle => 'درباره نِکسا';
+
+  @override
+  String get aboutNexaSubtitle => 'نسخه ۱.۰.۰، تغییرات، مجوزها و سازندگان';
+
+  @override
+  String get eqActive => 'فعال';
+
+  @override
+  String get eqBypass => 'غیرفعال';
+
+  @override
+  String get soundPresetLabel => 'پیش‌تنظیم صدا';
+
+  @override
+  String get preampLabel => 'پیش‌تقویت';
+
+  @override
+  String get parametricFilterLabel => 'فیلتر پارامتریک ۱۰ بانده';
+
+  @override
+  String get psychoacousticDspEffects => 'افکت‌های پردازش صدا (DSP)';
+
+  @override
+  String get bassBoostLabel => 'تقویت باس';
+
+  @override
+  String get virtualizer3dLabel => 'فضاسازی سه‌بعدی';
+
+  @override
+  String get acousticReverbLabel => 'اکو و فضای آکوستیک';
+
+  @override
+  String playingNextSnack(String title) {
+    return 'پخش بعدی: $title';
+  }
+
+  @override
+  String addedToQueueSnack(String title) {
+    return 'به صف پخش اضافه شد: $title';
+  }
+
+  @override
+  String get playNextAction => 'پخش به عنوان بعدی';
+
+  @override
+  String get addToQueueAction => 'افزودن به صف پخش';
+
+  @override
+  String get addToPlaylistAction => 'افزودن به لیست پخش';
+
+  @override
+  String get editTagsAndCoverAction => 'ویرایش تگ و کاور';
 }

@@ -6,6 +6,7 @@ import 'package:nexa_player/app/routes.dart';
 import 'package:nexa_player/core/constants/phase2_keys.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
+import 'package:nexa_player/core/l10n/locale_controller.dart';
 import 'package:nexa_player/features/player/domain/entities/playback_state.dart';
 import 'package:nexa_player/features/player/domain/entities/queue_context.dart';
 import 'package:nexa_player/features/player/presentation/providers/player_providers.dart';
@@ -284,9 +285,9 @@ class PlaylistDetailScreen extends ConsumerWidget {
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                           icon: const Icon(Icons.play_arrow_rounded, size: 22),
-                          label: const Text(
-                            'Play All',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                          label: Text(
+                            context.l10n.playAll,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
@@ -307,9 +308,9 @@ class PlaylistDetailScreen extends ConsumerWidget {
                                 children: [
                                   Icon(Icons.shuffle_rounded, size: 18, color: accent),
                                   const SizedBox(width: 8),
-                                  const Text(
-                                    'Shuffle',
-                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                  Text(
+                                    context.l10n.shuffle,
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
                                   ),
                                 ],
                               ),

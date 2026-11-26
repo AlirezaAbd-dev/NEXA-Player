@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nexa_player/app/routes.dart';
 import 'package:nexa_player/core/di/injection.dart';
+import 'package:nexa_player/core/l10n/locale_controller.dart';
 import 'package:nexa_player/features/player/presentation/providers/player_providers.dart';
 import 'package:nexa_player/features/playlists/domain/services/share_service.dart';
 import 'package:nexa_player/features/playlists/presentation/providers/playlists_providers.dart';
@@ -24,11 +25,11 @@ abstract final class TrackActionsHelper {
     switch (action) {
       case TrackTileMenuAction.playNext:
         ref.read(playerNotifierProvider.notifier).addNext(track);
-        _showSnack(context, 'Playing next: ${track.title}');
+        _showSnack(context, context.l10n.playingNextSnack(track.title));
         break;
       case TrackTileMenuAction.addToQueue:
         ref.read(playerNotifierProvider.notifier).addTrack(track);
-        _showSnack(context, 'Added to queue: ${track.title}');
+        _showSnack(context, context.l10n.addedToQueueSnack(track.title));
         break;
       case TrackTileMenuAction.addToPlaylist:
         await AddToPlaylistBottomSheet.show(context, track: track);

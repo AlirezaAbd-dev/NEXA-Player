@@ -84,7 +84,7 @@ class EqualizerScreen extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  eqState.isEnabled ? 'ACTIVE' : 'BYPASS',
+                  eqState.isEnabled ? context.l10n.eqActive : context.l10n.eqBypass,
                   style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
@@ -176,7 +176,7 @@ class EqualizerScreen extends ConsumerWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'PSYCHOACOUSTIC DSP EFFECTS',
+                    context.l10n.psychoacousticDspEffects,
                     style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelMedium).copyWith(
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.0,
@@ -198,7 +198,7 @@ class EqualizerScreen extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       TactileRotaryKnob(
-                        label: 'BASS BOOST',
+                        label: context.l10n.bassBoostLabel,
                         value: eqState.bassBoost,
                         isEnabled: eqState.isEnabled,
                         icon: Icons.speaker_group_rounded,
@@ -211,7 +211,7 @@ class EqualizerScreen extends ConsumerWidget {
                         color: surfaceTokens.level2,
                       ),
                       TactileRotaryKnob(
-                        label: '3D VIRTUALIZER',
+                        label: context.l10n.virtualizer3dLabel,
                         value: eqState.virtualizer,
                         isEnabled: eqState.isEnabled,
                         icon: Icons.surround_sound_rounded,
@@ -283,7 +283,7 @@ class EqualizerScreen extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'SOUND PRESET',
+                            context.l10n.soundPresetLabel,
                             style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
                               fontSize: 9.5,
                               fontWeight: FontWeight.w700,
@@ -363,7 +363,7 @@ class EqualizerScreen extends ConsumerWidget {
             ),
             const SizedBox(width: 12),
             Text(
-              'PREAMP',
+              context.l10n.preampLabel,
               style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
@@ -432,7 +432,7 @@ class EqualizerScreen extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '10-BAND PARAMETRIC FILTER',
+                    context.l10n.parametricFilterLabel,
                     style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,

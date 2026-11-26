@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
+import 'package:nexa_player/core/l10n/locale_controller.dart';
 import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
 import '../../domain/entities/reverb_preset.dart';
 
@@ -56,7 +57,7 @@ class ReverbSelector extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'ACOUSTIC REVERB',
+                        context.l10n.acousticReverbLabel,
                         style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,

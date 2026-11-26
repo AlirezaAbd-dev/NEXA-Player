@@ -628,6 +628,276 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Swipe up or tap close to dismiss'**
   String get swipeToUnlock;
+
+  /// No description provided for @matchingSettingsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'MATCHING SETTINGS ({count})'**
+  String matchingSettingsCount(int count);
+
+  /// No description provided for @noSettingsFoundFor.
+  ///
+  /// In en, this message translates to:
+  /// **'No settings found for \"{query}\"'**
+  String noSettingsFoundFor(String query);
+
+  /// No description provided for @statusOn.
+  ///
+  /// In en, this message translates to:
+  /// **'ON'**
+  String get statusOn;
+
+  /// No description provided for @statusOff.
+  ///
+  /// In en, this message translates to:
+  /// **'OFF'**
+  String get statusOff;
+
+  /// No description provided for @playbackAndControlsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Telephony resume, Focus ducking, Gestures, Car mode'**
+  String get playbackAndControlsSubtitle;
+
+  /// No description provided for @homescreenWidgetsAndStandby.
+  ///
+  /// In en, this message translates to:
+  /// **'Homescreen Widgets & Standby'**
+  String get homescreenWidgetsAndStandby;
+
+  /// No description provided for @homescreenWidgetsAndStandbySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'4×1, 4×2 Hero Vinyl, 2×2, 4×3 Karaoke & OLED Bedside'**
+  String get homescreenWidgetsAndStandbySubtitle;
+
+  /// No description provided for @audioSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bit-perfect Hi-Res, Gapless, DVC, Sample rate'**
+  String get audioSettingsSubtitle;
+
+  /// No description provided for @equalizerAndDspSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'10-Band Parametric EQ, Z-Bass, Reverb, Presets'**
+  String get equalizerAndDspSubtitle;
+
+  /// No description provided for @visualizerAndSpectrum.
+  ///
+  /// In en, this message translates to:
+  /// **'Visualizer & Spectrum'**
+  String get visualizerAndSpectrum;
+
+  /// No description provided for @visualizerAndSpectrumSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'FFT Bars, Circle, Wave, Spectrogram, VU Meter'**
+  String get visualizerAndSpectrumSubtitle;
+
+  /// No description provided for @autoAndWearables.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto & Wearables'**
+  String get autoAndWearables;
+
+  /// No description provided for @autoAndWearablesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Android Auto, Car Mode HUD, Galaxy/Pixel Watch companion'**
+  String get autoAndWearablesSubtitle;
+
+  /// No description provided for @cloudAndNetworkStreaming.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud & Network Streaming'**
+  String get cloudAndNetworkStreaming;
+
+  /// No description provided for @cloudAndNetworkStreamingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'UPnP/DLNA Casting, WebDAV/NAS sync, Lossless Web Radio'**
+  String get cloudAndNetworkStreamingSubtitle;
+
+  /// No description provided for @scannerSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Included folders, skip rules, tag encoding, database'**
+  String get scannerSettingsSubtitle;
+
+  /// No description provided for @albumArtTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Album Art'**
+  String get albumArtTitle;
+
+  /// No description provided for @albumArtSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Online cover download, quality, priority, cache wipe'**
+  String get albumArtSubtitle;
+
+  /// No description provided for @lyricsAndMetadataTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lyrics & Metadata'**
+  String get lyricsAndMetadataTitle;
+
+  /// No description provided for @lyricsAndMetadataSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'LRCLIB auto-fetch, karaoke font size, tag writeback'**
+  String get lyricsAndMetadataSubtitle;
+
+  /// No description provided for @powerSavingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Power Saving'**
+  String get powerSavingTitle;
+
+  /// No description provided for @powerSavingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Battery saving threshold, animations reduction, wake locks'**
+  String get powerSavingSubtitle;
+
+  /// No description provided for @notificationsAndWidgetsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications & Widgets'**
+  String get notificationsAndWidgetsTitle;
+
+  /// No description provided for @notificationsAndWidgetsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Media notification layout, Android Auto, Wear OS'**
+  String get notificationsAndWidgetsSubtitle;
+
+  /// No description provided for @privacyAndStorageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy & Storage'**
+  String get privacyAndStorageTitle;
+
+  /// No description provided for @privacyAndStorageSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'JSON settings export/import, search history purge'**
+  String get privacyAndStorageSubtitle;
+
+  /// No description provided for @designSystemShowcaseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Design System Showcase'**
+  String get designSystemShowcaseTitle;
+
+  /// No description provided for @designSystemShowcaseSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Live tactile interactive widget lab'**
+  String get designSystemShowcaseSubtitle;
+
+  /// No description provided for @aboutNexaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'About NEXA'**
+  String get aboutNexaTitle;
+
+  /// No description provided for @aboutNexaSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'v1.0.0 Obsidian, changelog, legal licenses, credits'**
+  String get aboutNexaSubtitle;
+
+  /// No description provided for @eqActive.
+  ///
+  /// In en, this message translates to:
+  /// **'ACTIVE'**
+  String get eqActive;
+
+  /// No description provided for @eqBypass.
+  ///
+  /// In en, this message translates to:
+  /// **'BYPASS'**
+  String get eqBypass;
+
+  /// No description provided for @soundPresetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'SOUND PRESET'**
+  String get soundPresetLabel;
+
+  /// No description provided for @preampLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'PREAMP'**
+  String get preampLabel;
+
+  /// No description provided for @parametricFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'10-BAND PARAMETRIC FILTER'**
+  String get parametricFilterLabel;
+
+  /// No description provided for @psychoacousticDspEffects.
+  ///
+  /// In en, this message translates to:
+  /// **'PSYCHOACOUSTIC DSP EFFECTS'**
+  String get psychoacousticDspEffects;
+
+  /// No description provided for @bassBoostLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'BASS BOOST'**
+  String get bassBoostLabel;
+
+  /// No description provided for @virtualizer3dLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'3D VIRTUALIZER'**
+  String get virtualizer3dLabel;
+
+  /// No description provided for @acousticReverbLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'ACOUSTIC REVERB'**
+  String get acousticReverbLabel;
+
+  /// No description provided for @playingNextSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'Playing next: {title}'**
+  String playingNextSnack(String title);
+
+  /// No description provided for @addedToQueueSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to queue: {title}'**
+  String addedToQueueSnack(String title);
+
+  /// No description provided for @playNextAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Play next'**
+  String get playNextAction;
+
+  /// No description provided for @addToQueueAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to queue'**
+  String get addToQueueAction;
+
+  /// No description provided for @addToPlaylistAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to playlist'**
+  String get addToPlaylistAction;
+
+  /// No description provided for @editTagsAndCoverAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit tags & cover'**
+  String get editTagsAndCoverAction;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

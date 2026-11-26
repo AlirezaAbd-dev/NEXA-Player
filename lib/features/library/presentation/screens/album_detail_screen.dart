@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nexa_player/core/constants/phase2_keys.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
+import 'package:nexa_player/core/l10n/locale_controller.dart';
 import 'package:nexa_player/features/library/presentation/providers/library_providers.dart';
 import 'package:nexa_player/features/player/domain/entities/playback_state.dart';
 import 'package:nexa_player/features/player/domain/entities/queue_context.dart';
@@ -163,7 +164,7 @@ class AlbumDetailScreen extends ConsumerWidget {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
                       ),
                       icon: const Icon(Icons.play_arrow_rounded, size: 20.0),
-                      label: const Text('Play All'),
+                      label: Text(context.l10n.playAll),
                       onPressed: () {
                         final tracks = tracksAsync.valueOrNull;
                         if (tracks != null && tracks.isNotEmpty) {
