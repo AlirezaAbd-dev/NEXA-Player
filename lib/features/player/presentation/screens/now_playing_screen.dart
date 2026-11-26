@@ -72,22 +72,19 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
   late final AnimationController _snapBackController;
   Animation<double>? _snapBackAnimation;
 
-  // Stellio 3D cover flow fractional scroll position
-  double? _carouselPageOffset;
+  // Stellio 3D cover flow fractional scroll position (scoped via ValueNotifier
+  // so cover dragging never triggers root NowPlayingScreen rebuilds).
+  final ValueNotifier<double?> _carouselPageOffset = ValueNotifier<double?>(null);
 
   void _handlePageScrolled(double pageOffset) {
     if (mounted) {
-      setState(() {
-        _carouselPageOffset = pageOffset;
-      });
+      _carouselPageOffset.value = pageOffset;
     }
   }
 
   void _handlePageSettled(int newIndex) {
     if (mounted) {
-      setState(() {
-        _carouselPageOffset = null;
-      });
+      _carouselPageOffset.value = null;
     }
     ref.read(playerNotifierProvider.notifier).skipToIndex(newIndex);
   }
@@ -395,6 +392,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
 
   @override
   void dispose() {
+    _carouselPageOffset.dispose();
     _snapBackController.dispose();
     _edgeHudTimer?.cancel();
     super.dispose();
@@ -428,38 +426,9 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
         ? queueTracks
         : (currentTrack != null ? [currentTrack] : const <Track>[]);
 
-    final activeOffset = (_carouselPageOffset ?? queueCurrentIndex.toDouble())
-        .clamp(0.0, effectiveTracks.isEmpty ? 0.0 : (effectiveTracks.length - 1).toDouble());
-    ExtractedPalette currentDisplayPalette = dynamicPalette;
-    if (effectiveTracks.isNotEmpty) {
-      final floorIndex = activeOffset.floor().clamp(0, effectiveTracks.length - 1);
-      final ceilIndex = activeOffset.ceil().clamp(0, effectiveTracks.length - 1);
-      final t = (activeOffset - floorIndex).clamp(0.0, 1.0);
-
-      final palA = (floorIndex == queueCurrentIndex && isDynamicEnabled)
-          ? dynamicPalette
-          : const DynamicPaletteService().computeSeedPalette(
-              '${effectiveTracks[floorIndex].title} ${effectiveTracks[floorIndex].artist} ${effectiveTracks[floorIndex].album}',
-            );
-      final palB = (ceilIndex == queueCurrentIndex && isDynamicEnabled)
-          ? dynamicPalette
-          : const DynamicPaletteService().computeSeedPalette(
-              '${effectiveTracks[ceilIndex].title} ${effectiveTracks[ceilIndex].artist} ${effectiveTracks[ceilIndex].album}',
-            );
-      if (isDynamicEnabled) {
-        currentDisplayPalette = ExtractedPalette.lerp(palA, palB, t);
-      } else if (_carouselPageOffset != null && floorIndex != ceilIndex) {
-        currentDisplayPalette = ExtractedPalette.lerp(palA, palB, t);
-      }
-    }
-
-    final dragTintPrimary = (_carouselPageOffset != null &&
-            effectiveTracks.length > 1 &&
-            !isDynamicEnabled)
-        ? Color.lerp(colorScheme.primary, currentDisplayPalette.primary, 0.45) ??
-            colorScheme.primary
-        : (isDynamicEnabled ? currentDisplayPalette.primary : colorScheme.primary);
-    final primary = dragTintPrimary;
+    final ExtractedPalette currentDisplayPalette = dynamicPalette;
+    final primary =
+        isDynamicEnabled ? currentDisplayPalette.primary : colorScheme.primary;
     final surfaceTokens = NexaSurfaceTokens.of(context);
 
     final title = currentTrack?.title ?? 'Starboy';
@@ -758,14 +727,27 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                                       crossAxisAlignment: CrossAxisAlignment.center,
                                       children: [
                                         Expanded(
-                                          child: _buildSynchronizedMetadataBlock(
-                                            context: context,
-                                            effectiveTracks: effectiveTracks,
-                                            activeOffset: activeOffset,
-                                            fallbackTitle: title,
-                                            fallbackSubtitle: artistAndAlbum,
-                                            isCompactHeight: isCompactHeight,
-                                            onSurface: colorScheme.onSurface,
+                                          child: RepaintBoundary(
+                                            child: ValueListenableBuilder<double?>(
+                                              valueListenable: _carouselPageOffset,
+                                              builder: (context, pageOffset, _) {
+                                                final maxIdx = effectiveTracks.isEmpty
+                                                    ? 0.0
+                                                    : (effectiveTracks.length - 1).toDouble();
+                                                final activeOffset =
+                                                    (pageOffset ?? queueCurrentIndex.toDouble())
+                                                        .clamp(0.0, maxIdx);
+                                                return _buildSynchronizedMetadataBlock(
+                                                  context: context,
+                                                  effectiveTracks: effectiveTracks,
+                                                  activeOffset: activeOffset,
+                                                  fallbackTitle: title,
+                                                  fallbackSubtitle: artistAndAlbum,
+                                                  isCompactHeight: isCompactHeight,
+                                                  onSurface: colorScheme.onSurface,
+                                                );
+                                              },
+                                            ),
                                           ),
                                         ),
                                         IconButton(
