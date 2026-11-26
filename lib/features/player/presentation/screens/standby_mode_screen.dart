@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/theme/dynamic_palette_providers.dart';
+import '../../../../shared/models/track.dart';
+import '../../../../shared/widgets/cards/nexa_artwork_image.dart';
 import '../../../visualizer/visualizer.dart';
 import '../providers/player_providers.dart';
 
@@ -371,6 +373,7 @@ class _StandbyModeScreenState extends ConsumerState<StandbyModeScreen>
   Widget _buildTurntable({
     required double size,
     required Color accentColor,
+    Track? currentTrack,
   }) {
     return SizedBox(
       width: size,
@@ -433,10 +436,10 @@ class _StandbyModeScreenState extends ConsumerState<StandbyModeScreen>
                       ),
                     ),
 
-                  // Center Vinyl Label
+                  // Center Vinyl Label with Track Cover Art
                   Container(
-                    width: size * 0.34,
-                    height: size * 0.34,
+                    width: size * 0.38,
+                    height: size * 0.38,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: accentColor,
@@ -447,14 +450,34 @@ class _StandbyModeScreenState extends ConsumerState<StandbyModeScreen>
                         ),
                       ],
                     ),
-                    child: Center(
-                      child: Container(
-                        width: size * 0.08,
-                        height: size * 0.08,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.black,
-                        ),
+                    child: ClipOval(
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Opacity(
+                            opacity: _dimFactor.clamp(0.25, 1.0),
+                            child: NexaArtworkImage(
+                              track: currentTrack,
+                              artworkUri: currentTrack?.artworkUri,
+                              width: size * 0.38,
+                              height: size * 0.38,
+                              cacheWidth: 320,
+                              fallbackBuilder: (_) => Container(
+                                color: accentColor,
+                              ),
+                            ),
+                          ),
+                          Center(
+                            child: Container(
+                              width: size * 0.08,
+                              height: size * 0.08,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -517,6 +540,7 @@ class _StandbyModeScreenState extends ConsumerState<StandbyModeScreen>
         _buildTurntable(
           size: 230,
           accentColor: accentColor,
+          currentTrack: track as Track?,
         ),
 
         // 3. Track Details & Scrubber
@@ -704,6 +728,7 @@ class _StandbyModeScreenState extends ConsumerState<StandbyModeScreen>
               _buildTurntable(
                 size: 190,
                 accentColor: accentColor,
+                currentTrack: track as Track?,
               ),
               const SizedBox(height: 12),
               Text(

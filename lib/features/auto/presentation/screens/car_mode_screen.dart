@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/theme/dynamic_palette_providers.dart';
 import '../../../../shared/models/track.dart';
+import '../../../../shared/widgets/cards/nexa_artwork_image.dart';
 import '../../../player/presentation/providers/player_providers.dart';
 import '../providers/auto_providers.dart';
 
@@ -106,14 +107,24 @@ class _CarModeScreenState extends ConsumerState<CarModeScreen> {
                                 horizontal: 12,
                                 vertical: 6,
                               ),
-                              leading: Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
-                                  color: const Color(0xFF1B2335),
+                              leading: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: NexaArtworkImage(
+                                  track: track,
+                                  artworkUri: track.artworkUri,
+                                  width: 44,
+                                  height: 44,
+                                  cacheWidth: 160,
+                                  fallbackBuilder: (_) => Container(
+                                    width: 44,
+                                    height: 44,
+                                    color: const Color(0xFF1B2335),
+                                    child: Icon(
+                                      Icons.music_note_rounded,
+                                      color: accent,
+                                    ),
+                                  ),
                                 ),
-                                child: Icon(Icons.music_note_rounded, color: accent),
                               ),
                               title: Text(
                                 track.title,
