@@ -5,6 +5,8 @@ import 'package:nexa_player/app/routes.dart';
 import 'package:nexa_player/core/constants/phase2_keys.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
+import 'package:nexa_player/core/l10n/locale_controller.dart';
+import 'package:nexa_player/features/library/domain/repositories/albums_repository.dart';
 import 'package:nexa_player/features/library/presentation/providers/library_providers.dart';
 import 'package:nexa_player/features/library/presentation/screens/album_detail_screen.dart';
 import 'package:nexa_player/features/library/presentation/widgets/library_segmented_pill_bar.dart';
@@ -22,6 +24,8 @@ class AlbumsTabScreen extends ConsumerStatefulWidget {
 class _AlbumsTabScreenState extends ConsumerState<AlbumsTabScreen> {
   int? _customColumns;
   bool _isScaling = false;
+  AlbumSortBy _sortBy = AlbumSortBy.title;
+  bool _ascending = true;
 
   int _resolveColumnCount(double screenWidth) {
     if (_customColumns != null) return _customColumns!;
@@ -42,6 +46,25 @@ class _AlbumsTabScreenState extends ConsumerState<AlbumsTabScreen> {
       default:
         return 0.60;
     }
+  }
+
+  PopupMenuItem<AlbumSortBy> _buildSortMenuItem(AlbumSortBy value, String label) {
+    return PopupMenuItem<AlbumSortBy>(
+      value: value,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label),
+          if (_sortBy == value)
+            Icon(
+              _ascending
+                  ? Icons.arrow_upward_rounded
+                  : Icons.arrow_downward_rounded,
+              size: 16,
+            ),
+        ],
+      ),
+    );
   }
 
   void _cycleDensity(int current) {
@@ -67,7 +90,10 @@ class _AlbumsTabScreenState extends ConsumerState<AlbumsTabScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final albumsAsync = ref.watch(albumsListProvider(null));
+    final queryParams = (_sortBy == AlbumSortBy.title && _ascending)
+        ? null
+        : AlbumQueryParams(sortBy: _sortBy, ascending: _ascending);
+    final albumsAsync = ref.watch(albumsListProvider(queryParams));
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -82,10 +108,10 @@ class _AlbumsTabScreenState extends ConsumerState<AlbumsTabScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Albums', style: AppTypography.titleLarge),
+                Text(context.l10n.tabAlbums, style: AppTypography.titleLarge),
                 albumsAsync.maybeWhen(
                   data: (albums) => Text(
-                    '${albums.length} ALBUMS · HI-RES VERIFIED',
+                    context.l10n.albumsCountMeta(albums.length),
                     style: AppTypography.labelSmall.copyWith(
                       color: Theme.of(context).colorScheme.primary.withOpacity(0.85),
                       fontWeight: FontWeight.w600,
@@ -99,6 +125,26 @@ class _AlbumsTabScreenState extends ConsumerState<AlbumsTabScreen> {
             ),
             automaticallyImplyLeading: false,
             actions: [
+              PopupMenuButton<AlbumSortBy>(
+                key: const ValueKey('albums_sort_btn'),
+                icon: const Icon(Icons.sort_rounded),
+                tooltip: 'Sort albums',
+                onSelected: (sortBy) {
+                  setState(() {
+                    if (_sortBy == sortBy) {
+                      _ascending = !_ascending;
+                    } else {
+                      _sortBy = sortBy;
+                      _ascending = true;
+                    }
+                  });
+                },
+                itemBuilder: (context) => [
+                  _buildSortMenuItem(AlbumSortBy.title, context.l10n.sortTitle),
+                  _buildSortMenuItem(AlbumSortBy.artist, context.l10n.sortArtist),
+                  _buildSortMenuItem(AlbumSortBy.year, context.l10n.sortYear),
+                ],
+              ),
               IconButton(
                 icon: Icon(
                   columns == 1
@@ -157,7 +203,7 @@ class _AlbumsTabScreenState extends ConsumerState<AlbumsTabScreen> {
                         heroTag: 'album_art_${album.id}',
                         mode: AlbumCardMode.grid,
                         onTap: () {
-                          Navigator.of(context).push(
+                          Navigator.of(context, rootNavigator: true).push(
                             MaterialPageRoute<void>(
                               builder: (_) => AlbumDetailScreen(album: album),
                             ),

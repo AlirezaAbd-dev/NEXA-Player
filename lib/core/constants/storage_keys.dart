@@ -7,6 +7,7 @@ abstract final class StorageKeys {
   // Theme & Appearance (F0.10 - F0.13)
   static const String themePreset = 'nexa_theme_preset';
   static const String themeMode = 'nexa_theme_mode';
+  static const String appLocale = 'nexa_app_locale';
   static const String customPrimaryColor = 'nexa_custom_primary_color';
   static const String customSurfaceColor = 'nexa_custom_surface_color';
   static const String customBackgroundColor = 'nexa_custom_background_color';

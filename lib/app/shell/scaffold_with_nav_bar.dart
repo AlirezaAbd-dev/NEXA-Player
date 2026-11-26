@@ -6,6 +6,7 @@ import '../routes.dart';
 import '../../features/player/presentation/providers/player_providers.dart';
 import '../../features/player/presentation/screens/desktop_studio_dock.dart';
 import '../../core/design_system/nexa_surface_tokens.dart';
+import '../../core/l10n/locale_controller.dart';
 import '../../shared/widgets/branding/nexa_animated_logo.dart';
 import '../../shared/widgets/glass/app_ambient_background.dart';
 import '../../shared/widgets/glass/nexa_floating_nav_dock.dart';
@@ -159,29 +160,30 @@ class ScaffoldWithNavBar extends ConsumerWidget {
     );
 
     // 4-Tab Balanced Bottom Navigation
+    final l10n = context.l10n;
     final navItems = [
-      const NexaNavDestination(
+      NexaNavDestination(
         icon: Icons.library_music_outlined,
         selectedIcon: Icons.library_music_rounded,
-        label: 'Library',
+        label: l10n.tabLibrary,
         key: _ShellKeys.tabLibrary,
       ),
-      const NexaNavDestination(
+      NexaNavDestination(
         icon: Icons.queue_music_outlined,
         selectedIcon: Icons.queue_music_rounded,
-        label: 'Playlists',
+        label: l10n.tabPlaylists,
         key: _ShellKeys.tabPlaylists,
       ),
-      const NexaNavDestination(
+      NexaNavDestination(
         icon: Icons.search_outlined,
         selectedIcon: Icons.search_rounded,
-        label: 'Search',
+        label: l10n.tabSearch,
         key: _ShellKeys.tabSearch,
       ),
-      const NexaNavDestination(
+      NexaNavDestination(
         icon: Icons.tune_outlined,
         selectedIcon: Icons.tune_rounded,
-        label: 'Settings',
+        label: l10n.tabSettings,
         key: _ShellKeys.tabSettings,
       ),
     ];

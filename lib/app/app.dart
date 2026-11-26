@@ -2,8 +2,10 @@ import 'dart:async';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/l10n/locale_controller.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/theme_controller.dart';
+import '../l10n/generated/app_localizations.dart';
 import 'router.dart';
 import 'routes.dart';
 
@@ -43,6 +45,7 @@ class _NexaPlayerAppState extends ConsumerState<NexaPlayerApp> {
   @override
   Widget build(BuildContext context) {
     final themeState = ref.watch(themeControllerProvider);
+    final localePref = ref.watch(localeControllerProvider);
     final systemBrightness = MediaQuery.platformBrightnessOf(context);
 
     final effectiveTheme = AppTheme.buildTheme(
@@ -58,6 +61,10 @@ class _NexaPlayerAppState extends ConsumerState<NexaPlayerApp> {
       title: 'NEXA Player',
       debugShowCheckedModeBanner: false,
       theme: effectiveTheme,
+      locale: localePref.locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localeResolutionCallback: resolveNexaLocale,
       routerConfig: appRouter,
       builder: (context, child) {
         return MediaQuery(

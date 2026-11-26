@@ -5,6 +5,7 @@ import '../../../../app/routes.dart';
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/glass_tokens.dart';
+import '../../../../core/l10n/locale_controller.dart';
 import '../../../../core/theme/theme_controller.dart';
 import '../../../../shared/widgets/glass/glass_app_bar.dart';
 import '../../../../shared/widgets/inputs/nexa_search_bar.dart';
@@ -39,16 +40,18 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
   @override
   Widget build(BuildContext context) {
     final themeState = ref.watch(themeControllerProvider);
+    final localePref = ref.watch(localeControllerProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final searchQuery = ref.watch(settingsSearchQueryProvider);
     final searchResults = ref.watch(settingsSearchResultsProvider);
+    final l10n = context.l10n;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
-      appBar: const GlassAppBar(
-        titleText: 'Settings',
+      appBar: GlassAppBar(
+        titleText: l10n.tabSettings,
         automaticallyImplyLeading: false,
       ),
       body: ListView(
@@ -58,7 +61,7 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
           NexaSearchBar(
             key: _SettingsKeys.searchSettingsInput,
             controller: _searchController,
-            hintText: 'Search audio, controls, theme, gestures...',
+            hintText: l10n.searchSettingsHint,
             onChanged: (val) {
               ref.read(settingsSearchQueryProvider.notifier).state = val;
             },
@@ -91,7 +94,7 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
               ),
             ] else ...[
               Padding(
-                padding: const EdgeInsets.only(left: 4.0, bottom: 8.0),
+                padding: const EdgeInsetsDirectional.only(start: 4.0, bottom: 8.0),
                 child: Text(
                   'MATCHING SETTINGS (${searchResults.length})',
                   style: AppTypography.labelSmall.copyWith(
@@ -170,9 +173,9 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
                             ),
                           ),
                           Icon(
-                            Icons.arrow_forward_ios_rounded,
-                            size: 14,
-                            color: colorScheme.onSurface.withOpacity(0.3),
+                            Icons.chevron_right_rounded,
+                            size: 18,
+                            color: colorScheme.onSurface.withOpacity(0.35),
                           ),
                         ],
                       ),
@@ -187,7 +190,7 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
             // ==========================================
             // TIER 1: DAILY ESSENTIALS
             // ==========================================
-            _buildSectionHeader(context, 'DAILY ESSENTIALS'),
+            _buildSectionHeader(context, l10n.dailyEssentials),
             const SizedBox(height: AppSpacing.xs),
 
             // Theme & Appearance (Hero Card)
@@ -219,7 +222,7 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Theme & Appearance',
+                          l10n.themeAndAppearance,
                           style: AppTypography.titleLarge.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -235,9 +238,67 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
                     ),
                   ),
                   Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 16,
-                    color: colorScheme.onSurface.withOpacity(0.4),
+                    Icons.chevron_right_rounded,
+                    size: 20,
+                    color: colorScheme.onSurface.withOpacity(0.45),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+
+            // Language Picker Card (System Default / English / فارسی)
+            NexaSurface(
+              key: const ValueKey('language_settings_tile'),
+              tier: NexaSurfaceTier.l1,
+              padding: const EdgeInsets.all(AppSpacing.md),
+              borderRadius: BorderRadius.circular(GlassTokens.radiusCard),
+              onTap: () => _showLanguagePicker(context, localePref),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withOpacity(0.18),
+                      borderRadius:
+                          BorderRadius.circular(GlassTokens.radiusSmall),
+                    ),
+                    child: Icon(
+                      Icons.language_rounded,
+                      color: colorScheme.primary,
+                      size: 26,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.language,
+                          style: AppTypography.titleLarge.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          switch (localePref) {
+                            AppLocalePreference.system => l10n.languageSubtitleSystem,
+                            AppLocalePreference.en => l10n.languageSubtitleEnglish,
+                            AppLocalePreference.fa => l10n.languageSubtitlePersian,
+                          },
+                          style: AppTypography.bodySmall.copyWith(
+                            color: colorScheme.onSurface.withOpacity(0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 20,
+                    color: colorScheme.onSurface.withOpacity(0.45),
                   ),
                 ],
               ),
@@ -427,6 +488,57 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Future<void> _showLanguagePicker(
+    BuildContext context,
+    AppLocalePreference current,
+  ) async {
+    final l10n = context.l10n;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.language),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RadioListTile<AppLocalePreference>(
+              value: AppLocalePreference.system,
+              groupValue: current,
+              title: Text(l10n.languageSystemDefault),
+              onChanged: (val) {
+                if (val != null) {
+                  ref.read(localeControllerProvider.notifier).setLocalePreference(val);
+                  Navigator.of(ctx).pop();
+                }
+              },
+            ),
+            RadioListTile<AppLocalePreference>(
+              value: AppLocalePreference.en,
+              groupValue: current,
+              title: Text(l10n.languageEnglish),
+              onChanged: (val) {
+                if (val != null) {
+                  ref.read(localeControllerProvider.notifier).setLocalePreference(val);
+                  Navigator.of(ctx).pop();
+                }
+              },
+            ),
+            RadioListTile<AppLocalePreference>(
+              value: AppLocalePreference.fa,
+              groupValue: current,
+              title: Text(l10n.languagePersian),
+              onChanged: (val) {
+                if (val != null) {
+                  ref.read(localeControllerProvider.notifier).setLocalePreference(val);
+                  Navigator.of(ctx).pop();
+                }
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

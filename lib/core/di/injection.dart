@@ -5,6 +5,7 @@ import 'package:get_it/get_it.dart';
 import 'package:nexa_player/core/services/artwork/artwork_resolution_service.dart';
 import 'package:nexa_player/core/services/audio/audio_telemetry_service.dart';
 import 'package:nexa_player/core/services/library/library_sync_bus.dart';
+import 'package:nexa_player/features/equalizer/data/services/native_equalizer_bridge.dart';
 import 'package:nexa_player/features/equalizer/data/services/pure_dart_equalizer_service.dart';
 import 'package:nexa_player/features/equalizer/domain/services/equalizer_service.dart';
 import 'package:nexa_player/features/lyrics/data/services/lrclib_api_client.dart';
@@ -346,11 +347,20 @@ Future<void> configureDependencies({
 
   // 10. Equalizer & DSP Service
   if (!getIt.isRegistered<IEqualizerService>()) {
+    final audioEngine =
+        getIt.isRegistered<IAudioEngine>() ? getIt<IAudioEngine>() : null;
+    final dspBridge = (Platform.isAndroid &&
+            audioEngine is IAudioSessionProvider)
+        ? AndroidEqualizerDspBridge(
+            audioSessionProvider: audioEngine as IAudioSessionProvider,
+          )
+        : null;
     final eq = equalizerService ??
         PureDartEqualizerService(
           storageService: getIt.isRegistered<IStorageService>()
               ? getIt<IStorageService>()
               : null,
+          dspBridge: dspBridge,
         );
     await eq.initialize();
     getIt.registerSingleton<IEqualizerService>(eq);

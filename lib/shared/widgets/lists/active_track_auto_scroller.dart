@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
+import 'package:nexa_player/core/l10n/locale_controller.dart';
 import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
 
 /// Pure coordinator calculating auto-scroll offsets and protecting manual user
@@ -93,7 +94,7 @@ class ActiveTrackAutoScrollScope extends StatefulWidget {
     this.manualCooldown = const Duration(seconds: 3),
     this.clock,
     this.showJumpToPlayingChip = true,
-    this.bottomChipPadding = 128.0,
+    this.bottomChipPadding = 12.0,
   });
 
   final List<String> trackIds;
@@ -246,8 +247,8 @@ class _ActiveTrackAutoScrollScopeState
       children: [
         listChild,
         if (_showJumpChip)
-          Positioned(
-            right: 16.0,
+          PositionedDirectional(
+            end: 16.0,
             bottom: MediaQuery.paddingOf(context).bottom +
                 widget.bottomChipPadding,
             child: NexaSurface(
@@ -275,7 +276,7 @@ class _ActiveTrackAutoScrollScopeState
                       ),
                       const SizedBox(width: 6.0),
                       Text(
-                        'Jump to Playing',
+                        context.l10n.jumpToPlaying,
                         style: AppTypography.labelSmall.copyWith(
                           color: colorScheme.onSurface,
                           fontWeight: FontWeight.bold,

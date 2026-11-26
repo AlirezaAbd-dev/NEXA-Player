@@ -1,0 +1,121 @@
+{
+  "@@locale": "en",
+  "appTitle": "NEXA Player",
+  "tabLibrary": "Library",
+  "tabSongs": "Songs",
+  "tabAlbums": "Albums",
+  "tabArtists": "Artists",
+  "tabFolders": "Folders",
+  "tabPlaylists": "Playlists",
+  "tabSearch": "Search",
+  "tabSettings": "Settings",
+  "sortTitle": "Title",
+  "sortArtist": "Artist",
+  "sortAlbum": "Album",
+  "sortDuration": "Duration",
+  "sortDateAdded": "Date Added",
+  "sortYear": "Year",
+  "sortName": "Name",
+  "sortTrackCount": "Track Count",
+  "sortSongCount": "Song Count",
+  "sortRecentlyUpdated": "Recently Updated",
+  "sortSongsTooltip": "Sort songs",
+  "sortAlbumsTooltip": "Sort albums",
+  "sortArtistsTooltip": "Sort artists",
+  "sortFoldersTooltip": "Sort folders",
+  "sortPlaylistsTooltip": "Sort playlists",
+  "searchLibraryTooltip": "Search library",
+  "searchSongsHint": "Search songs, artists, albums...",
+  "searchAllHint": "Search songs, albums, artists...",
+  "searchSettingsHint": "Search audio, controls, theme, gestures...",
+  "allSongsCount": "All Songs ({count})",
+  "@allSongsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "albumsCountMeta": "{count} ALBUMS · HI-RES VERIFIED",
+  "@albumsCountMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "artistsCountMeta": "{count} ARTISTS IN LIBRARY",
+  "@artistsCountMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "foldersCountMeta": "{count} STORAGE FOLDERS INDEXED",
+  "@foldersCountMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "playlistsCountMeta": "{count} PLAYLISTS · 3 DYNAMIC SMART",
+  "@playlistsCountMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tracksCount": "{count} tracks",
+  "@tracksCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "jumpToPlaying": "Jump to Playing",
+  "playAll": "Play All",
+  "shuffle": "Shuffle",
+  "smartPlaylists": "SMART PLAYLISTS",
+  "myPlaylists": "MY PLAYLISTS",
+  "newPlaylist": "New Playlist",
+  "createPlaylist": "Create Playlist",
+  "playlistNameHint": "Playlist name",
+  "cancel": "Cancel",
+  "create": "Create",
+  "delete": "Delete",
+  "save": "Save",
+  "done": "Done",
+  "noAlbumsFound": "No albums found. Scan your media in Settings!",
+  "noArtistsFound": "No artists found. Scan your media in Settings!",
+  "noPlaylistsYet": "No playlists yet. Tap \"+ New Playlist\" to create one!",
+  "noMatchesFound": "No matches found",
+  "exploreLibrary": "Explore Library",
+  "recentSearches": "Recent Searches",
+  "clear": "Clear",
+  "favorites": "Favorites",
+  "upOneFolder": "Up one folder",
+  "importM3u": "Import M3U",
+  "dailyEssentials": "DAILY ESSENTIALS",
+  "language": "Language",
+  "languageSubtitleSystem": "System Default (Follows device)",
+  "languageSubtitleEnglish": "English",
+  "languageSubtitlePersian": "فارسی (Persian)",
+  "languageSystemDefault": "System Default",
+  "languageEnglish": "English",
+  "languagePersian": "فارسی",
+  "themeAndAppearance": "Theme & Appearance",
+  "equalizerAndDsp": "Equalizer & DSP",
+  "bassBoost": "Bass Boost",
+  "virtualizer": "Virtualizer",
+  "preamp": "Preamp",
+  "reverb": "Reverb",
+  "reset": "Reset",
+  "presets": "Presets",
+  "upNext": "Up Next",
+  "lyrics": "Lyrics",
+  "queue": "Queue"
+}

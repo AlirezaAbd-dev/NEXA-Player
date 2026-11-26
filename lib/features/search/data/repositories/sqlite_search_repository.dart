@@ -5,6 +5,7 @@ import 'package:nexa_player/core/utils/result.dart';
 import 'package:nexa_player/core/utils/tag_encoding_decoder.dart';
 import 'package:nexa_player/features/search/domain/models/search_result.dart';
 import 'package:nexa_player/features/search/domain/models/search_result_category.dart';
+import 'package:nexa_player/features/search/domain/query_token_parser.dart';
 import 'package:nexa_player/features/search/domain/repositories/search_repository.dart';
 import 'package:nexa_player/shared/models/album.dart';
 import 'package:nexa_player/shared/models/artist.dart';
@@ -46,8 +47,14 @@ class SqliteSearchRepository implements ISearchRepository {
       return Result.success(SearchResult.empty(query));
     }
 
-    final normalizedQuery = QueryNormalizer.normalizeForSearch(trimmed);
-    final normForSql = normalizedQuery.isNotEmpty ? normalizedQuery : trimmed;
+    final parsed = QueryTokenParser.parse(trimmed);
+    final effectiveTextQuery = parsed.hasFilters
+        ? parsed.textTerm.trim()
+        : trimmed;
+    final normalizedQuery = QueryNormalizer.normalizeForSearch(effectiveTextQuery);
+    final normForSql = normalizedQuery.isNotEmpty
+        ? normalizedQuery
+        : effectiveTextQuery;
 
     try {
       final likeTerm = '%$normForSql%';
@@ -61,49 +68,65 @@ class SqliteSearchRepository implements ISearchRepository {
 
       // 1. Search Tracks
       if (category == SearchResultCategory.all || category == SearchResultCategory.tracks) {
-        final rows = database.select(
-          '''
-          SELECT * FROM ${DatabaseSchema.tableTracks}
-          WHERE ${_sqlNorm(DatabaseSchema.colTitle)} LIKE ?
-             OR ${_sqlNorm(DatabaseSchema.colTrackArtist)} LIKE ?
-             OR ${_sqlNorm(DatabaseSchema.colTrackAlbum)} LIKE ?
-             OR ${_sqlNorm(DatabaseSchema.colTrackGenre)} LIKE ?
-          ORDER BY
-            CASE
-              WHEN lower(${_sqlNorm(DatabaseSchema.colTitle)}) LIKE lower(?) THEN 0
-              WHEN lower(${_sqlNorm(DatabaseSchema.colTrackArtist)}) LIKE lower(?) THEN 1
-              WHEN lower(${_sqlNorm(DatabaseSchema.colTrackAlbum)}) LIKE lower(?) THEN 2
-              ELSE 3
-            END,
-            ${DatabaseSchema.colTitle} COLLATE NOCASE ASC
-          LIMIT ?
-          ''',
-          [likeTerm, likeTerm, likeTerm, likeTerm, prefixTerm, prefixTerm, prefixTerm, limitPerCategory],
-        );
-        tracks = rows.map((r) => Track.fromMap(r)).toList();
-
-        // Fallback ZWNJ/diacritic scan when normalized SQL didn't catch ZWNJ gaps (e.g. می خواهم vs می‌خواهم)
-        if (tracks.isEmpty && TagEncodingDecoder.containsRtlCharacters(trimmed)) {
-          final allRows = database.select(
-            'SELECT * FROM ${DatabaseSchema.tableTracks} ORDER BY ${DatabaseSchema.colTitle} COLLATE NOCASE ASC;',
-          );
-          tracks = allRows
-              .map((r) => Track.fromMap(r))
-              .where(
-                (t) =>
-                    QueryNormalizer.containsNormalized(t.title, trimmed) ||
-                    QueryNormalizer.containsNormalized(t.artist, trimmed) ||
-                    QueryNormalizer.containsNormalized(t.album, trimmed) ||
-                    (t.genre != null &&
-                        QueryNormalizer.containsNormalized(t.genre!, trimmed)),
-              )
+        if (parsed.hasFilters && effectiveTextQuery.isEmpty) {
+          final sql = parsed.onlyFavorites
+              ? 'SELECT * FROM ${DatabaseSchema.tableTracks} WHERE ${DatabaseSchema.colIsFavorite} = 1 ORDER BY ${DatabaseSchema.colTitle} COLLATE NOCASE ASC;'
+              : 'SELECT * FROM ${DatabaseSchema.tableTracks} ORDER BY ${DatabaseSchema.colTitle} COLLATE NOCASE ASC;';
+          final rows = database.select(sql);
+          tracks = parsed
+              .filterTracks(rows.map((r) => Track.fromMap(r)).toList())
               .take(limitPerCategory)
               .toList();
+        } else {
+          final rows = database.select(
+            '''
+            SELECT * FROM ${DatabaseSchema.tableTracks}
+            WHERE ${_sqlNorm(DatabaseSchema.colTitle)} LIKE ?
+               OR ${_sqlNorm(DatabaseSchema.colTrackArtist)} LIKE ?
+               OR ${_sqlNorm(DatabaseSchema.colTrackAlbum)} LIKE ?
+               OR ${_sqlNorm(DatabaseSchema.colTrackGenre)} LIKE ?
+            ORDER BY
+              CASE
+                WHEN lower(${_sqlNorm(DatabaseSchema.colTitle)}) LIKE lower(?) THEN 0
+                WHEN lower(${_sqlNorm(DatabaseSchema.colTrackArtist)}) LIKE lower(?) THEN 1
+                WHEN lower(${_sqlNorm(DatabaseSchema.colTrackAlbum)}) LIKE lower(?) THEN 2
+                ELSE 3
+              END,
+              ${DatabaseSchema.colTitle} COLLATE NOCASE ASC
+            LIMIT ?
+            ''',
+            [likeTerm, likeTerm, likeTerm, likeTerm, prefixTerm, prefixTerm, prefixTerm, limitPerCategory],
+          );
+          tracks = rows.map((r) => Track.fromMap(r)).toList();
+
+          // Fallback ZWNJ/diacritic scan when normalized SQL didn't catch ZWNJ gaps (e.g. می خواهم vs می‌خواهم)
+          if (tracks.isEmpty && TagEncodingDecoder.containsRtlCharacters(effectiveTextQuery)) {
+            final allRows = database.select(
+              'SELECT * FROM ${DatabaseSchema.tableTracks} ORDER BY ${DatabaseSchema.colTitle} COLLATE NOCASE ASC;',
+            );
+            tracks = allRows
+                .map((r) => Track.fromMap(r))
+                .where(
+                  (t) =>
+                      QueryNormalizer.containsNormalized(t.title, effectiveTextQuery) ||
+                      QueryNormalizer.containsNormalized(t.artist, effectiveTextQuery) ||
+                      QueryNormalizer.containsNormalized(t.album, effectiveTextQuery) ||
+                      (t.genre != null &&
+                          QueryNormalizer.containsNormalized(t.genre!, effectiveTextQuery)),
+                )
+                .take(limitPerCategory)
+                .toList();
+          }
+
+          if (parsed.hasFilters) {
+            tracks = parsed.filterTracks(tracks);
+          }
         }
       }
 
       // 2. Search Albums
-      if (category == SearchResultCategory.all || category == SearchResultCategory.albums) {
+      if ((category == SearchResultCategory.all || category == SearchResultCategory.albums) &&
+          effectiveTextQuery.isNotEmpty) {
         final rows = database.select(
           '''
           SELECT * FROM ${DatabaseSchema.tableAlbums}
@@ -124,7 +147,8 @@ class SqliteSearchRepository implements ISearchRepository {
       }
 
       // 3. Search Artists
-      if (category == SearchResultCategory.all || category == SearchResultCategory.artists) {
+      if ((category == SearchResultCategory.all || category == SearchResultCategory.artists) &&
+          effectiveTextQuery.isNotEmpty) {
         final rows = database.select(
           '''
           SELECT * FROM ${DatabaseSchema.tableArtists}
@@ -143,7 +167,8 @@ class SqliteSearchRepository implements ISearchRepository {
       }
 
       // 4. Search Playlists
-      if (category == SearchResultCategory.all || category == SearchResultCategory.playlists) {
+      if ((category == SearchResultCategory.all || category == SearchResultCategory.playlists) &&
+          effectiveTextQuery.isNotEmpty) {
         final rows = database.select(
           '''
           SELECT * FROM ${DatabaseSchema.tablePlaylists}
@@ -163,7 +188,8 @@ class SqliteSearchRepository implements ISearchRepository {
       }
 
       // 5. Search Genres
-      if (category == SearchResultCategory.all || category == SearchResultCategory.genres) {
+      if ((category == SearchResultCategory.all || category == SearchResultCategory.genres) &&
+          effectiveTextQuery.isNotEmpty) {
         final rows = database.select(
           '''
           SELECT * FROM ${DatabaseSchema.tableGenres}

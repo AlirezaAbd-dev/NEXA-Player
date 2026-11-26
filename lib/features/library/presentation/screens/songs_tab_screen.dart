@@ -5,6 +5,7 @@ import 'package:nexa_player/core/constants/phase2_keys.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
 import 'package:nexa_player/core/design_system/glass_tokens.dart';
+import 'package:nexa_player/core/l10n/locale_controller.dart';
 import 'package:nexa_player/core/services/storage_permission_orchestrator.dart';
 import 'package:nexa_player/core/services/storage_permission_service.dart';
 import 'package:nexa_player/features/library/domain/repositories/tracks_repository.dart';
@@ -76,14 +77,14 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
       backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
       appBar: GlassAppBar(
-        title: const NexaHeaderBrandLockup(sectionTitle: 'Songs'),
+        title: NexaHeaderBrandLockup(sectionTitle: context.l10n.tabSongs),
         titleSpacing: 12.0,
         automaticallyImplyLeading: false,
         actions: [
           PopupMenuButton<TrackSortBy>(
             key: Phase2Keys.sortButton,
             icon: const Icon(Icons.sort_rounded),
-            tooltip: 'Sort songs',
+            tooltip: context.l10n.sortSongsTooltip,
             onSelected: (sortBy) {
               setState(() {
                 if (_sortBy == sortBy) {
@@ -95,25 +96,73 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
               });
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 key: Phase2Keys.sortMenuTitle,
                 value: TrackSortBy.title,
-                child: Text('Title'),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(context.l10n.sortTitle),
+                    if (_sortBy == TrackSortBy.title)
+                      Icon(
+                        _ascending
+                            ? Icons.arrow_upward_rounded
+                            : Icons.arrow_downward_rounded,
+                        size: 16,
+                      ),
+                  ],
+                ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 key: Phase2Keys.sortMenuArtist,
                 value: TrackSortBy.artist,
-                child: Text('Artist'),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(context.l10n.sortArtist),
+                    if (_sortBy == TrackSortBy.artist)
+                      Icon(
+                        _ascending
+                            ? Icons.arrow_upward_rounded
+                            : Icons.arrow_downward_rounded,
+                        size: 16,
+                      ),
+                  ],
+                ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 key: Phase2Keys.sortMenuDuration,
                 value: TrackSortBy.duration,
-                child: Text('Duration'),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(context.l10n.sortDuration),
+                    if (_sortBy == TrackSortBy.duration)
+                      Icon(
+                        _ascending
+                            ? Icons.arrow_upward_rounded
+                            : Icons.arrow_downward_rounded,
+                        size: 16,
+                      ),
+                  ],
+                ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 key: Phase2Keys.sortMenuDateAdded,
                 value: TrackSortBy.dateAdded,
-                child: Text('Date Added'),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(context.l10n.sortDateAdded),
+                    if (_sortBy == TrackSortBy.dateAdded)
+                      Icon(
+                        _ascending
+                            ? Icons.arrow_upward_rounded
+                            : Icons.arrow_downward_rounded,
+                        size: 16,
+                      ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -130,12 +179,12 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
             NexaSearchBar(
               key: Phase2Keys.searchField,
               controller: _searchController,
-              hintText: 'Search songs, artists, albums...',
+              hintText: context.l10n.searchSongsHint,
             ),
             const SizedBox(height: AppSpacing.md),
             tracksAsync.when(
               data: (tracks) => Text(
-                'All Songs (${tracks.length})',
+                context.l10n.allSongsCount(tracks.length),
                 key: Phase2Keys.songCountHeader,
                 style: AppTypography.titleLarge
                     .copyWith(fontWeight: FontWeight.bold),

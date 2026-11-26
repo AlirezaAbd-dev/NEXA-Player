@@ -576,8 +576,8 @@ class _PlayingQueueSheetState extends ConsumerState<PlayingQueueSheet> {
                               key: ValueKey('queue_item_${track.id}_$index'),
                               direction: DismissDirection.endToStart,
                               background: Container(
-                                alignment: Alignment.centerRight,
-                                padding: const EdgeInsets.only(right: 20.0),
+                                alignment: AlignmentDirectional.centerEnd,
+                                padding: const EdgeInsetsDirectional.only(end: 20.0),
                                 margin: const EdgeInsets.only(bottom: 4.0),
                                 decoration: BoxDecoration(
                                   color: Colors.redAccent.withOpacity(0.22),

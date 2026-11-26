@@ -8,16 +8,21 @@ import '../../domain/entities/equalizer_preset.dart';
 import '../../domain/entities/equalizer_state.dart';
 import '../../domain/entities/reverb_preset.dart';
 import '../../domain/services/equalizer_service.dart';
+import 'native_equalizer_bridge.dart';
 
 /// Pure Dart implementation of [IEqualizerService] with 16 factory presets,
-/// persistence via [IStorageService], and psychoacoustic DSP parameters.
+/// persistence via [IStorageService], and optional native DSP bridge.
 class PureDartEqualizerService implements IEqualizerService {
-  PureDartEqualizerService({IStorageService? storageService})
-      : _storageService = storageService {
+  PureDartEqualizerService({
+    IStorageService? storageService,
+    IEqualizerDspBridge? dspBridge,
+  })  : _storageService = storageService,
+        _dspBridge = dspBridge {
     _state = _buildInitialState();
   }
 
   final IStorageService? _storageService;
+  final IEqualizerDspBridge? _dspBridge;
   final StreamController<EqualizerState> _stateController =
       StreamController<EqualizerState>.broadcast();
 
@@ -298,6 +303,7 @@ class PureDartEqualizerService implements IEqualizerService {
     if (!_stateController.isClosed) {
       _stateController.add(_state);
     }
+    unawaited(_dspBridge?.applyState(_state));
   }
 
   @override
@@ -448,6 +454,7 @@ class PureDartEqualizerService implements IEqualizerService {
 
   @override
   void dispose() {
+    _dspBridge?.dispose();
     _stateController.close();
   }
 }

@@ -11,6 +11,11 @@ import android.media.AudioFormat
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.media.MediaMetadataRetriever
+import android.media.audiofx.BassBoost
+import android.media.audiofx.Equalizer
+import android.media.audiofx.LoudnessEnhancer
+import android.media.audiofx.PresetReverb
+import android.media.audiofx.Virtualizer
 import android.media.audiofx.Visualizer
 import android.net.Uri
 import android.os.Build
@@ -29,6 +34,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.math.ln
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -37,8 +43,10 @@ class MainActivity : AudioServiceActivity() {
     private val channelName = "com.nexa.player/media_store"
     private val fftEventChannelName = "com.nexa.player/fft_stream"
     private val fftControlChannelName = "com.nexa.player/fft_control"
+    private val eqChannelName = "com.nexa.player/equalizer"
     private val ioExecutor: ExecutorService = Executors.newFixedThreadPool(4)
     private val fftExecutor: ExecutorService = Executors.newSingleThreadExecutor()
+    private val eqExecutor: ExecutorService = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
     private var pendingImagePickResult: MethodChannel.Result? = null
 
@@ -48,6 +56,13 @@ class MainActivity : AudioServiceActivity() {
     private var activeFpsCap: Int = 60
     private var captureRequested: Boolean = false
     private var capturePausedInBackground: Boolean = false
+
+    private var nativeEqualizer: Equalizer? = null
+    private var nativeBassBoost: BassBoost? = null
+    private var nativeVirtualizer: Virtualizer? = null
+    private var nativeReverb: PresetReverb? = null
+    private var nativeLoudness: LoudnessEnhancer? = null
+    private var eqSessionId: Int = 0
 
     companion object {
         private const val REQUEST_CODE_PICK_COVER = 41029
@@ -188,6 +203,46 @@ class MainActivity : AudioServiceActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, eqChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "applyState" -> {
+                        val sessionId = call.argument<Number>("audioSessionId")?.toInt() ?: 0
+                        val isEnabled = call.argument<Boolean>("isEnabled") ?: true
+                        val preamp = call.argument<Number>("preamp")?.toDouble() ?: 0.0
+                        val bassBoost = call.argument<Number>("bassBoost")?.toDouble() ?: 0.0
+                        val virtualizer = call.argument<Number>("virtualizer")?.toDouble() ?: 0.0
+                        val reverb = call.argument<String>("reverb") ?: "none"
+                        val rawBands = call.argument<List<*>>("bands") ?: emptyList<Any>()
+                        val bandPairs = rawBands.mapNotNull { item ->
+                            val map = item as? Map<*, *> ?: return@mapNotNull null
+                            val freq = (map["frequency"] as? Number)?.toDouble() ?: return@mapNotNull null
+                            val gain = (map["gain"] as? Number)?.toDouble() ?: 0.0
+                            freq to gain
+                        }
+                        if (sessionId > 0) {
+                            eqExecutor.execute {
+                                applyEqualizerStateSync(
+                                    sessionId = sessionId,
+                                    isEnabled = isEnabled,
+                                    preamp = preamp,
+                                    bandPairs = bandPairs,
+                                    bassBoost = bassBoost,
+                                    virtualizer = virtualizer,
+                                    reverbName = reverb
+                                )
+                            }
+                        }
+                        result.success(true)
+                    }
+                    "release" -> {
+                        eqExecutor.execute { releaseEqualizerSync() }
+                        result.success(true)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
     }
 
     override fun onStart() {
@@ -250,9 +305,172 @@ class MainActivity : AudioServiceActivity() {
     override fun onDestroy() {
         captureRequested = false
         releaseVisualizerSync()
+        releaseEqualizerSync()
         fftExecutor.shutdownNow()
+        eqExecutor.shutdownNow()
         ioExecutor.shutdownNow()
         super.onDestroy()
+    }
+
+    private fun applyEqualizerStateSync(
+        sessionId: Int,
+        isEnabled: Boolean,
+        preamp: Double,
+        bandPairs: List<Pair<Double, Double>>,
+        bassBoost: Double,
+        virtualizer: Double,
+        reverbName: String
+    ) {
+        if (sessionId <= 0) return
+
+        if (sessionId != eqSessionId) {
+            releaseEqualizerSync()
+            eqSessionId = sessionId
+            try {
+                nativeEqualizer = Equalizer(0, sessionId)
+            } catch (_: Exception) {
+                nativeEqualizer = null
+            }
+            try {
+                nativeBassBoost = BassBoost(0, sessionId)
+            } catch (_: Exception) {
+                nativeBassBoost = null
+            }
+            try {
+                nativeVirtualizer = Virtualizer(0, sessionId)
+            } catch (_: Exception) {
+                nativeVirtualizer = null
+            }
+            try {
+                nativeReverb = PresetReverb(0, sessionId)
+            } catch (_: Exception) {
+                nativeReverb = null
+            }
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    nativeLoudness = LoudnessEnhancer(sessionId)
+                }
+            } catch (_: Exception) {
+                nativeLoudness = null
+            }
+        }
+
+        // 1. Multi-band Equalizer (interpolating 10 UI ISO bands to hardware bands in log-freq space)
+        nativeEqualizer?.let { eq ->
+            try {
+                eq.enabled = isEnabled
+                if (isEnabled && bandPairs.isNotEmpty()) {
+                    val range = eq.bandLevelRange
+                    val minMb = range[0].toInt()
+                    val maxMb = range[1].toInt()
+                    val numBands = eq.numberOfBands.toInt()
+                    val negativePreampOffset = if (preamp < 0.0) preamp else 0.0
+                    for (b in 0 until numBands) {
+                        val centerHz = (eq.getCenterFreq(b.toShort()) / 1000.0).coerceAtLeast(20.0)
+                        val gainDb = interpolateGainDb(centerHz, bandPairs) + negativePreampOffset
+                        val levelMb = (gainDb * 100.0).roundToInt().coerceIn(minMb, maxMb)
+                        eq.setBandLevel(b.toShort(), levelMb.toShort())
+                    }
+                }
+            } catch (_: Exception) {
+            }
+        }
+
+        // 2. Positive Preamp via LoudnessEnhancer (negative preamp is folded into EQ bands above)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            nativeLoudness?.let { loudness ->
+                try {
+                    if (isEnabled && preamp > 0.0) {
+                        loudness.setTargetGain((preamp * 100.0).roundToInt())
+                        loudness.enabled = true
+                    } else {
+                        loudness.setTargetGain(0)
+                        loudness.enabled = false
+                    }
+                } catch (_: Exception) {
+                }
+            }
+        }
+
+        // 3. Bass Boost (0..1000 permille)
+        nativeBassBoost?.let { bass ->
+            try {
+                val clamped = bassBoost.coerceIn(0.0, 1.0)
+                if (bass.strengthSupported) {
+                    bass.setStrength((clamped * 1000.0).roundToInt().toShort())
+                }
+                bass.enabled = isEnabled && clamped > 0.0
+            } catch (_: Exception) {
+            }
+        }
+
+        // 4. Virtualizer / Stereo Wideness (0..1000 permille)
+        nativeVirtualizer?.let { virt ->
+            try {
+                val clamped = virtualizer.coerceIn(0.0, 1.0)
+                if (virt.strengthSupported) {
+                    virt.setStrength((clamped * 1000.0).roundToInt().toShort())
+                }
+                virt.enabled = isEnabled && clamped > 0.0
+            } catch (_: Exception) {
+            }
+        }
+
+        // 5. Preset Reverb
+        nativeReverb?.let { rev ->
+            try {
+                val preset = when (reverbName.lowercase()) {
+                    "room" -> PresetReverb.PRESET_SMALLROOM
+                    "studio" -> PresetReverb.PRESET_MEDIUMROOM
+                    "plate" -> PresetReverb.PRESET_PLATE
+                    "hall" -> PresetReverb.PRESET_MEDIUMHALL
+                    "livearena" -> PresetReverb.PRESET_LARGEHALL
+                    else -> PresetReverb.PRESET_NONE
+                }
+                rev.preset = preset
+                rev.enabled = isEnabled && preset != PresetReverb.PRESET_NONE
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    private fun interpolateGainDb(
+        targetHz: Double,
+        bandPairs: List<Pair<Double, Double>>
+    ): Double {
+        if (bandPairs.isEmpty()) return 0.0
+        if (bandPairs.size == 1 || targetHz <= bandPairs.first().first) {
+            return bandPairs.first().second
+        }
+        if (targetHz >= bandPairs.last().first) {
+            return bandPairs.last().second
+        }
+        val logTarget = ln(targetHz)
+        for (i in 0 until bandPairs.size - 1) {
+            val (f0, g0) = bandPairs[i]
+            val (f1, g1) = bandPairs[i + 1]
+            if (targetHz in f0..f1) {
+                val log0 = ln(f0.coerceAtLeast(1.0))
+                val log1 = ln(f1.coerceAtLeast(1.0))
+                val t = if (log1 > log0) (logTarget - log0) / (log1 - log0) else 0.0
+                return g0 + (g1 - g0) * t
+            }
+        }
+        return bandPairs.last().second
+    }
+
+    private fun releaseEqualizerSync() {
+        eqSessionId = 0
+        try { nativeEqualizer?.release() } catch (_: Exception) {}
+        nativeEqualizer = null
+        try { nativeBassBoost?.release() } catch (_: Exception) {}
+        nativeBassBoost = null
+        try { nativeVirtualizer?.release() } catch (_: Exception) {}
+        nativeVirtualizer = null
+        try { nativeReverb?.release() } catch (_: Exception) {}
+        nativeReverb = null
+        try { nativeLoudness?.release() } catch (_: Exception) {}
+        nativeLoudness = null
     }
 
     private fun rebindVisualizer(sessionId: Int, fpsCap: Int, enabled: Boolean) {

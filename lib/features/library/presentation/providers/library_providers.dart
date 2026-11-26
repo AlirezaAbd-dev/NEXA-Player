@@ -83,11 +83,41 @@ final tracksListProvider =
   return result.valueOrNull ?? [];
 });
 
+/// Query parameter container for album filtering and sorting.
+class AlbumQueryParams {
+  const AlbumQueryParams({
+    this.sortBy = AlbumSortBy.title,
+    this.ascending = true,
+    this.searchQuery,
+  });
+
+  final AlbumSortBy sortBy;
+  final bool ascending;
+  final String? searchQuery;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AlbumQueryParams &&
+          runtimeType == other.runtimeType &&
+          sortBy == other.sortBy &&
+          ascending == other.ascending &&
+          searchQuery == other.searchQuery;
+
+  @override
+  int get hashCode => Object.hash(sortBy, ascending, searchQuery);
+}
+
 /// Provider fetching all albums.
 final albumsListProvider =
-    FutureProvider.family<List<Album>, String?>((ref, searchQuery) async {
+    FutureProvider.family<List<Album>, AlbumQueryParams?>((ref, params) async {
+  final p = params ?? const AlbumQueryParams();
   final repo = ref.watch(albumsRepositoryProvider);
-  final result = await repo.getAllAlbums(searchQuery: searchQuery);
+  final result = await repo.getAllAlbums(
+    sortBy: p.sortBy,
+    ascending: p.ascending,
+    searchQuery: p.searchQuery,
+  );
   return result.valueOrNull ?? [];
 });
 
@@ -99,11 +129,41 @@ final albumDetailTracksProvider =
   return result.valueOrNull ?? [];
 });
 
+/// Query parameter container for artist filtering and sorting.
+class ArtistQueryParams {
+  const ArtistQueryParams({
+    this.sortBy = ArtistSortBy.name,
+    this.ascending = true,
+    this.searchQuery,
+  });
+
+  final ArtistSortBy sortBy;
+  final bool ascending;
+  final String? searchQuery;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ArtistQueryParams &&
+          runtimeType == other.runtimeType &&
+          sortBy == other.sortBy &&
+          ascending == other.ascending &&
+          searchQuery == other.searchQuery;
+
+  @override
+  int get hashCode => Object.hash(sortBy, ascending, searchQuery);
+}
+
 /// Provider fetching all artists.
 final artistsListProvider =
-    FutureProvider.family<List<Artist>, String?>((ref, searchQuery) async {
+    FutureProvider.family<List<Artist>, ArtistQueryParams?>((ref, params) async {
+  final p = params ?? const ArtistQueryParams();
   final repo = ref.watch(artistsRepositoryProvider);
-  final result = await repo.getAllArtists(searchQuery: searchQuery);
+  final result = await repo.getAllArtists(
+    sortBy: p.sortBy,
+    ascending: p.ascending,
+    searchQuery: p.searchQuery,
+  );
   return result.valueOrNull ?? [];
 });
 

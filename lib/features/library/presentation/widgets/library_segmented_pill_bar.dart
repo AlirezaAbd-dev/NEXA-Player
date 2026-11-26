@@ -5,6 +5,7 @@ import '../../../../app/routes.dart';
 import '../../../../core/constants/phase2_keys.dart';
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../core/design_system/app_typography.dart';
+import '../../../../core/l10n/locale_controller.dart';
 
 /// Top-level sub-tabs within the Library hub.
 enum LibrarySubTab {
@@ -19,6 +20,16 @@ enum LibrarySubTab {
   final IconData icon;
   final Key key;
   final String route;
+
+  String localizedLabel(BuildContext context) {
+    final l10n = context.l10n;
+    return switch (this) {
+      LibrarySubTab.songs => l10n.tabSongs,
+      LibrarySubTab.albums => l10n.tabAlbums,
+      LibrarySubTab.artists => l10n.tabArtists,
+      LibrarySubTab.folders => l10n.tabFolders,
+    };
+  }
 }
 
 /// Borderless tonal segmented pill bar positioned at the top of Library views.
@@ -107,7 +118,7 @@ class LibrarySegmentedPillBar extends StatelessWidget implements PreferredSizeWi
                           ),
                           const SizedBox(width: 6.0),
                           Text(
-                            tab.label,
+                            tab.localizedLabel(context),
                             style: AppTypography.labelMedium.copyWith(
                               color: isSelected
                                   ? colorScheme.primary

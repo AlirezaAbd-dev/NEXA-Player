@@ -187,12 +187,14 @@ class _HeroArtworkCardState extends State<HeroArtworkCard>
       if (uri.startsWith('http://') || uri.startsWith('https://')) continue;
       final clean = uri.startsWith('file://') ? uri.substring(7) : uri;
       final file = File(clean);
-      if (file.existsSync()) {
-        precacheImage(
-          ResizeImage(FileImage(file), width: 720),
-          context,
-        ).catchError((_) {});
-      }
+      file.exists().then((exists) {
+        if (exists && mounted) {
+          precacheImage(
+            ResizeImage(FileImage(file), width: 720),
+            context,
+          ).catchError((_) {});
+        }
+      });
     }
   }
 

@@ -7,6 +7,7 @@ import '../../../../core/design_system/app_spacing.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/glass_tokens.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/l10n/locale_controller.dart';
 import '../../../../core/services/storage_permission_orchestrator.dart';
 import '../../../../core/services/storage_permission_service.dart';
 import '../../../../core/utils/contrast_validator.dart';
@@ -47,8 +48,40 @@ class FoldersTabScreen extends ConsumerStatefulWidget {
   ConsumerState<FoldersTabScreen> createState() => _FoldersTabScreenState();
 }
 
+enum _FolderSortBy { name, songCount }
+
 class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
   final List<String> _navigationStack = [];
+  _FolderSortBy _sortBy = _FolderSortBy.name;
+  bool _ascending = true;
+
+  List<FolderNode> _sortFolders(List<FolderNode> input) {
+    final copy = List<FolderNode>.from(input);
+    copy.sort((a, b) {
+      final cmp = switch (_sortBy) {
+        _FolderSortBy.name =>
+          a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+        _FolderSortBy.songCount =>
+          a.recursiveTrackCount.compareTo(b.recursiveTrackCount),
+      };
+      return _ascending ? cmp : -cmp;
+    });
+    return copy;
+  }
+
+  List<FileNode> _sortFiles(List<FileNode> input) {
+    final copy = List<FileNode>.from(input);
+    copy.sort((a, b) {
+      final cmp = switch (_sortBy) {
+        _FolderSortBy.name =>
+          a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+        _FolderSortBy.songCount =>
+          a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+      };
+      return _ascending ? cmp : -cmp;
+    });
+    return copy;
+  }
 
   @override
   void initState() {
@@ -180,7 +213,7 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
       orElse: () => null,
     );
 
-    return PopScope(
+    final scaffold = PopScope(
       canPop: _navigationStack.isEmpty,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop && _navigationStack.isNotEmpty) {
@@ -205,7 +238,7 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                activeNode?.name ?? 'Folders',
+                activeNode?.name ?? context.l10n.tabFolders,
                 style: AppTypography.titleLarge,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -214,7 +247,7 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
                 data: (folders) => Text(
                   activeNode != null
                       ? _formatFolderCounts(activeNode).toUpperCase()
-                      : '${folders.length} STORAGE FOLDERS INDEXED',
+                      : context.l10n.foldersCountMeta(folders.length),
                   style: AppTypography.labelSmall.copyWith(
                     color: colorScheme.primary.withOpacity(0.85),
                     fontWeight: FontWeight.w600,
@@ -229,6 +262,57 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
           bottom: const LibrarySegmentedPillBar(
             selectedTab: LibrarySubTab.folders,
           ),
+          actions: [
+            PopupMenuButton<_FolderSortBy>(
+              key: const ValueKey('folders_sort_btn'),
+              icon: const Icon(Icons.sort_rounded),
+              tooltip: 'Sort folders',
+              onSelected: (sortBy) {
+                setState(() {
+                  if (_sortBy == sortBy) {
+                    _ascending = !_ascending;
+                  } else {
+                    _sortBy = sortBy;
+                    _ascending = true;
+                  }
+                });
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: _FolderSortBy.name,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Name'),
+                      if (_sortBy == _FolderSortBy.name)
+                        Icon(
+                          _ascending
+                              ? Icons.arrow_upward_rounded
+                              : Icons.arrow_downward_rounded,
+                          size: 16,
+                        ),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: _FolderSortBy.songCount,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Song Count'),
+                      if (_sortBy == _FolderSortBy.songCount)
+                        Icon(
+                          _ascending
+                              ? Icons.arrow_upward_rounded
+                              : Icons.arrow_downward_rounded,
+                          size: 16,
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
         body: Stack(
           fit: StackFit.expand,
@@ -253,14 +337,16 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
                     );
                   }
 
+                  final sortedRoots = _sortFolders(folders);
+
                   // Root View: Folders ONLY (no auto-expanding tiles or loose songs)
                   return ListView.builder(
                     key: Phase2Keys.foldersTreeView,
                     padding:
                         nexaScrollPadding(context, horizontal: 0.0, top: 0.0),
-                    itemCount: folders.length,
+                    itemCount: sortedRoots.length,
                     itemBuilder: (context, index) {
-                      final folder = folders[index];
+                      final folder = sortedRoots[index];
                       return Padding(
                         padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                         child: _buildFolderCard(
@@ -285,6 +371,21 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
           ],
         ),
       ),
+    );
+
+    if (Router.maybeOf(context) == null) {
+      return scaffold;
+    }
+
+    return BackButtonListener(
+      onBackButtonPressed: () async {
+        if (_navigationStack.isNotEmpty) {
+          _navigateUp();
+          return true;
+        }
+        return false;
+      },
+      child: scaffold,
     );
   }
 
@@ -387,13 +488,15 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
     ColorScheme colorScheme,
   ) {
     final primary = colorScheme.primary;
-    final subCount = folder.subFolders.length;
-    final fileCount = folder.files.length;
+    final sortedSubFolders = _sortFolders(folder.subFolders);
+    final sortedFiles = _sortFiles(folder.files);
+    final subCount = sortedSubFolders.length;
+    final fileCount = sortedFiles.length;
     final totalItems = subCount + fileCount;
 
     final activeFileKey = activeTrack == null
         ? null
-        : (folder.files.any((f) => f.trackId == activeTrack.id)
+        : (sortedFiles.any((f) => f.trackId == activeTrack.id)
             ? activeTrack.id
             : activeTrack.filePath);
 
@@ -455,7 +558,7 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
                   ),
                 ),
                 icon: const Icon(Icons.play_arrow_rounded, size: 18.0),
-                label: const Text('Play All'),
+                label: Text(context.l10n.playAll),
                 onPressed: () => _playFolderFiles(folder, initialIndex: 0),
               ),
               const SizedBox(width: AppSpacing.xs),
@@ -481,7 +584,7 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
         Expanded(
           child: ActiveTrackAutoScrollScope(
             trackIds:
-                folder.files.map((f) => f.trackId ?? f.path).toList(growable: false),
+                sortedFiles.map((f) => f.trackId ?? f.path).toList(growable: false),
             activeTrackId: activeFileKey,
             indexOffset: subCount,
             builder: (context, scrollController) => ListView.builder(
@@ -492,7 +595,7 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
               itemBuilder: (context, index) {
                 // Direct subfolders first
                 if (index < subCount) {
-                  final sub = folder.subFolders[index];
+                  final sub = sortedSubFolders[index];
                   return Padding(
                     padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                     child: _buildFolderCard(
@@ -506,7 +609,7 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
 
                 // Direct files in this folder
                 final fileIndex = index - subCount;
-                final file = folder.files[fileIndex];
+                final file = sortedFiles[fileIndex];
                 final ext = _extractExtension(file.name);
                 final isActive = activeTrack != null &&
                     ((file.trackId != null && activeTrack.id == file.trackId) ||

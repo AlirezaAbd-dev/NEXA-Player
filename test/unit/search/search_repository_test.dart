@@ -205,6 +205,43 @@ void main() {
       expect(albumsOnly.valueOrNull!.albums.length, equals(1));
     });
 
+    test('returns all favorited tracks when searching Favorites token', () async {
+      const fav1 = Track(
+        id: 'fav-1',
+        title: 'Midnight Rain',
+        artist: 'Artist X',
+        duration: Duration(seconds: 200),
+        filePath: '/music/midnight.mp3',
+        isFavorite: true,
+      );
+      const fav2 = Track(
+        id: 'fav-2',
+        title: 'Solar Echo',
+        artist: 'Artist Y',
+        duration: Duration(seconds: 180),
+        filePath: '/music/solar.mp3',
+        isFavorite: true,
+      );
+      const nonFav = Track(
+        id: 'non-fav',
+        title: 'Unliked Song',
+        artist: 'Artist Z',
+        duration: Duration(seconds: 150),
+        filePath: '/music/unliked.mp3',
+        isFavorite: false,
+      );
+
+      TestDatabaseHelper.seedTrack(db, fav1);
+      TestDatabaseHelper.seedTrack(db, fav2);
+      TestDatabaseHelper.seedTrack(db, nonFav);
+
+      final res = await repository.search(query: 'Favorites');
+      expect(res.isSuccess, isTrue);
+      final tracks = res.valueOrNull!.tracks;
+      expect(tracks.map((t) => t.id), containsAll(['fav-1', 'fav-2']));
+      expect(tracks.map((t) => t.id), isNot(contains('non-fav')));
+    });
+
     test('searches genres matching name', () async {
       TestDatabaseHelper.seedGenre(db, testGenre1);
 

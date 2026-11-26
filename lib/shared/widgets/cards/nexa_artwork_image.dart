@@ -81,6 +81,18 @@ class _NexaArtworkImageState extends State<NexaArtworkImage> {
     return null;
   }
 
+  static const int _maxCacheEntries = 500;
+  static const int _maxConcurrentResolutions = 3;
+  static final Set<String> _missingFilesCache = <String>{};
+  static int _activeResolutions = 0;
+
+  static void _rememberMissingFile(String path) {
+    if (_missingFilesCache.length >= _maxCacheEntries) {
+      _missingFilesCache.clear();
+    }
+    _missingFilesCache.add(path);
+  }
+
   void _maybeResolveLazily() {
     if (_resolutionAttempted) return;
     final current = _resolvedUri;
@@ -88,15 +100,32 @@ class _NexaArtworkImageState extends State<NexaArtworkImage> {
       if (current.startsWith('http://') || current.startsWith('https://')) {
         return;
       }
-      final file = File(_stripFileScheme(current));
-      if (file.existsSync()) return;
+      final clean = _stripFileScheme(current);
+      if (!_missingFilesCache.contains(clean)) {
+        // Verify asynchronously off the UI isolate rather than blocking with existsSync.
+        File(clean).exists().then((exists) {
+          if (exists) return;
+          _rememberMissingFile(clean);
+          if (mounted) {
+            _resolveFromService();
+          }
+        });
+        return;
+      }
     }
 
+    _resolveFromService();
+  }
+
+  void _resolveFromService() {
+    if (_resolutionAttempted) return;
     final service = _effectiveService;
     if (service == null) return;
     if (widget.track == null && widget.album == null) return;
+    if (_activeResolutions >= _maxConcurrentResolutions) return;
 
     _resolutionAttempted = true;
+    _activeResolutions++;
     Future<String?>? future;
     if (widget.track != null) {
       future = service.resolveTrackArtwork(widget.track!);
@@ -107,13 +136,21 @@ class _NexaArtworkImageState extends State<NexaArtworkImage> {
       );
     }
 
-    future?.then((resolved) {
+    if (future == null) {
+      _activeResolutions = (_activeResolutions - 1).clamp(0, _maxConcurrentResolutions);
+      return;
+    }
+
+    future.then((resolved) {
       if (!mounted) return;
       if (resolved != null && resolved.isNotEmpty && resolved != _resolvedUri) {
+        _missingFilesCache.remove(_stripFileScheme(resolved));
         setState(() {
           _resolvedUri = resolved;
         });
       }
+    }).whenComplete(() {
+      _activeResolutions = (_activeResolutions - 1).clamp(0, _maxConcurrentResolutions);
     });
   }
 
@@ -136,18 +173,21 @@ class _NexaArtworkImageState extends State<NexaArtworkImage> {
           errorBuilder: (_, __, ___) => widget.fallbackBuilder(context),
         );
       } else {
-        final file = File(_stripFileScheme(uri));
-        if (file.existsSync()) {
+        final clean = _stripFileScheme(uri);
+        if (_missingFilesCache.contains(clean)) {
+          content = widget.fallbackBuilder(context);
+        } else {
           content = Image.file(
-            file,
+            File(clean),
             width: widget.width,
             height: widget.height,
             fit: widget.fit,
             cacheWidth: widget.cacheWidth,
-            errorBuilder: (_, __, ___) => widget.fallbackBuilder(context),
+            errorBuilder: (_, __, ___) {
+              _rememberMissingFile(clean);
+              return widget.fallbackBuilder(context);
+            },
           );
-        } else {
-          content = widget.fallbackBuilder(context);
         }
       }
     } else {

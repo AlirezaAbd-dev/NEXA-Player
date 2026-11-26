@@ -6,6 +6,7 @@ import 'package:nexa_player/core/constants/phase2_keys.dart';
 import 'package:nexa_player/core/services/artwork/artwork_providers.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
+import 'package:nexa_player/core/l10n/locale_controller.dart';
 import 'package:nexa_player/features/playlists/presentation/providers/playlists_providers.dart';
 import 'package:nexa_player/features/playlists/presentation/screens/playlist_detail_screen.dart';
 import 'package:nexa_player/features/playlists/presentation/widgets/m3u_import_dialog.dart';
@@ -18,9 +19,55 @@ import 'package:nexa_player/shared/widgets/glass/glass_fab.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_text_field.dart';
 import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
 
+enum _PlaylistSortBy { name, trackCount, updatedAt }
+
 /// Playlists tab screen managing user playlists and smart auto-generated playlists.
-class PlaylistsTabScreen extends ConsumerWidget {
+class PlaylistsTabScreen extends ConsumerStatefulWidget {
   const PlaylistsTabScreen({super.key});
+
+  @override
+  ConsumerState<PlaylistsTabScreen> createState() => _PlaylistsTabScreenState();
+}
+
+class _PlaylistsTabScreenState extends ConsumerState<PlaylistsTabScreen> {
+  _PlaylistSortBy _sortBy = _PlaylistSortBy.name;
+  bool _ascending = true;
+
+  List<Playlist> _sortPlaylists(List<Playlist> input) {
+    final copy = List<Playlist>.from(input);
+    copy.sort((a, b) {
+      final cmp = switch (_sortBy) {
+        _PlaylistSortBy.name =>
+          a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+        _PlaylistSortBy.trackCount => a.trackCount.compareTo(b.trackCount),
+        _PlaylistSortBy.updatedAt => a.updatedAt.compareTo(b.updatedAt),
+      };
+      return _ascending ? cmp : -cmp;
+    });
+    return copy;
+  }
+
+  PopupMenuItem<_PlaylistSortBy> _buildSortMenuItem(
+    _PlaylistSortBy value,
+    String label,
+  ) {
+    return PopupMenuItem<_PlaylistSortBy>(
+      value: value,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label),
+          if (_sortBy == value)
+            Icon(
+              _ascending
+                  ? Icons.arrow_upward_rounded
+                  : Icons.arrow_downward_rounded,
+              size: 16,
+            ),
+        ],
+      ),
+    );
+  }
 
   void _showCreateDialog(BuildContext context, WidgetRef ref) {
     final controller = TextEditingController();
@@ -93,7 +140,7 @@ class PlaylistsTabScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final playlistsAsync = ref.watch(playlistsListNotifierProvider);
     final smartPlaylists = ref.watch(smartPlaylistsProvider);
     final theme = Theme.of(context);
@@ -110,10 +157,10 @@ class PlaylistsTabScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Playlists', style: AppTypography.titleLarge),
+            Text(context.l10n.tabPlaylists, style: AppTypography.titleLarge),
             playlistsAsync.maybeWhen(
               data: (playlists) => Text(
-                '${playlists.length} PLAYLISTS · 3 DYNAMIC SMART',
+                context.l10n.playlistsCountMeta(playlists.length),
                 style: AppTypography.labelSmall.copyWith(
                   color: Theme.of(context).colorScheme.primary.withOpacity(0.85),
                   fontWeight: FontWeight.w600,
@@ -127,6 +174,26 @@ class PlaylistsTabScreen extends ConsumerWidget {
         ),
         automaticallyImplyLeading: false,
         actions: [
+          PopupMenuButton<_PlaylistSortBy>(
+            key: const ValueKey('playlists_sort_btn'),
+            icon: const Icon(Icons.sort_rounded),
+            tooltip: 'Sort playlists',
+            onSelected: (sortBy) {
+              setState(() {
+                if (_sortBy == sortBy) {
+                  _ascending = !_ascending;
+                } else {
+                  _sortBy = sortBy;
+                  _ascending = true;
+                }
+              });
+            },
+            itemBuilder: (context) => [
+              _buildSortMenuItem(_PlaylistSortBy.name, context.l10n.sortName),
+              _buildSortMenuItem(_PlaylistSortBy.trackCount, context.l10n.sortTrackCount),
+              _buildSortMenuItem(_PlaylistSortBy.updatedAt, context.l10n.sortRecentlyUpdated),
+            ],
+          ),
           IconButton(
             icon: const Icon(Icons.search_rounded),
             tooltip: 'Search library',
@@ -189,7 +256,7 @@ class PlaylistsTabScreen extends ConsumerWidget {
                             updatedAt: DateTime.now(),
                             trackCount: 0,
                           );
-                          Navigator.of(context).push(
+                          Navigator.of(context, rootNavigator: true).push(
                             MaterialPageRoute<void>(
                               builder: (_) =>
                                   PlaylistDetailScreen(playlist: simulatedPlaylist),
@@ -288,13 +355,15 @@ class PlaylistsTabScreen extends ConsumerWidget {
                     );
                   }
 
+                  final sortedPlaylists = _sortPlaylists(playlists);
+
                   return ListView.builder(
                     key: Phase2Keys.playlistsList,
                     padding:
                         nexaScrollPadding(context, horizontal: 0.0, top: 0.0),
-                    itemCount: playlists.length,
+                    itemCount: sortedPlaylists.length,
                     itemBuilder: (context, index) {
-                      final playlist = playlists[index];
+                      final playlist = sortedPlaylists[index];
                       return Padding(
                         padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                         child: NexaSurface(
@@ -304,7 +373,7 @@ class PlaylistsTabScreen extends ConsumerWidget {
                           child: InkWell(
                             borderRadius: BorderRadius.circular(16.0),
                             onTap: () {
-                              Navigator.of(context).push(
+                              Navigator.of(context, rootNavigator: true).push(
                                 MaterialPageRoute<void>(
                                   builder: (_) =>
                                       PlaylistDetailScreen(playlist: playlist),

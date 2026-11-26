@@ -108,7 +108,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     if (_searchController.text.trim().isNotEmpty) {
       ref.read(recentSearchesProvider.notifier).save(_searchController.text.trim());
     }
-    Navigator.of(context).push(
+    Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute<void>(
         builder: (_) => AlbumDetailScreen(album: album),
       ),
@@ -120,7 +120,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     if (_searchController.text.trim().isNotEmpty) {
       ref.read(recentSearchesProvider.notifier).save(_searchController.text.trim());
     }
-    Navigator.of(context).push(
+    Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute<void>(
         builder: (_) => ArtistDetailScreen(artist: artist),
       ),
@@ -132,7 +132,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     if (_searchController.text.trim().isNotEmpty) {
       ref.read(recentSearchesProvider.notifier).save(_searchController.text.trim());
     }
-    Navigator.of(context).push(
+    Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute<void>(
         builder: (_) => PlaylistDetailScreen(playlist: playlist),
       ),

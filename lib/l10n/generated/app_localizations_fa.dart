@@ -1,0 +1,248 @@
+import 'app_localizations.dart';
+
+// ignore_for_file: type=lint
+
+/// The translations for Persian (`fa`).
+class AppLocalizationsFa extends AppLocalizations {
+  AppLocalizationsFa([String locale = 'fa']) : super(locale);
+
+  @override
+  String get appTitle => 'پخش‌کننده نِکسا';
+
+  @override
+  String get tabLibrary => 'کتابخانه';
+
+  @override
+  String get tabSongs => 'آهنگ‌ها';
+
+  @override
+  String get tabAlbums => 'آلبوم‌ها';
+
+  @override
+  String get tabArtists => 'هنرمندان';
+
+  @override
+  String get tabFolders => 'پوشه‌ها';
+
+  @override
+  String get tabPlaylists => 'لیست‌های پخش';
+
+  @override
+  String get tabSearch => 'جستجو';
+
+  @override
+  String get tabSettings => 'تنظیمات';
+
+  @override
+  String get sortTitle => 'عنوان';
+
+  @override
+  String get sortArtist => 'هنرمند';
+
+  @override
+  String get sortAlbum => 'آلبوم';
+
+  @override
+  String get sortDuration => 'مدت زمان';
+
+  @override
+  String get sortDateAdded => 'تاریخ افزودن';
+
+  @override
+  String get sortYear => 'سال';
+
+  @override
+  String get sortName => 'نام';
+
+  @override
+  String get sortTrackCount => 'تعداد آهنگ';
+
+  @override
+  String get sortSongCount => 'تعداد آهنگ';
+
+  @override
+  String get sortRecentlyUpdated => 'آخرین به‌روزرسانی';
+
+  @override
+  String get sortSongsTooltip => 'مرتب‌سازی آهنگ‌ها';
+
+  @override
+  String get sortAlbumsTooltip => 'مرتب‌سازی آلبوم‌ها';
+
+  @override
+  String get sortArtistsTooltip => 'مرتب‌سازی هنرمندان';
+
+  @override
+  String get sortFoldersTooltip => 'مرتب‌سازی پوشه‌ها';
+
+  @override
+  String get sortPlaylistsTooltip => 'مرتب‌سازی لیست‌های پخش';
+
+  @override
+  String get searchLibraryTooltip => 'جستجو در کتابخانه';
+
+  @override
+  String get searchSongsHint => 'جستجوی آهنگ، هنرمند، آلبوم...';
+
+  @override
+  String get searchAllHint => 'جستجوی آهنگ، آلبوم، هنرمند...';
+
+  @override
+  String get searchSettingsHint => 'جستجو در صدا، کنترل‌ها، پوسته، ژست‌ها...';
+
+  @override
+  String allSongsCount(int count) {
+    return 'همه آهنگ‌ها ($count)';
+  }
+
+  @override
+  String albumsCountMeta(int count) {
+    return '$count آلبوم · کیفیت بالا';
+  }
+
+  @override
+  String artistsCountMeta(int count) {
+    return '$count هنرمند در کتابخانه';
+  }
+
+  @override
+  String foldersCountMeta(int count) {
+    return '$count پوشه نمایه‌شده';
+  }
+
+  @override
+  String playlistsCountMeta(int count) {
+    return '$count لیست پخش · ۳ لیست هوشمند';
+  }
+
+  @override
+  String tracksCount(int count) {
+    return '$count آهنگ';
+  }
+
+  @override
+  String get jumpToPlaying => 'رفتن به در حال پخش';
+
+  @override
+  String get playAll => 'پخش همه';
+
+  @override
+  String get shuffle => 'پخش تصادفی';
+
+  @override
+  String get smartPlaylists => 'لیست‌های هوشمند';
+
+  @override
+  String get myPlaylists => 'لیست‌های من';
+
+  @override
+  String get newPlaylist => 'لیست جدید';
+
+  @override
+  String get createPlaylist => 'ساخت لیست پخش';
+
+  @override
+  String get playlistNameHint => 'نام لیست پخش';
+
+  @override
+  String get cancel => 'لغو';
+
+  @override
+  String get create => 'ساختن';
+
+  @override
+  String get delete => 'حذف';
+
+  @override
+  String get save => 'ذخیره';
+
+  @override
+  String get done => 'انجام شد';
+
+  @override
+  String get noAlbumsFound => 'آلبومی پیدا نشد. رسانه خود را در تنظیمات اسکن کنید!';
+
+  @override
+  String get noArtistsFound => 'هنرمندی پیدا نشد. رسانه خود را در تنظیمات اسکن کنید!';
+
+  @override
+  String get noPlaylistsYet => 'هنوز لیست پخشی ندارید. برای ساختن روی «+ لیست جدید» بزنید!';
+
+  @override
+  String get noMatchesFound => 'موردی پیدا نشد';
+
+  @override
+  String get exploreLibrary => 'کاوش کتابخانه';
+
+  @override
+  String get recentSearches => 'جستجوهای اخیر';
+
+  @override
+  String get clear => 'پاک کردن';
+
+  @override
+  String get favorites => 'علاقه‌مندی‌ها';
+
+  @override
+  String get upOneFolder => 'پوشه بالایی';
+
+  @override
+  String get importM3u => 'ورود M3U';
+
+  @override
+  String get dailyEssentials => 'تنظیمات اصلی';
+
+  @override
+  String get language => 'زبان برنامه';
+
+  @override
+  String get languageSubtitleSystem => 'پیش‌فرض سیستم (مطابق زبان گوشی)';
+
+  @override
+  String get languageSubtitleEnglish => 'English';
+
+  @override
+  String get languageSubtitlePersian => 'فارسی';
+
+  @override
+  String get languageSystemDefault => 'پیش‌فرض سیستم';
+
+  @override
+  String get languageEnglish => 'English';
+
+  @override
+  String get languagePersian => 'فارسی';
+
+  @override
+  String get themeAndAppearance => 'پوسته و ظاهر';
+
+  @override
+  String get equalizerAndDsp => 'اکولایزر و پردازش صدا';
+
+  @override
+  String get bassBoost => 'تقویت باس';
+
+  @override
+  String get virtualizer => 'فضاسازی سه‌بعدی';
+
+  @override
+  String get preamp => 'پیش‌تقویت';
+
+  @override
+  String get reverb => 'اکو و فضا';
+
+  @override
+  String get reset => 'بازنشانی';
+
+  @override
+  String get presets => 'پیش‌تنظیم‌ها';
+
+  @override
+  String get upNext => 'صف بعدی';
+
+  @override
+  String get lyrics => 'متن آهنگ';
+
+  @override
+  String get queue => 'صف پخش';
+}

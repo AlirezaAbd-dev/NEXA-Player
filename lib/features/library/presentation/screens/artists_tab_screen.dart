@@ -5,6 +5,8 @@ import 'package:nexa_player/app/routes.dart';
 import 'package:nexa_player/core/constants/phase2_keys.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
+import 'package:nexa_player/core/l10n/locale_controller.dart';
+import 'package:nexa_player/features/library/domain/repositories/artists_repository.dart';
 import 'package:nexa_player/features/library/presentation/providers/library_providers.dart';
 import 'package:nexa_player/features/library/presentation/screens/artist_detail_screen.dart';
 import 'package:nexa_player/features/library/presentation/widgets/library_segmented_pill_bar.dart';
@@ -12,12 +14,23 @@ import 'package:nexa_player/shared/widgets/cards/artist_card.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
 
 /// Artists tab screen displaying artist list.
-class ArtistsTabScreen extends ConsumerWidget {
+class ArtistsTabScreen extends ConsumerStatefulWidget {
   const ArtistsTabScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final artistsAsync = ref.watch(artistsListProvider(null));
+  ConsumerState<ArtistsTabScreen> createState() => _ArtistsTabScreenState();
+}
+
+class _ArtistsTabScreenState extends ConsumerState<ArtistsTabScreen> {
+  ArtistSortBy _sortBy = ArtistSortBy.name;
+  bool _ascending = true;
+
+  @override
+  Widget build(BuildContext context) {
+    final queryParams = (_sortBy == ArtistSortBy.name && _ascending)
+        ? null
+        : ArtistQueryParams(sortBy: _sortBy, ascending: _ascending);
+    final artistsAsync = ref.watch(artistsListProvider(queryParams));
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -27,10 +40,10 @@ class ArtistsTabScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Artists', style: AppTypography.titleLarge),
+            Text(context.l10n.tabArtists, style: AppTypography.titleLarge),
             artistsAsync.maybeWhen(
               data: (artists) => Text(
-                '${artists.length} ARTISTS IN LIBRARY',
+                context.l10n.artistsCountMeta(artists.length),
                 style: AppTypography.labelSmall.copyWith(
                   color: Theme.of(context).colorScheme.primary.withOpacity(0.85),
                   fontWeight: FontWeight.w600,
@@ -44,10 +57,54 @@ class ArtistsTabScreen extends ConsumerWidget {
         ),
         automaticallyImplyLeading: false,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.sort_by_alpha_rounded),
-            tooltip: 'Sort A to Z',
-            onPressed: () {},
+          PopupMenuButton<ArtistSortBy>(
+            key: const ValueKey('artists_sort_btn'),
+            icon: const Icon(Icons.sort_rounded),
+            tooltip: 'Sort artists',
+            onSelected: (sortBy) {
+              setState(() {
+                if (_sortBy == sortBy) {
+                  _ascending = !_ascending;
+                } else {
+                  _sortBy = sortBy;
+                  _ascending = true;
+                }
+              });
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: ArtistSortBy.name,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Name'),
+                    if (_sortBy == ArtistSortBy.name)
+                      Icon(
+                        _ascending
+                            ? Icons.arrow_upward_rounded
+                            : Icons.arrow_downward_rounded,
+                        size: 16,
+                      ),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: ArtistSortBy.trackCount,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Track Count'),
+                    if (_sortBy == ArtistSortBy.trackCount)
+                      Icon(
+                        _ascending
+                            ? Icons.arrow_upward_rounded
+                            : Icons.arrow_downward_rounded,
+                        size: 16,
+                      ),
+                  ],
+                ),
+              ),
+            ],
           ),
           IconButton(
             icon: const Icon(Icons.search_rounded),
@@ -60,26 +117,31 @@ class ArtistsTabScreen extends ConsumerWidget {
         ),
       ),
       body: Padding(
-        padding: const EdgeInsets.fromLTRB(16.0, 148.0, 4.0, 0.0),
+        padding: const EdgeInsetsDirectional.fromSTEB(16.0, 148.0, 4.0, 0.0),
         child: artistsAsync.when(
           data: (artists) {
             if (artists.isEmpty) {
-              return const Center(
+              return Center(
                 child: Text(
-                  'No artists found. Scan your media in Settings!',
+                  context.l10n.noArtistsFound,
                   style: AppTypography.bodyMedium,
                 ),
               );
             }
 
+            final basePadding =
+                nexaScrollPadding(context, horizontal: 0.0, top: 8.0);
             return Stack(
               children: [
                 // Direct-on-L0 Artist List (No repetitive boxed cards)
                 ListView.builder(
                   key: Phase2Keys.artistsList,
-                  padding: nexaScrollPadding(context,
-                          horizontal: 0.0, top: 8.0)
-                      .copyWith(right: 24.0),
+                  padding: EdgeInsetsDirectional.only(
+                    start: basePadding.left,
+                    end: 24.0,
+                    top: basePadding.top,
+                    bottom: basePadding.bottom,
+                  ),
                   itemCount: artists.length,
                   itemBuilder: (context, index) {
                     final artist = artists[index];
@@ -89,7 +151,7 @@ class ArtistsTabScreen extends ConsumerWidget {
                         key: Phase2Keys.artistCard(artist.id),
                         artist: artist,
                         onTap: () {
-                          Navigator.of(context).push(
+                          Navigator.of(context, rootNavigator: true).push(
                             MaterialPageRoute<void>(
                               builder: (_) => ArtistDetailScreen(artist: artist),
                             ),
@@ -99,9 +161,9 @@ class ArtistsTabScreen extends ConsumerWidget {
                     );
                   },
                 ),
-                // Slim A-Z Fast-Scroll Scrubber Rail on right margin
-                Positioned(
-                  right: 2,
+                // Slim A-Z Fast-Scroll Scrubber Rail on end margin
+                PositionedDirectional(
+                  end: 2,
                   top: 16,
                   bottom: 140,
                   child: Center(

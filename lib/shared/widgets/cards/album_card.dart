@@ -120,7 +120,7 @@ class _AlbumCardState extends State<AlbumCard> {
     final sleeveAccent = HSLColor.fromAHSL(1.0, hue, 0.70, isDark ? 0.65 : 0.45).toColor();
 
     // 1:1 Album Artwork Sleeve with rich generative detailing
-    Widget artworkPlaceholder = ClipRRect(
+    final Widget defaultSleeve = ClipRRect(
       borderRadius: artworkRadius,
       child: Container(
         decoration: BoxDecoration(
@@ -191,15 +191,16 @@ class _AlbumCardState extends State<AlbumCard> {
       ),
     );
 
+    Widget artworkPlaceholder = defaultSleeve;
     if (widget.artworkUri != null && widget.artworkUri!.isNotEmpty || widget.album != null) {
       artworkPlaceholder = NexaArtworkImage(
         artworkUri: widget.artworkUri,
         album: widget.album,
         width: double.infinity,
         height: double.infinity,
-        cacheWidth: 380,
+        cacheWidth: widget.mode == AlbumCardMode.grid ? 260 : 140,
         borderRadius: artworkRadius,
-        fallbackBuilder: (_) => artworkPlaceholder,
+        fallbackBuilder: (_) => defaultSleeve,
       );
     }
 

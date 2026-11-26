@@ -162,7 +162,7 @@ class AppDialog extends StatelessWidget {
                           // Header: Optional Icon + Title
                           if (icon != null) ...[
                             Align(
-                              alignment: Alignment.centerLeft,
+                              alignment: AlignmentDirectional.centerStart,
                               child: Container(
                                 width: 44,
                                 height: 44,
