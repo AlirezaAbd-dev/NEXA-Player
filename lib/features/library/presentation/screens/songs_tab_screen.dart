@@ -141,7 +141,7 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
           16.0,
           nexaBodyTopPadding(context, hasSubTabBar: true),
           16.0,
-          MediaQuery.paddingOf(context).bottom,
+          0.0,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -275,7 +275,6 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
                   return ActiveTrackAutoScrollScope(
                     trackIds: tracks.map((t) => t.id).toList(growable: false),
                     activeTrackId: activePlayingTrack?.id,
-                    bottomChipPadding: 132.0,
                     builder: (context, scrollController) => ListView.builder(
                       key: Phase2Keys.allSongsList,
                       controller: scrollController,
