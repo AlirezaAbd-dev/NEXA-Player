@@ -11,7 +11,9 @@ import android.media.AudioFormat
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.media.MediaMetadataRetriever
+import android.media.audiofx.AudioEffect
 import android.media.audiofx.BassBoost
+import android.media.audiofx.EnvironmentalReverb
 import android.media.audiofx.Equalizer
 import android.media.audiofx.LoudnessEnhancer
 import android.media.audiofx.PresetReverb
@@ -60,6 +62,7 @@ class MainActivity : AudioServiceActivity() {
     private var nativeEqualizer: Equalizer? = null
     private var nativeBassBoost: BassBoost? = null
     private var nativeVirtualizer: Virtualizer? = null
+    private var nativeEnvReverb: EnvironmentalReverb? = null
     private var nativeReverb: PresetReverb? = null
     private var nativeLoudness: LoudnessEnhancer? = null
     private var eqSessionId: Int = 0
@@ -342,11 +345,6 @@ class MainActivity : AudioServiceActivity() {
                 nativeVirtualizer = null
             }
             try {
-                nativeReverb = PresetReverb(0, sessionId)
-            } catch (_: Exception) {
-                nativeReverb = null
-            }
-            try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                     nativeLoudness = LoudnessEnhancer(sessionId)
                 }
@@ -416,10 +414,100 @@ class MainActivity : AudioServiceActivity() {
             }
         }
 
-        // 5. Preset Reverb
+        // 5. Acoustic Reverb (use insert-capable EnvironmentalReverb at unity roomLevel=0
+        //    to avoid PresetReverb dry-signal attenuation on Android HALs)
+        applyReverbSync(sessionId = sessionId, isEnabled = isEnabled, reverbName = reverbName)
+    }
+
+    private fun hasInsertEffect(effectType: java.util.UUID): Boolean {
+        return try {
+            AudioEffect.queryEffects()?.any {
+                it.type == effectType && it.connectMode == AudioEffect.EFFECT_INSERT
+            } == true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private fun releaseReverbSync() {
+        try { nativeEnvReverb?.enabled = false } catch (_: Exception) {}
+        try { nativeEnvReverb?.release() } catch (_: Exception) {}
+        nativeEnvReverb = null
+        try { nativeReverb?.enabled = false } catch (_: Exception) {}
+        try { nativeReverb?.release() } catch (_: Exception) {}
+        nativeReverb = null
+    }
+
+    private data class EnvReverbProfile(
+        val roomHFLevel: Short,
+        val decayTime: Int,
+        val decayHFRatio: Short,
+        val reflectionsLevel: Short,
+        val reflectionsDelay: Int,
+        val reverbLevel: Short,
+        val reverbDelay: Int,
+        val diffusion: Short,
+        val density: Short
+    )
+
+    private val envReverbProfiles = mapOf(
+        "room" to EnvReverbProfile(-200, 450, 750, -1000, 12, -1100, 20, 700, 750),
+        "studio" to EnvReverbProfile(-350, 700, 650, -900, 18, -950, 25, 800, 850),
+        "plate" to EnvReverbProfile(-100, 1200, 950, -800, 8, -800, 15, 950, 950),
+        "hall" to EnvReverbProfile(-250, 1900, 700, -750, 25, -650, 40, 850, 900),
+        "livearena" to EnvReverbProfile(-400, 2800, 600, -700, 35, -550, 55, 900, 950)
+    )
+
+    private fun applyReverbSync(sessionId: Int, isEnabled: Boolean, reverbName: String) {
+        val normalized = reverbName.lowercase()
+        val profile = envReverbProfiles[normalized]
+        if (!isEnabled || profile == null) {
+            releaseReverbSync()
+            return
+        }
+
+        // Prefer EnvironmentalReverb in insert mode with roomLevel = 0 mB (unity dry gain)
+        if (nativeEnvReverb == null && hasInsertEffect(AudioEffect.EFFECT_TYPE_ENV_REVERB)) {
+            try {
+                nativeEnvReverb = EnvironmentalReverb(0, sessionId)
+            } catch (_: Exception) {
+                nativeEnvReverb = null
+            }
+        }
+
+        nativeEnvReverb?.let { env ->
+            try {
+                // Keep roomLevel at 0 mB (0 dB) so the dry signal is never attenuated.
+                env.roomLevel = 0
+                env.roomHFLevel = profile.roomHFLevel
+                env.decayTime = profile.decayTime
+                env.decayHFRatio = profile.decayHFRatio
+                env.reflectionsLevel = profile.reflectionsLevel
+                env.reflectionsDelay = profile.reflectionsDelay
+                env.reverbLevel = profile.reverbLevel
+                env.reverbDelay = profile.reverbDelay
+                env.diffusion = profile.diffusion
+                env.density = profile.density
+                env.enabled = true
+                return
+            } catch (_: Exception) {
+                releaseReverbSync()
+            }
+        }
+
+        // Only use PresetReverb on sessionId if the HAL explicitly advertises INSERT mode;
+        // attaching an AUXILIARY PresetReverb directly to sessionId drops dry audio volume.
+        if (nativeReverb == null && hasInsertEffect(AudioEffect.EFFECT_TYPE_PRESET_REVERB)) {
+            try {
+                nativeReverb = PresetReverb(0, sessionId)
+            } catch (_: Exception) {
+                nativeReverb = null
+            }
+        }
+
         nativeReverb?.let { rev ->
             try {
-                val preset = when (reverbName.lowercase()) {
+                val preset = when (normalized) {
                     "room" -> PresetReverb.PRESET_SMALLROOM
                     "studio" -> PresetReverb.PRESET_MEDIUMROOM
                     "plate" -> PresetReverb.PRESET_PLATE
@@ -428,8 +516,9 @@ class MainActivity : AudioServiceActivity() {
                     else -> PresetReverb.PRESET_NONE
                 }
                 rev.preset = preset
-                rev.enabled = isEnabled && preset != PresetReverb.PRESET_NONE
+                rev.enabled = preset != PresetReverb.PRESET_NONE
             } catch (_: Exception) {
+                releaseReverbSync()
             }
         }
     }
@@ -467,8 +556,7 @@ class MainActivity : AudioServiceActivity() {
         nativeBassBoost = null
         try { nativeVirtualizer?.release() } catch (_: Exception) {}
         nativeVirtualizer = null
-        try { nativeReverb?.release() } catch (_: Exception) {}
-        nativeReverb = null
+        releaseReverbSync()
         try { nativeLoudness?.release() } catch (_: Exception) {}
         nativeLoudness = null
     }
