@@ -550,6 +550,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Queue'**
   String get queue;
+
+  /// No description provided for @playingFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'PLAYING FROM'**
+  String get playingFrom;
+
+  /// No description provided for @castAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Cast Audio'**
+  String get castAudio;
+
+  /// No description provided for @bedsideStandbyMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Bedside Standby Mode'**
+  String get bedsideStandbyMode;
+
+  /// No description provided for @carDrivingMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Car Driving Mode'**
+  String get carDrivingMode;
+
+  /// No description provided for @acousticEngine.
+  ///
+  /// In en, this message translates to:
+  /// **'ACOUSTIC ENGINE'**
+  String get acousticEngine;
+
+  /// No description provided for @systemAndStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'SYSTEM & STORAGE'**
+  String get systemAndStorage;
+
+  /// No description provided for @playbackAndControls.
+  ///
+  /// In en, this message translates to:
+  /// **'Playback & Controls'**
+  String get playbackAndControls;
+
+  /// No description provided for @audioSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio Settings'**
+  String get audioSettings;
+
+  /// No description provided for @scannerSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Scanner Settings'**
+  String get scannerSettings;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

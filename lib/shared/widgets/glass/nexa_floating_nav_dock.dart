@@ -184,10 +184,12 @@ class NexaFloatingNavDock extends StatelessWidget {
               behavior: HitTestBehavior.translucent,
               onHorizontalDragEnd: (details) {
                 final velocity = details.primaryVelocity ?? 0.0;
-                if (velocity < -200 && currentIndex < items.length - 1) {
+                final isRtl = Directionality.of(context) == TextDirection.rtl;
+                final effectiveVelocity = isRtl ? -velocity : velocity;
+                if (effectiveVelocity < -200 && currentIndex < items.length - 1) {
                   HapticFeedback.selectionClick();
                   onTap(currentIndex + 1);
-                } else if (velocity > 200 && currentIndex > 0) {
+                } else if (effectiveVelocity > 200 && currentIndex > 0) {
                   HapticFeedback.selectionClick();
                   onTap(currentIndex - 1);
                 }

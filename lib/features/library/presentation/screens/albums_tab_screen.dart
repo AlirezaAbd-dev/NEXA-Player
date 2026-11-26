@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nexa_player/app/navigation_helpers.dart';
 import 'package:nexa_player/app/routes.dart';
 import 'package:nexa_player/core/constants/phase2_keys.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
@@ -12,6 +13,7 @@ import 'package:nexa_player/features/library/presentation/screens/album_detail_s
 import 'package:nexa_player/features/library/presentation/widgets/library_segmented_pill_bar.dart';
 import 'package:nexa_player/shared/widgets/cards/album_card.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
+import 'package:nexa_player/shared/widgets/inputs/nexa_sort_menu_button.dart';
 
 /// Albums tab screen displaying album grid with pinch-to-zoom density control.
 class AlbumsTabScreen extends ConsumerStatefulWidget {
@@ -46,25 +48,6 @@ class _AlbumsTabScreenState extends ConsumerState<AlbumsTabScreen> {
       default:
         return 0.60;
     }
-  }
-
-  PopupMenuItem<AlbumSortBy> _buildSortMenuItem(AlbumSortBy value, String label) {
-    return PopupMenuItem<AlbumSortBy>(
-      value: value,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label),
-          if (_sortBy == value)
-            Icon(
-              _ascending
-                  ? Icons.arrow_upward_rounded
-                  : Icons.arrow_downward_rounded,
-              size: 16,
-            ),
-        ],
-      ),
-    );
   }
 
   void _cycleDensity(int current) {
@@ -125,10 +108,11 @@ class _AlbumsTabScreenState extends ConsumerState<AlbumsTabScreen> {
             ),
             automaticallyImplyLeading: false,
             actions: [
-              PopupMenuButton<AlbumSortBy>(
+              NexaSortMenuButton<AlbumSortBy>(
                 key: const ValueKey('albums_sort_btn'),
-                icon: const Icon(Icons.sort_rounded),
-                tooltip: 'Sort albums',
+                selected: _sortBy,
+                ascending: _ascending,
+                tooltip: context.l10n.sortAlbumsTooltip,
                 onSelected: (sortBy) {
                   setState(() {
                     if (_sortBy == sortBy) {
@@ -139,10 +123,10 @@ class _AlbumsTabScreenState extends ConsumerState<AlbumsTabScreen> {
                     }
                   });
                 },
-                itemBuilder: (context) => [
-                  _buildSortMenuItem(AlbumSortBy.title, context.l10n.sortTitle),
-                  _buildSortMenuItem(AlbumSortBy.artist, context.l10n.sortArtist),
-                  _buildSortMenuItem(AlbumSortBy.year, context.l10n.sortYear),
+                options: [
+                  NexaSortOption(value: AlbumSortBy.title, label: context.l10n.sortTitle),
+                  NexaSortOption(value: AlbumSortBy.artist, label: context.l10n.sortArtist),
+                  NexaSortOption(value: AlbumSortBy.year, label: context.l10n.sortYear),
                 ],
               ),
               IconButton(
@@ -160,7 +144,7 @@ class _AlbumsTabScreenState extends ConsumerState<AlbumsTabScreen> {
               ),
               IconButton(
                 icon: const Icon(Icons.search_rounded),
-                tooltip: 'Search library',
+                tooltip: context.l10n.searchLibraryTooltip,
                 onPressed: () => context.push(AppRoutes.search),
               ),
             ],
@@ -172,7 +156,12 @@ class _AlbumsTabScreenState extends ConsumerState<AlbumsTabScreen> {
             onScaleUpdate: (details) => _onScaleUpdate(details, columns),
             onScaleEnd: (_) => _isScaling = false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16.0, 148.0, 16.0, 0.0),
+              padding: EdgeInsets.fromLTRB(
+                16.0,
+                nexaBodyTopPadding(context, hasSubTabBar: true),
+                16.0,
+                0.0,
+              ),
               child: albumsAsync.when(
                 data: (albums) {
                   if (albums.isEmpty) {
@@ -202,13 +191,12 @@ class _AlbumsTabScreenState extends ConsumerState<AlbumsTabScreen> {
                         album: album,
                         heroTag: 'album_art_${album.id}',
                         mode: AlbumCardMode.grid,
-                        onTap: () {
-                          Navigator.of(context, rootNavigator: true).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => AlbumDetailScreen(album: album),
-                            ),
-                          );
-                        },
+                        onTap: () => pushDetailScreen<void>(
+                          context,
+                          route: AppRoutes.albumDetail,
+                          extra: album,
+                          fallbackBuilder: (_) => AlbumDetailScreen(album: album),
+                        ),
                       );
                     },
                   );

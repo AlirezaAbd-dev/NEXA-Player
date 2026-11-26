@@ -117,5 +117,14 @@
   "presets": "Presets",
   "upNext": "Up Next",
   "lyrics": "Lyrics",
-  "queue": "Queue"
+  "queue": "Queue",
+  "playingFrom": "PLAYING FROM",
+  "castAudio": "Cast Audio",
+  "bedsideStandbyMode": "Bedside Standby Mode",
+  "carDrivingMode": "Car Driving Mode",
+  "acousticEngine": "ACOUSTIC ENGINE",
+  "systemAndStorage": "SYSTEM & STORAGE",
+  "playbackAndControls": "Playback & Controls",
+  "audioSettings": "Audio Settings",
+  "scannerSettings": "Scanner Settings"
 }

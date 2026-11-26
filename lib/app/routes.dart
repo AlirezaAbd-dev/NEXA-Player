@@ -6,6 +6,9 @@ abstract final class AppRoutes {
   static const String playlists = '/playlists';
   static const String folders = '/folders';
   static const String settings = '/settings';
+  static const String albumDetail = '/album-detail';
+  static const String artistDetail = '/artist-detail';
+  static const String playlistDetail = '/playlist-detail';
 
   // Subroutes
   static const String themePicker = '/settings/theme';

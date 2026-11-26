@@ -2,8 +2,11 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nexa_player/app/navigation_helpers.dart';
+import 'package:nexa_player/app/routes.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
 import 'package:nexa_player/core/design_system/app_typography.dart';
+import 'package:nexa_player/core/l10n/locale_controller.dart';
 import 'package:nexa_player/features/library/presentation/screens/album_detail_screen.dart';
 import 'package:nexa_player/features/library/presentation/screens/artist_detail_screen.dart';
 import 'package:nexa_player/features/player/player.dart';
@@ -108,10 +111,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     if (_searchController.text.trim().isNotEmpty) {
       ref.read(recentSearchesProvider.notifier).save(_searchController.text.trim());
     }
-    Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute<void>(
-        builder: (_) => AlbumDetailScreen(album: album),
-      ),
+    pushDetailScreen<void>(
+      context,
+      route: AppRoutes.albumDetail,
+      extra: album,
+      fallbackBuilder: (_) => AlbumDetailScreen(album: album),
     );
   }
 
@@ -120,10 +124,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     if (_searchController.text.trim().isNotEmpty) {
       ref.read(recentSearchesProvider.notifier).save(_searchController.text.trim());
     }
-    Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute<void>(
-        builder: (_) => ArtistDetailScreen(artist: artist),
-      ),
+    pushDetailScreen<void>(
+      context,
+      route: AppRoutes.artistDetail,
+      extra: artist,
+      fallbackBuilder: (_) => ArtistDetailScreen(artist: artist),
     );
   }
 
@@ -132,10 +137,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     if (_searchController.text.trim().isNotEmpty) {
       ref.read(recentSearchesProvider.notifier).save(_searchController.text.trim());
     }
-    Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute<void>(
-        builder: (_) => PlaylistDetailScreen(playlist: playlist),
-      ),
+    pushDetailScreen<void>(
+      context,
+      route: AppRoutes.playlistDetail,
+      extra: playlist,
+      fallbackBuilder: (_) => PlaylistDetailScreen(playlist: playlist),
     );
   }
 
@@ -146,6 +152,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final searchResultsAsync = ref.watch(searchResultsProvider);
     final playerState = ref.watch(playerNotifierProvider);
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final surfaceTokens = NexaSurfaceTokens.of(context);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -153,27 +162,27 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       appBar: GlassAppBar(
         automaticallyImplyLeading: true,
         title: Text(
-          'Search',
+          context.l10n.tabSearch,
           style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold),
-        ),
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(48),
-          child: Padding(
-            padding: EdgeInsets.only(bottom: 8.0),
-            child: SearchCategoryChips(),
-          ),
         ),
       ),
       body: Stack(
         fit: StackFit.expand,
         children: [
           const AppAmbientBackground(),
-          Container(color: Colors.black.withOpacity(0.5)),
+          Container(
+            color: surfaceTokens.l0.withOpacity(isDark ? 0.50 : 0.72),
+          ),
 
-          // Scrollable results layer with bottom inset clearance
+          // Scrollable results layer with dynamic top & bottom deck clearance
           Positioned.fill(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(0, 116.0, 0, 120.0 + keyboardHeight),
+              padding: EdgeInsets.fromLTRB(
+                0,
+                nexaBodyTopPadding(context, hasSubTabBar: false),
+                0,
+                168.0 + keyboardHeight,
+              ),
               child: query.trim().isEmpty
                   ? _buildEmptyQueryContent()
                   : searchResultsAsync.when(
@@ -259,6 +268,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Category Filter Tabs in Lower Thumb Zone
+              const SearchCategoryChips(),
+              const SizedBox(height: 8.0),
+
               // Smart Query Token Chips Row
               SizedBox(
                 height: 32.0,
@@ -270,6 +283,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   itemBuilder: (context, index) {
                     final token = _smartFilterTokens[index];
                     final isActive = _isTokenActive(token);
+                    final chipLabel = token == 'favorites'
+                        ? context.l10n.favorites
+                        : token.toUpperCase();
 
                     return GestureDetector(
                       onTap: () => _toggleFilterToken(token),
@@ -282,9 +298,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         ),
                         child: Center(
                           child: Text(
-                            token.toUpperCase(),
+                            chipLabel,
                             style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
-                              color: isActive ? Colors.black : onSurface,
+                              color: isActive ? surfaceTokens.onL4 : onSurface,
                               fontWeight: FontWeight.bold,
                               fontSize: 10.5,
                             ),
@@ -301,7 +317,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               NexaSearchBar(
                 controller: _searchController,
                 focusNode: _searchFocusNode,
-                hintText: 'Search songs, albums, artists...',
+                hintText: context.l10n.searchAllHint,
                 trailingActions: [
                   IconButton(
                     icon: Icon(

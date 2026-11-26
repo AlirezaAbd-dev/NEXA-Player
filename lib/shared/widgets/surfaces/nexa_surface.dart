@@ -4,6 +4,7 @@ import '../../../core/design_system/glass_tokens.dart';
 import '../../../core/design_system/nexa_surface_tokens.dart';
 
 export '../../../core/design_system/nexa_surface_tokens.dart';
+export '../layout/nexa_scroll_padding.dart';
 
 /// Architectural exceptions permitting a visible outline on a [NexaSurface].
 ///

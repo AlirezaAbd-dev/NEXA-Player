@@ -66,6 +66,11 @@ Locale resolveNexaLocale(
   return const Locale('en');
 }
 
+/// Returns `0.0` in RTL layouts so Persian/Arabic cursive ligatures stay
+/// cleanly joined, while preserving typographic tracking in LTR layouts.
+double effectiveLetterSpacing(BuildContext context, double ltrSpacing) =>
+    Directionality.of(context) == TextDirection.rtl ? 0.0 : ltrSpacing;
+
 /// Safe localization accessor on [BuildContext] with English fallback for
 /// isolated widget tests that pump a screen without [AppLocalizations.delegate].
 extension NexaL10nContext on BuildContext {

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/design_system/app_spacing.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/design_system/app_typography.dart';
+import '../../../../core/l10n/locale_controller.dart';
 import '../../../../shared/widgets/surfaces/nexa_surface.dart';
 import '../../../visualizer/visualizer.dart';
 import '../providers/equalizer_providers.dart';
@@ -35,7 +36,7 @@ class EqualizerScreen extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          icon: const Icon(Icons.arrow_back_rounded, size: 22),
           onPressed: () => context.pop(),
           tooltip: 'Back',
         ),
@@ -43,7 +44,7 @@ class EqualizerScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Equalizer & DSP',
+              context.l10n.equalizerAndDsp,
               style: AppTypography.titleMedium.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -52,7 +53,7 @@ class EqualizerScreen extends ConsumerWidget {
               '10-Band Parametric • Studio DSP',
               style: (surfaceTokens.telemetryTextStyle ?? AppTypography.labelSmall).copyWith(
                 color: theme.colorScheme.onSurface.withOpacity(0.5),
-                letterSpacing: 0.5,
+                letterSpacing: effectiveLetterSpacing(context, 0.5),
                 fontSize: 10.0,
               ),
             ),
@@ -73,12 +74,12 @@ class EqualizerScreen extends ConsumerWidget {
                 ),
               );
             },
-            tooltip: 'Reset to Flat',
+            tooltip: context.l10n.reset,
           ),
 
           // Master Power Switch
           Padding(
-            padding: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsetsDirectional.only(end: 12),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [

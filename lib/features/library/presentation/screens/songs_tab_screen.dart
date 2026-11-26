@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../app/routes.dart';
 import '../../../../core/extensions/duration_x.dart';
 import 'package:nexa_player/core/constants/phase2_keys.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
@@ -20,6 +22,7 @@ import 'package:nexa_player/shared/widgets/cards/track_tile.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_button.dart';
 import 'package:nexa_player/shared/widgets/inputs/nexa_search_bar.dart';
+import 'package:nexa_player/shared/widgets/inputs/nexa_sort_menu_button.dart';
 import 'package:nexa_player/shared/widgets/lists/active_track_auto_scroller.dart';
 import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
 import '../widgets/library_segmented_pill_bar.dart';
@@ -81,9 +84,10 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
         titleSpacing: 12.0,
         automaticallyImplyLeading: false,
         actions: [
-          PopupMenuButton<TrackSortBy>(
+          NexaSortMenuButton<TrackSortBy>(
             key: Phase2Keys.sortButton,
-            icon: const Icon(Icons.sort_rounded),
+            selected: _sortBy,
+            ascending: _ascending,
             tooltip: context.l10n.sortSongsTooltip,
             onSelected: (sortBy) {
               setState(() {
@@ -95,76 +99,33 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
                 }
               });
             },
-            itemBuilder: (context) => [
-              PopupMenuItem(
+            options: [
+              NexaSortOption(
                 key: Phase2Keys.sortMenuTitle,
                 value: TrackSortBy.title,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(context.l10n.sortTitle),
-                    if (_sortBy == TrackSortBy.title)
-                      Icon(
-                        _ascending
-                            ? Icons.arrow_upward_rounded
-                            : Icons.arrow_downward_rounded,
-                        size: 16,
-                      ),
-                  ],
-                ),
+                label: context.l10n.sortTitle,
               ),
-              PopupMenuItem(
+              NexaSortOption(
                 key: Phase2Keys.sortMenuArtist,
                 value: TrackSortBy.artist,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(context.l10n.sortArtist),
-                    if (_sortBy == TrackSortBy.artist)
-                      Icon(
-                        _ascending
-                            ? Icons.arrow_upward_rounded
-                            : Icons.arrow_downward_rounded,
-                        size: 16,
-                      ),
-                  ],
-                ),
+                label: context.l10n.sortArtist,
               ),
-              PopupMenuItem(
+              NexaSortOption(
                 key: Phase2Keys.sortMenuDuration,
                 value: TrackSortBy.duration,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(context.l10n.sortDuration),
-                    if (_sortBy == TrackSortBy.duration)
-                      Icon(
-                        _ascending
-                            ? Icons.arrow_upward_rounded
-                            : Icons.arrow_downward_rounded,
-                        size: 16,
-                      ),
-                  ],
-                ),
+                label: context.l10n.sortDuration,
               ),
-              PopupMenuItem(
+              NexaSortOption(
                 key: Phase2Keys.sortMenuDateAdded,
                 value: TrackSortBy.dateAdded,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(context.l10n.sortDateAdded),
-                    if (_sortBy == TrackSortBy.dateAdded)
-                      Icon(
-                        _ascending
-                            ? Icons.arrow_upward_rounded
-                            : Icons.arrow_downward_rounded,
-                        size: 16,
-                      ),
-                  ],
-                ),
+                label: context.l10n.sortDateAdded,
               ),
             ],
+          ),
+          IconButton(
+            icon: const Icon(Icons.search_rounded),
+            tooltip: context.l10n.searchLibraryTooltip,
+            onPressed: () => context.push(AppRoutes.search),
           ),
         ],
         bottom: const LibrarySegmentedPillBar(
@@ -172,7 +133,12 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
         ),
       ),
       body: Padding(
-        padding: const EdgeInsets.fromLTRB(16.0, 148.0, 16.0, 130.0),
+        padding: EdgeInsets.fromLTRB(
+          16.0,
+          nexaBodyTopPadding(context, hasSubTabBar: true),
+          16.0,
+          MediaQuery.paddingOf(context).bottom,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

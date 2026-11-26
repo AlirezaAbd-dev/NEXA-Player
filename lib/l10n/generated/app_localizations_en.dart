@@ -245,4 +245,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get queue => 'Queue';
+
+  @override
+  String get playingFrom => 'PLAYING FROM';
+
+  @override
+  String get castAudio => 'Cast Audio';
+
+  @override
+  String get bedsideStandbyMode => 'Bedside Standby Mode';
+
+  @override
+  String get carDrivingMode => 'Car Driving Mode';
+
+  @override
+  String get acousticEngine => 'ACOUSTIC ENGINE';
+
+  @override
+  String get systemAndStorage => 'SYSTEM & STORAGE';
+
+  @override
+  String get playbackAndControls => 'Playback & Controls';
+
+  @override
+  String get audioSettings => 'Audio Settings';
+
+  @override
+  String get scannerSettings => 'Scanner Settings';
 }

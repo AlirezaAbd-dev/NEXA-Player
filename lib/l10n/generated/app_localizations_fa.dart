@@ -245,4 +245,31 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get queue => 'صف پخش';
+
+  @override
+  String get playingFrom => 'پخش از';
+
+  @override
+  String get castAudio => 'پخش روی دستگاه دیگر';
+
+  @override
+  String get bedsideStandbyMode => 'حالت شب کنار تخت';
+
+  @override
+  String get carDrivingMode => 'حالت رانندگی خودرو';
+
+  @override
+  String get acousticEngine => 'موتور صوتی';
+
+  @override
+  String get systemAndStorage => 'سیستم و حافظه';
+
+  @override
+  String get playbackAndControls => 'پخش و کنترل‌ها';
+
+  @override
+  String get audioSettings => 'تنظیمات صدا';
+
+  @override
+  String get scannerSettings => 'تنظیمات اسکنر';
 }

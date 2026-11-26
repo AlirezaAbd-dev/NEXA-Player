@@ -5,6 +5,7 @@ import '../../../../app/routes.dart';
 import '../../../../core/constants/phase2_keys.dart';
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../core/design_system/app_typography.dart';
+import '../../../../core/design_system/nexa_surface_tokens.dart';
 import '../../../../core/l10n/locale_controller.dart';
 
 /// Top-level sub-tabs within the Library hub.
@@ -66,6 +67,7 @@ class LibrarySegmentedPillBar extends StatelessWidget implements PreferredSizeWi
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final tokens = NexaSurfaceTokens.of(context);
 
     return SizedBox(
       height: 48.0,
@@ -97,14 +99,8 @@ class LibrarySegmentedPillBar extends StatelessWidget implements PreferredSizeWi
                       decoration: BoxDecoration(
                         color: isSelected
                             ? colorScheme.primary.withOpacity(0.22)
-                            : colorScheme.surface.withOpacity(0.12),
+                            : tokens.l2,
                         borderRadius: BorderRadius.circular(20.0),
-                        border: Border.all(
-                          color: isSelected
-                              ? colorScheme.primary.withOpacity(0.55)
-                              : Colors.white.withOpacity(0.08),
-                          width: 1.0,
-                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,

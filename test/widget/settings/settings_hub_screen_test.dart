@@ -55,7 +55,7 @@ void main() {
       // Core categories
       expect(find.byKey(const ValueKey('theme_settings_tile')), findsOneWidget);
       expect(find.text('Audio Settings'), findsOneWidget);
-      expect(find.text('Equalizer & DSP Engine'), findsOneWidget);
+      expect(find.text('Equalizer & DSP'), findsOneWidget);
       expect(find.text('Playback & Controls'), findsOneWidget);
       expect(find.text('Scanner Settings'), findsOneWidget);
       expect(find.text('Album Art'), findsOneWidget);

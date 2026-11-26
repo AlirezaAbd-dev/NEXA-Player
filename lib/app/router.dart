@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../features/equalizer/presentation/screens/equalizer_screen.dart';
+import '../features/library/presentation/screens/album_detail_screen.dart';
 import '../features/library/presentation/screens/albums_tab_screen.dart';
+import '../features/library/presentation/screens/artist_detail_screen.dart';
 import '../features/library/presentation/screens/artists_tab_screen.dart';
 import '../features/library/presentation/screens/folders_tab_screen.dart';
 import '../features/library/presentation/screens/songs_tab_screen.dart';
 import '../features/lyrics/lyrics.dart';
 import '../features/player/presentation/screens/now_playing_screen.dart';
 import '../features/player/presentation/screens/standby_mode_screen.dart';
+import '../features/playlists/presentation/screens/playlist_detail_screen.dart';
 import '../features/playlists/presentation/screens/playlists_tab_screen.dart';
 import '../features/playlists/presentation/screens/ringtone_trimmer_screen.dart';
 import '../features/search/search.dart';
@@ -18,6 +21,9 @@ import '../features/visualizer/visualizer.dart';
 import '../features/widgets/widgets.dart';
 import '../features/auto/auto.dart';
 import '../features/cloud/cloud.dart';
+import '../shared/models/album.dart';
+import '../shared/models/artist.dart';
+import '../shared/models/playlist.dart';
 import '../shared/models/track.dart';
 import 'routes.dart';
 import 'shell/scaffold_with_nav_bar.dart';
@@ -271,6 +277,32 @@ final appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       path: AppRoutes.equalizer,
       builder: (context, state) => const EqualizerScreen(),
+    ),
+
+    // 3b. Library & Playlist Detail Routes (Root Navigator for predictable system Back)
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: AppRoutes.albumDetail,
+      builder: (context, state) {
+        final album = state.extra as Album;
+        return AlbumDetailScreen(album: album);
+      },
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: AppRoutes.artistDetail,
+      builder: (context, state) {
+        final artist = state.extra as Artist;
+        return ArtistDetailScreen(artist: artist);
+      },
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: AppRoutes.playlistDetail,
+      builder: (context, state) {
+        final playlist = state.extra as Playlist;
+        return PlaylistDetailScreen(playlist: playlist);
+      },
     ),
 
     // 4. Full-Screen Ringtone Trimmer Route

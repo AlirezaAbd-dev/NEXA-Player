@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nexa_player/app/navigation_helpers.dart';
 import 'package:nexa_player/app/routes.dart';
 import 'package:nexa_player/core/constants/phase2_keys.dart';
 import 'package:nexa_player/core/design_system/app_spacing.dart';
@@ -12,6 +13,7 @@ import 'package:nexa_player/features/library/presentation/screens/artist_detail_
 import 'package:nexa_player/features/library/presentation/widgets/library_segmented_pill_bar.dart';
 import 'package:nexa_player/shared/widgets/cards/artist_card.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
+import 'package:nexa_player/shared/widgets/inputs/nexa_sort_menu_button.dart';
 
 /// Artists tab screen displaying artist list.
 class ArtistsTabScreen extends ConsumerStatefulWidget {
@@ -57,10 +59,11 @@ class _ArtistsTabScreenState extends ConsumerState<ArtistsTabScreen> {
         ),
         automaticallyImplyLeading: false,
         actions: [
-          PopupMenuButton<ArtistSortBy>(
+          NexaSortMenuButton<ArtistSortBy>(
             key: const ValueKey('artists_sort_btn'),
-            icon: const Icon(Icons.sort_rounded),
-            tooltip: 'Sort artists',
+            selected: _sortBy,
+            ascending: _ascending,
+            tooltip: context.l10n.sortArtistsTooltip,
             onSelected: (sortBy) {
               setState(() {
                 if (_sortBy == sortBy) {
@@ -71,44 +74,17 @@ class _ArtistsTabScreenState extends ConsumerState<ArtistsTabScreen> {
                 }
               });
             },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: ArtistSortBy.name,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Name'),
-                    if (_sortBy == ArtistSortBy.name)
-                      Icon(
-                        _ascending
-                            ? Icons.arrow_upward_rounded
-                            : Icons.arrow_downward_rounded,
-                        size: 16,
-                      ),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
+            options: [
+              NexaSortOption(value: ArtistSortBy.name, label: context.l10n.sortName),
+              NexaSortOption(
                 value: ArtistSortBy.trackCount,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Track Count'),
-                    if (_sortBy == ArtistSortBy.trackCount)
-                      Icon(
-                        _ascending
-                            ? Icons.arrow_upward_rounded
-                            : Icons.arrow_downward_rounded,
-                        size: 16,
-                      ),
-                  ],
-                ),
+                label: context.l10n.sortTrackCount,
               ),
             ],
           ),
           IconButton(
             icon: const Icon(Icons.search_rounded),
-            tooltip: 'Search library',
+            tooltip: context.l10n.searchLibraryTooltip,
             onPressed: () => context.push(AppRoutes.search),
           ),
         ],
@@ -117,7 +93,12 @@ class _ArtistsTabScreenState extends ConsumerState<ArtistsTabScreen> {
         ),
       ),
       body: Padding(
-        padding: const EdgeInsetsDirectional.fromSTEB(16.0, 148.0, 4.0, 0.0),
+        padding: EdgeInsetsDirectional.fromSTEB(
+          16.0,
+          nexaBodyTopPadding(context, hasSubTabBar: true),
+          4.0,
+          0.0,
+        ),
         child: artistsAsync.when(
           data: (artists) {
             if (artists.isEmpty) {
@@ -150,13 +131,13 @@ class _ArtistsTabScreenState extends ConsumerState<ArtistsTabScreen> {
                       child: ArtistCard.fromArtist(
                         key: Phase2Keys.artistCard(artist.id),
                         artist: artist,
-                        onTap: () {
-                          Navigator.of(context, rootNavigator: true).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => ArtistDetailScreen(artist: artist),
-                            ),
-                          );
-                        },
+                        onTap: () => pushDetailScreen<void>(
+                          context,
+                          route: AppRoutes.artistDetail,
+                          extra: artist,
+                          fallbackBuilder: (_) =>
+                              ArtistDetailScreen(artist: artist),
+                        ),
                       ),
                     );
                   },

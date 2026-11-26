@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:path/path.dart' as p;
+import '../../../../app/routes.dart';
 import '../../../../core/constants/phase2_keys.dart';
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../core/design_system/app_typography.dart';
@@ -20,6 +22,7 @@ import '../../../../shared/widgets/cards/track_tile.dart';
 import '../../../../shared/widgets/glass/app_ambient_background.dart';
 import '../../../../shared/widgets/glass/glass_app_bar.dart';
 import '../../../../shared/widgets/glass/glass_button.dart';
+import '../../../../shared/widgets/inputs/nexa_sort_menu_button.dart';
 import '../../../../shared/widgets/lists/active_track_auto_scroller.dart';
 import '../../../../shared/widgets/surfaces/nexa_surface.dart';
 import '../../../../shared/widgets/typography/bidi_text.dart';
@@ -263,10 +266,11 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
             selectedTab: LibrarySubTab.folders,
           ),
           actions: [
-            PopupMenuButton<_FolderSortBy>(
+            NexaSortMenuButton<_FolderSortBy>(
               key: const ValueKey('folders_sort_btn'),
-              icon: const Icon(Icons.sort_rounded),
-              tooltip: 'Sort folders',
+              selected: _sortBy,
+              ascending: _ascending,
+              tooltip: context.l10n.sortFoldersTooltip,
               onSelected: (sortBy) {
                 setState(() {
                   if (_sortBy == sortBy) {
@@ -277,40 +281,21 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
                   }
                 });
               },
-              itemBuilder: (context) => [
-                PopupMenuItem(
+              options: [
+                NexaSortOption(
                   value: _FolderSortBy.name,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Name'),
-                      if (_sortBy == _FolderSortBy.name)
-                        Icon(
-                          _ascending
-                              ? Icons.arrow_upward_rounded
-                              : Icons.arrow_downward_rounded,
-                          size: 16,
-                        ),
-                    ],
-                  ),
+                  label: context.l10n.sortName,
                 ),
-                PopupMenuItem(
+                NexaSortOption(
                   value: _FolderSortBy.songCount,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Song Count'),
-                      if (_sortBy == _FolderSortBy.songCount)
-                        Icon(
-                          _ascending
-                              ? Icons.arrow_upward_rounded
-                              : Icons.arrow_downward_rounded,
-                          size: 16,
-                        ),
-                    ],
-                  ),
+                  label: context.l10n.sortSongCount,
                 ),
               ],
+            ),
+            IconButton(
+              icon: const Icon(Icons.search_rounded),
+              tooltip: context.l10n.searchLibraryTooltip,
+              onPressed: () => context.push(AppRoutes.search),
             ),
           ],
         ),
@@ -319,7 +304,12 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
           children: [
             const AppAmbientBackground(),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16.0, 148.0, 16.0, 0.0),
+              padding: EdgeInsets.fromLTRB(
+                16.0,
+                nexaBodyTopPadding(context, hasSubTabBar: true),
+                16.0,
+                0.0,
+              ),
               child: foldersAsync.when(
                 data: (folders) {
                   if (folders.isEmpty) {

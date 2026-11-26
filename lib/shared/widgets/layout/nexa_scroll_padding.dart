@@ -1,6 +1,19 @@
 import 'package:flutter/material.dart';
 import '../../../core/design_system/app_spacing.dart';
 
+/// Computes dynamic top clearance below [GlassAppBar] (and an optional
+/// 48dp [LibrarySegmentedPillBar] sub-tab strip), replacing fixed 100/148dp constants.
+double nexaBodyTopPadding(
+  BuildContext context, {
+  bool hasSubTabBar = false,
+  double extraTop = 12.0,
+}) {
+  return MediaQuery.paddingOf(context).top +
+      kToolbarHeight +
+      (hasSubTabBar ? 48.0 : 0.0) +
+      extraTop;
+}
+
 /// Computes unified scroll padding that respects system safe areas
 /// and dynamic floating shell chrome (Mini-Player + Floating Nav Dock).
 ///

@@ -5,8 +5,11 @@ import '../../../../app/routes.dart';
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/design_system/glass_tokens.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/l10n/locale_controller.dart';
 import '../../../../core/theme/theme_controller.dart';
+import '../../../../features/equalizer/domain/services/equalizer_service.dart';
+import '../../../../features/equalizer/presentation/providers/equalizer_providers.dart';
 import '../../../../shared/widgets/glass/glass_app_bar.dart';
 import '../../../../shared/widgets/inputs/nexa_search_bar.dart';
 import '../../../../shared/widgets/surfaces/nexa_surface.dart';
@@ -41,6 +44,9 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
   Widget build(BuildContext context) {
     final themeState = ref.watch(themeControllerProvider);
     final localePref = ref.watch(localeControllerProvider);
+    final eqEnabled = getIt.isRegistered<IEqualizerService>()
+        ? ref.watch(equalizerNotifierProvider.select((s) => s.isEnabled))
+        : null;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final searchQuery = ref.watch(settingsSearchQueryProvider);
@@ -55,7 +61,11 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
         automaticallyImplyLeading: false,
       ),
       body: ListView(
-        padding: nexaScrollPadding(context, horizontal: 16.0, top: 100.0),
+        padding: nexaScrollPadding(
+          context,
+          horizontal: 16.0,
+          top: nexaBodyTopPadding(context, hasSubTabBar: false),
+        ),
         children: [
           // Instant Settings Search Bar
           NexaSearchBar(
@@ -310,7 +320,7 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
               context,
               icon: Icons.gamepad_rounded,
               iconColor: Colors.blueAccent,
-              title: 'Playback & Controls',
+              title: l10n.playbackAndControls,
               subtitle: 'Telephony resume, Focus ducking, Gestures, Car mode',
               onTap: () => context.push(AppRoutes.controlSettings),
             ),
@@ -323,7 +333,6 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
               iconColor: Colors.deepOrangeAccent,
               title: 'Homescreen Widgets & Standby',
               subtitle: '4×1, 4×2 Hero Vinyl, 2×2, 4×3 Karaoke & OLED Bedside',
-              badge: 'INTERACTIVE',
               onTap: () => context.push(AppRoutes.widgets),
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -331,7 +340,7 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
             // ==========================================
             // TIER 2: ACOUSTIC ENGINE
             // ==========================================
-            _buildSectionHeader(context, 'ACOUSTIC ENGINE'),
+            _buildSectionHeader(context, l10n.acousticEngine),
             const SizedBox(height: AppSpacing.xs),
 
             // Audio Settings
@@ -339,9 +348,8 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
               context,
               icon: Icons.volume_up_rounded,
               iconColor: Colors.amberAccent,
-              title: 'Audio Settings',
+              title: l10n.audioSettings,
               subtitle: 'Bit-perfect Hi-Res, Gapless, DVC, Sample rate',
-              badge: '14 OPTIONS',
               onTap: () => context.push(AppRoutes.audioSettings),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -351,9 +359,9 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
               context,
               icon: Icons.equalizer_rounded,
               iconColor: Colors.tealAccent,
-              title: 'Equalizer & DSP Engine',
+              title: l10n.equalizerAndDsp,
               subtitle: '10-Band Parametric EQ, Z-Bass, Reverb, Presets',
-              badge: 'STUDIO DSP',
+              badge: eqEnabled == null ? null : (eqEnabled ? 'ON' : 'OFF'),
               onTap: () => context.push(AppRoutes.equalizer),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -365,7 +373,6 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
               iconColor: Colors.purpleAccent,
               title: 'Visualizer & Spectrum',
               subtitle: 'FFT Bars, Circle, Wave, Spectrogram, VU Meter',
-              badge: 'REAL-TIME FFT',
               onTap: () => context.push(AppRoutes.visualizerSettings),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -377,7 +384,6 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
               iconColor: Colors.cyanAccent,
               title: 'Auto & Wearables',
               subtitle: 'Android Auto, Car Mode HUD, Galaxy/Pixel Watch companion',
-              badge: 'AUTOMOTIVE',
               onTap: () => context.push(AppRoutes.autoSettings),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -389,7 +395,6 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
               iconColor: const Color(0xFF00E5FF),
               title: 'Cloud & Network Streaming',
               subtitle: 'UPnP/DLNA Casting, WebDAV/NAS sync, Lossless Web Radio',
-              badge: 'DLNA / NAS',
               onTap: () => context.push(AppRoutes.cloud),
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -397,7 +402,7 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
             // ==========================================
             // TIER 3: SYSTEM & STORAGE
             // ==========================================
-            _buildSectionHeader(context, 'SYSTEM & STORAGE'),
+            _buildSectionHeader(context, l10n.systemAndStorage),
             const SizedBox(height: AppSpacing.xs),
 
             // Scanner Settings
@@ -405,7 +410,7 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
               context,
               icon: Icons.folder_special_rounded,
               iconColor: Colors.lightGreenAccent,
-              title: 'Scanner Settings',
+              title: l10n.scannerSettings,
               subtitle: 'Included folders, skip rules, tag encoding, database',
               onTap: () => context.push(AppRoutes.scannerSettings),
             ),
@@ -548,13 +553,13 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
     final colorScheme = theme.colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.only(left: 4.0, bottom: 4.0, top: 4.0),
+      padding: const EdgeInsetsDirectional.only(start: 4.0, bottom: 4.0, top: 4.0),
       child: Text(
         title,
         style: AppTypography.labelSmall.copyWith(
           color: colorScheme.primary.withOpacity(0.85),
           fontWeight: FontWeight.w700,
-          letterSpacing: 1.2,
+          letterSpacing: effectiveLetterSpacing(context, 1.2),
           fontSize: 11,
         ),
       ),
@@ -643,9 +648,9 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen> {
             ),
           ),
           Icon(
-            Icons.arrow_forward_ios_rounded,
-            size: 16,
-            color: colorScheme.onSurface.withOpacity(0.3),
+            Icons.chevron_right_rounded,
+            size: 20,
+            color: colorScheme.onSurface.withOpacity(0.35),
           ),
         ],
       ),

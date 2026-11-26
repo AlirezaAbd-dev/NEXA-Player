@@ -11,6 +11,7 @@ import 'package:nexa_player/features/settings/presentation/providers/settings_pr
 import 'package:nexa_player/features/settings/presentation/screens/settings_hub_screen.dart';
 import 'package:nexa_player/l10n/generated/app_localizations.dart';
 import 'package:nexa_player/shared/models/artist.dart';
+import 'package:nexa_player/shared/widgets/glass/nexa_floating_nav_dock.dart';
 import 'package:nexa_player/shared/widgets/lists/active_track_auto_scroller.dart';
 import '../../helpers/mock_services.dart';
 
@@ -130,5 +131,67 @@ void main() {
 
     expect(Directionality.of(tester.element(find.byType(ArtistsTabScreen))), TextDirection.rtl);
     expect(find.text('هنرمندان'), findsWidgets);
+  });
+
+  testWidgets('effectiveLetterSpacing zeroes tracking in RTL and preserves in LTR',
+      (tester) async {
+    late double ltrSpacing;
+    late double rtlSpacing;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: Builder(
+          builder: (ctx) {
+            ltrSpacing = effectiveLetterSpacing(ctx, 1.2);
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+    expect(ltrSpacing, 1.2);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: Builder(
+          builder: (ctx) {
+            rtlSpacing = effectiveLetterSpacing(ctx, 1.2);
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+    expect(rtlSpacing, 0.0);
+  });
+
+  testWidgets('NexaFloatingNavDock respects RTL directionality on horizontal swipe',
+      (tester) async {
+    int tappedIndex = -1;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: Scaffold(
+          body: NexaFloatingNavDock(
+            currentIndex: 0,
+            onTap: (idx) => tappedIndex = idx,
+          ),
+        ),
+      ),
+    );
+    // In RTL, dragging right advances to index 1.
+    await tester.fling(
+      find.byType(NexaFloatingNavDock),
+      const Offset(200, 0),
+      1000,
+    );
+    await tester.pump();
+    expect(tappedIndex, 1);
   });
 }

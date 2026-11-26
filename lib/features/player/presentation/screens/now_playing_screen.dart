@@ -9,6 +9,7 @@ import '../../../../core/design_system/app_typography.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/di/service_providers.dart' hide playbackQueueProvider;
 import '../../../../core/extensions/duration_x.dart';
+import '../../../../core/l10n/locale_controller.dart';
 import '../../../../core/utils/audio_quality_formatter.dart';
 import '../../../../core/theme/dynamic_palette_providers.dart';
 import '../../../../core/theme/dynamic_palette_service.dart';
@@ -165,6 +166,47 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
           break;
       }
     });
+  }
+
+  void _showDisplayModesSheet(BuildContext context, bool isCasting) {
+    final l10n = context.l10n;
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(
+                isCasting ? Icons.cast_connected_rounded : Icons.cast_rounded,
+                color: isCasting ? const Color(0xFF00E676) : null,
+              ),
+              title: Text(l10n.castAudio),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                CastDevicePickerModal.show(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.nightlight_round),
+              title: Text(l10n.bedsideStandbyMode),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                context.push(AppRoutes.standby);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.directions_car_rounded),
+              title: Text(l10n.carDrivingMode),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                context.push(AppRoutes.carMode);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _loadWaveformIfAvailable(String? trackId, String? filePath) {
@@ -538,9 +580,9 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
                                                 Text(
-                                                  'PLAYING FROM',
+                                                  context.l10n.playingFrom,
                                                   style: surfaceTokens.telemetryTextStyle.copyWith(
-                                                    letterSpacing: 1.2,
+                                                    letterSpacing: effectiveLetterSpacing(context, 1.2),
                                                     color: colorScheme.onSurface.withOpacity(0.6),
                                                     fontWeight: FontWeight.w600,
                                                     fontSize: 10.0,
@@ -577,10 +619,23 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                                                 padding: const EdgeInsets.all(4),
                                                 constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
                                               ),
+                                              IconButton(
+                                                icon: Icon(
+                                                  isCasting
+                                                      ? Icons.cast_connected_rounded
+                                                      : Icons.devices_other_rounded,
+                                                  size: 20,
+                                                  color: isCasting ? const Color(0xFF00E676) : null,
+                                                ),
+                                                onPressed: () => _showDisplayModesSheet(context, isCasting),
+                                                tooltip: 'Output & Display Modes',
+                                                padding: const EdgeInsets.all(4),
+                                                constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                                              ),
                                               PopupMenuButton<String>(
                                                 key: const ValueKey('now_playing_more_menu'),
                                                 icon: const Icon(Icons.more_vert_rounded, size: 20),
-                                                tooltip: 'More Options',
+                                                tooltip: 'Track Actions',
                                                 padding: const EdgeInsets.all(4),
                                                 onSelected: (value) {
                                                   switch (value) {
@@ -599,15 +654,6 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                                                           track: currentTrack,
                                                         );
                                                       }
-                                                      break;
-                                                    case 'cast':
-                                                      CastDevicePickerModal.show(context);
-                                                      break;
-                                                    case 'standby':
-                                                      context.push(AppRoutes.standby);
-                                                      break;
-                                                    case 'car':
-                                                      context.push(AppRoutes.carMode);
                                                       break;
                                                   }
                                                 },
@@ -633,42 +679,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                                                         ],
                                                       ),
                                                     ),
-                                                    const PopupMenuDivider(),
                                                   ],
-                                                  PopupMenuItem(
-                                                    value: 'cast',
-                                                    child: Row(
-                                                      children: [
-                                                        Icon(
-                                                          isCasting ? Icons.cast_connected_rounded : Icons.cast_rounded,
-                                                          size: 18,
-                                                          color: isCasting ? const Color(0xFF00E676) : null,
-                                                        ),
-                                                        const SizedBox(width: 8),
-                                                        const Text('Cast Audio'),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                  const PopupMenuItem(
-                                                    value: 'standby',
-                                                    child: Row(
-                                                      children: [
-                                                        Icon(Icons.nightlight_round, size: 18),
-                                                        SizedBox(width: 8),
-                                                        Text('Bedside Standby Mode'),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                  const PopupMenuItem(
-                                                    value: 'car',
-                                                    child: Row(
-                                                      children: [
-                                                        Icon(Icons.directions_car_rounded, size: 18),
-                                                        SizedBox(width: 8),
-                                                        Text('Car Driving Mode'),
-                                                      ],
-                                                    ),
-                                                  ),
                                                 ],
                                               ),
                                             ],
@@ -971,14 +982,14 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                                           IconButton(
                                             icon: const Icon(Icons.lyrics_rounded, size: 20),
                                             onPressed: () => context.push(AppRoutes.lyrics),
-                                            tooltip: 'Lyrics',
+                                            tooltip: context.l10n.lyrics,
                                             padding: const EdgeInsets.all(6),
                                             constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                                           ),
                                           IconButton(
                                             icon: const Icon(Icons.equalizer_rounded, size: 20),
                                             onPressed: () => context.push(AppRoutes.equalizer),
-                                            tooltip: 'Equalizer & DSP',
+                                            tooltip: context.l10n.equalizerAndDsp,
                                             padding: const EdgeInsets.all(6),
                                             constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                                           ),

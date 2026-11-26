@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nexa_player/app/navigation_helpers.dart';
 import 'package:nexa_player/app/routes.dart';
 import 'package:nexa_player/core/constants/phase2_keys.dart';
 import 'package:nexa_player/core/services/artwork/artwork_providers.dart';
@@ -17,6 +18,7 @@ import 'package:nexa_player/shared/widgets/glass/glass_app_bar.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_button.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_fab.dart';
 import 'package:nexa_player/shared/widgets/glass/glass_text_field.dart';
+import 'package:nexa_player/shared/widgets/inputs/nexa_sort_menu_button.dart';
 import 'package:nexa_player/shared/widgets/surfaces/nexa_surface.dart';
 
 enum _PlaylistSortBy { name, trackCount, updatedAt }
@@ -45,28 +47,6 @@ class _PlaylistsTabScreenState extends ConsumerState<PlaylistsTabScreen> {
       return _ascending ? cmp : -cmp;
     });
     return copy;
-  }
-
-  PopupMenuItem<_PlaylistSortBy> _buildSortMenuItem(
-    _PlaylistSortBy value,
-    String label,
-  ) {
-    return PopupMenuItem<_PlaylistSortBy>(
-      value: value,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label),
-          if (_sortBy == value)
-            Icon(
-              _ascending
-                  ? Icons.arrow_upward_rounded
-                  : Icons.arrow_downward_rounded,
-              size: 16,
-            ),
-        ],
-      ),
-    );
   }
 
   void _showCreateDialog(BuildContext context, WidgetRef ref) {
@@ -174,10 +154,11 @@ class _PlaylistsTabScreenState extends ConsumerState<PlaylistsTabScreen> {
         ),
         automaticallyImplyLeading: false,
         actions: [
-          PopupMenuButton<_PlaylistSortBy>(
+          NexaSortMenuButton<_PlaylistSortBy>(
             key: const ValueKey('playlists_sort_btn'),
-            icon: const Icon(Icons.sort_rounded),
-            tooltip: 'Sort playlists',
+            selected: _sortBy,
+            ascending: _ascending,
+            tooltip: context.l10n.sortPlaylistsTooltip,
             onSelected: (sortBy) {
               setState(() {
                 if (_sortBy == sortBy) {
@@ -188,20 +169,26 @@ class _PlaylistsTabScreenState extends ConsumerState<PlaylistsTabScreen> {
                 }
               });
             },
-            itemBuilder: (context) => [
-              _buildSortMenuItem(_PlaylistSortBy.name, context.l10n.sortName),
-              _buildSortMenuItem(_PlaylistSortBy.trackCount, context.l10n.sortTrackCount),
-              _buildSortMenuItem(_PlaylistSortBy.updatedAt, context.l10n.sortRecentlyUpdated),
+            options: [
+              NexaSortOption(value: _PlaylistSortBy.name, label: context.l10n.sortName),
+              NexaSortOption(
+                value: _PlaylistSortBy.trackCount,
+                label: context.l10n.sortTrackCount,
+              ),
+              NexaSortOption(
+                value: _PlaylistSortBy.updatedAt,
+                label: context.l10n.sortRecentlyUpdated,
+              ),
             ],
           ),
           IconButton(
             icon: const Icon(Icons.search_rounded),
-            tooltip: 'Search library',
+            tooltip: context.l10n.searchLibraryTooltip,
             onPressed: () => context.push(AppRoutes.search),
           ),
           IconButton(
             icon: const Icon(Icons.file_download_outlined),
-            tooltip: 'Import M3U',
+            tooltip: context.l10n.importM3u,
             onPressed: () => M3uImportDialog.show(context),
           ),
         ],
@@ -212,12 +199,17 @@ class _PlaylistsTabScreenState extends ConsumerState<PlaylistsTabScreen> {
         child: GlassFAB(
           key: Phase2Keys.createPlaylistFab,
           icon: const Icon(Icons.add_rounded),
-          label: const Text('New Playlist'),
+          label: Text(context.l10n.newPlaylist),
           onPressed: () => _showCreateDialog(context, ref),
         ),
       ),
       body: Padding(
-        padding: const EdgeInsets.fromLTRB(16.0, 100.0, 16.0, 0.0),
+        padding: EdgeInsets.fromLTRB(
+          16.0,
+          nexaBodyTopPadding(context, hasSubTabBar: false),
+          16.0,
+          0.0,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -256,11 +248,12 @@ class _PlaylistsTabScreenState extends ConsumerState<PlaylistsTabScreen> {
                             updatedAt: DateTime.now(),
                             trackCount: 0,
                           );
-                          Navigator.of(context, rootNavigator: true).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) =>
-                                  PlaylistDetailScreen(playlist: simulatedPlaylist),
-                            ),
+                          pushDetailScreen<void>(
+                            context,
+                            route: AppRoutes.playlistDetail,
+                            extra: simulatedPlaylist,
+                            fallbackBuilder: (_) =>
+                                PlaylistDetailScreen(playlist: simulatedPlaylist),
                           );
                         },
                         borderRadius: BorderRadius.circular(14),
@@ -372,14 +365,13 @@ class _PlaylistsTabScreenState extends ConsumerState<PlaylistsTabScreen> {
                           borderRadius: BorderRadius.circular(16.0),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(16.0),
-                            onTap: () {
-                              Navigator.of(context, rootNavigator: true).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) =>
-                                      PlaylistDetailScreen(playlist: playlist),
-                                ),
-                              );
-                            },
+                            onTap: () => pushDetailScreen<void>(
+                              context,
+                              route: AppRoutes.playlistDetail,
+                              extra: playlist,
+                              fallbackBuilder: (_) =>
+                                  PlaylistDetailScreen(playlist: playlist),
+                            ),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: AppSpacing.md,
