@@ -97,13 +97,13 @@ class NexaSurfaceTokens extends ThemeExtension<NexaSurfaceTokens> {
   Color get onLevel3 => onL3;
   Color get onLevel4 => onL4;
 
-  /// Default Obsidian dark mode tonal tokens.
+  /// Default Obsidian dark mode tonal tokens (smooth dark slate elevations).
   factory NexaSurfaceTokens.dark({Color? accent, Color? seedTint}) {
     final effectiveAccent = accent ?? const Color(0xFF00E5FF);
-    const baseL0 = Color(0xFF050507);
-    const baseL1 = Color(0xFF0D0E12);
-    const baseL2 = Color(0xFF14151B);
-    const baseL3 = Color(0xFF1D1F28);
+    const baseL0 = Color(0xFF12141C);
+    const baseL1 = Color(0xFF1A1D28);
+    const baseL2 = Color(0xFF222634);
+    const baseL3 = Color(0xFF2B3042);
 
     final resolvedL2 = seedTint != null
         ? Color.alphaBlend(seedTint.withOpacity(0.04), baseL2)
@@ -119,9 +119,9 @@ class NexaSurfaceTokens extends ThemeExtension<NexaSurfaceTokens> {
       l2: resolvedL2,
       l3: resolvedL3,
       l4: effectiveAccent,
-      onL0: const Color(0xFFE2E4EC),
-      onL1: const Color(0xFFC4C7D4),
-      onL2: const Color(0xFFF0F2F8),
+      onL0: const Color(0xFFE6E9F2),
+      onL1: const Color(0xFFCFD4E2),
+      onL2: const Color(0xFFF3F5FA),
       onL3: const Color(0xFFFFFFFF),
       onL4: ThemeData.estimateBrightnessForColor(effectiveAccent) == Brightness.dark
           ? const Color(0xFFFFFFFF)

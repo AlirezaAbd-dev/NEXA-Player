@@ -1,21 +1,28 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nexa_player/core/design_system/nexa_surface_tokens.dart';
 import 'package:nexa_player/core/theme/app_theme.dart';
 import 'package:nexa_player/core/theme/dynamic_palette_service.dart';
 import 'package:nexa_player/core/theme/theme_preset.dart';
+import 'package:nexa_player/core/utils/contrast_validator.dart';
 
 void main() {
   group('NexaSurfaceTokens Unit Tests', () {
-    test('NexaSurfaceTokens.dark defaults conform to L0-L4 tonal specifications', () {
+    test('NexaSurfaceTokens.dark defaults conform to smooth dark slate L0-L4 specifications', () {
       final tokens = NexaSurfaceTokens.dark();
 
-      expect(tokens.l0, equals(const Color(0xFF050507)));
-      expect(tokens.l1, equals(const Color(0xFF0D0E12)));
-      expect(tokens.l2, equals(const Color(0xFF14151B)));
-      expect(tokens.l3, equals(const Color(0xFF1D1F28)));
+      expect(tokens.l0, equals(const Color(0xFF12141C)));
+      expect(tokens.l1, equals(const Color(0xFF1A1D28)));
+      expect(tokens.l2, equals(const Color(0xFF222634)));
+      expect(tokens.l3, equals(const Color(0xFF2B3042)));
       expect(tokens.l4, equals(const Color(0xFF00E5FF)));
+
+      // Verify WCAG AA contrast (>= 4.5:1) across all surface tiers
+      expect(ContrastValidator.calculateContrastRatio(tokens.onL0, tokens.l0), greaterThanOrEqualTo(4.5));
+      expect(ContrastValidator.calculateContrastRatio(tokens.onL1, tokens.l1), greaterThanOrEqualTo(4.5));
+      expect(ContrastValidator.calculateContrastRatio(tokens.onL2, tokens.l2), greaterThanOrEqualTo(4.5));
+      expect(ContrastValidator.calculateContrastRatio(tokens.onL3, tokens.l3), greaterThanOrEqualTo(4.5));
+      expect(ContrastValidator.calculateContrastRatio(tokens.onL4, tokens.l4), greaterThanOrEqualTo(4.5));
 
       expect(tokens.onL0, isNotNull);
       expect(tokens.onL1, isNotNull);
@@ -92,7 +99,7 @@ void main() {
         brightness: Brightness.dark,
       );
       expect(darkTokens.l4, equals(palette.vibrant));
-      expect(darkTokens.l0, equals(const Color(0xFF050507)));
+      expect(darkTokens.l0, equals(const Color(0xFF12141C)));
 
       final lightTokens = NexaSurfaceTokens.fromDynamicPalette(
         palette,

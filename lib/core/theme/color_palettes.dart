@@ -105,9 +105,9 @@ abstract final class AppColorPalettes {
     name: 'Deep Space',
     description: 'Cosmic navy void with celestial indigo and stellar cyan highlights.',
     isOledBlack: false,
-    darkScaffold: Color(0xFF0B0F19), // Cosmic navy
-    darkSurface: Color(0xFF131B2E),  // Stellar surface
-    darkCard: Color(0xFF1A243D),
+    darkScaffold: Color(0xFF111625), // Smooth cosmic slate-navy
+    darkSurface: Color(0xFF192238),  // Stellar surface
+    darkCard: Color(0xFF212D48),
     darkScheme: FlexSchemeColor(
       primary: Color(0xFF6366F1),          // Indigo
       primaryContainer: Color(0xFF282A73),
@@ -201,9 +201,9 @@ abstract final class AppColorPalettes {
     name: 'Forest Green',
     description: 'Deep canopy wilderness with glowing neon canopy and fresh mint.',
     isOledBlack: false,
-    darkScaffold: Color(0xFF0B170E), // Obsidian Forest
-    darkSurface: Color(0xFF14291A),  // Pine Surface
-    darkCard: Color(0xFF1C3A25),
+    darkScaffold: Color(0xFF102016), // Smooth deep pine
+    darkSurface: Color(0xFF183121),  // Pine Surface
+    darkCard: Color(0xFF21422C),
     darkScheme: FlexSchemeColor(
       primary: Color(0xFF00E676),          // Neon Canopy
       primaryContainer: Color(0xFF004D25),
@@ -233,9 +233,9 @@ abstract final class AppColorPalettes {
     name: 'Lava',
     description: 'Smoldering volcanic rock with molten blaze and fiery amber.',
     isOledBlack: false,
-    darkScaffold: Color(0xFF150806), // Charred Basalt
-    darkSurface: Color(0xFF29100C),  // Warm Magma Surface
-    darkCard: Color(0xFF3B1712),
+    darkScaffold: Color(0xFF1C0E0C), // Smooth volcanic basalt
+    darkSurface: Color(0xFF2D1612),  // Warm Magma Surface
+    darkCard: Color(0xFF3E1F1A),
     darkScheme: FlexSchemeColor(
       primary: Color(0xFFFF3D00),          // Molten Blaze
       primaryContainer: Color(0xFF5C1400),

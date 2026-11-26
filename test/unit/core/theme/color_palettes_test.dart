@@ -19,11 +19,11 @@ void main() {
       expect(palette.lightScaffold, equals(const Color(0xFFF5F5F7)));
     });
 
-    test('Deep Space dark scaffold is #0B0F19 with indigo #6366F1', () {
+    test('Deep Space dark scaffold is #111625 with indigo #6366F1', () {
       const palette = AppColorPalettes.deepSpace;
       expect(palette.isOledBlack, isFalse);
-      expect(palette.darkScaffold, equals(const Color(0xFF0B0F19)));
-      expect(palette.darkSurface, equals(const Color(0xFF131B2E)));
+      expect(palette.darkScaffold, equals(const Color(0xFF111625)));
+      expect(palette.darkSurface, equals(const Color(0xFF192238)));
       expect(palette.darkScheme.primary, equals(const Color(0xFF6366F1)));
       expect(palette.lightScaffold, equals(const Color(0xFFF0F4FA)));
     });
@@ -44,18 +44,18 @@ void main() {
       expect(palette.lightScaffold, equals(const Color(0xFFF0F9FF)));
     });
 
-    test('Forest Green dark scaffold is #0B170E with neon canopy #00E676', () {
+    test('Forest Green dark scaffold is #102016 with neon canopy #00E676', () {
       const palette = AppColorPalettes.forestGreen;
-      expect(palette.darkScaffold, equals(const Color(0xFF0B170E)));
-      expect(palette.darkSurface, equals(const Color(0xFF14291A)));
+      expect(palette.darkScaffold, equals(const Color(0xFF102016)));
+      expect(palette.darkSurface, equals(const Color(0xFF183121)));
       expect(palette.darkScheme.primary, equals(const Color(0xFF00E676)));
       expect(palette.lightScaffold, equals(const Color(0xFFF2FBF5)));
     });
 
-    test('Lava dark scaffold is #150806 with molten blaze #FF3D00', () {
+    test('Lava dark scaffold is #1C0E0C with molten blaze #FF3D00', () {
       const palette = AppColorPalettes.lava;
-      expect(palette.darkScaffold, equals(const Color(0xFF150806)));
-      expect(palette.darkSurface, equals(const Color(0xFF29100C)));
+      expect(palette.darkScaffold, equals(const Color(0xFF1C0E0C)));
+      expect(palette.darkSurface, equals(const Color(0xFF2D1612)));
       expect(palette.darkScheme.primary, equals(const Color(0xFFFF3D00)));
       expect(palette.lightScaffold, equals(const Color(0xFFFFF7F5)));
     });
