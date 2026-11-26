@@ -23,6 +23,7 @@ class SqliteTracksRepository implements ITracksRepository {
       final orderClause = switch (sortBy) {
         TrackSortBy.title => '${DatabaseSchema.colTitle} COLLATE NOCASE',
         TrackSortBy.artist => '${DatabaseSchema.colTrackArtist} COLLATE NOCASE',
+        TrackSortBy.album => '${DatabaseSchema.colTrackAlbum} COLLATE NOCASE',
         TrackSortBy.dateAdded => DatabaseSchema.colDateAdded,
         TrackSortBy.duration => DatabaseSchema.colDurationMs,
       };

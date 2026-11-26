@@ -3,7 +3,7 @@ import 'package:nexa_player/shared/models/track.dart';
 import 'package:nexa_player/shared/services/database/app_database.dart';
 
 /// Sort options for track querying.
-enum TrackSortBy { title, artist, dateAdded, duration }
+enum TrackSortBy { title, artist, album, dateAdded, duration }
 
 /// Repository contract managing audio track retrieval, searching, and metadata updates.
 abstract interface class ITracksRepository {

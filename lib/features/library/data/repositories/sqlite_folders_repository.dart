@@ -1,5 +1,6 @@
 import 'package:nexa_player/core/utils/result.dart';
 import 'package:nexa_player/features/library/domain/repositories/folders_repository.dart';
+import 'package:nexa_player/shared/models/track.dart';
 import 'package:nexa_player/shared/services/database/app_database.dart';
 import 'package:nexa_player/shared/services/database/database_schema.dart';
 import 'package:path/path.dart' as p;
@@ -49,9 +50,7 @@ class SqliteFoldersRepository implements IFoldersRepository {
   ) async {
     try {
       final rows = database.select(
-        'SELECT ${DatabaseSchema.colId}, ${DatabaseSchema.colTrackFilePath}, '
-        '${DatabaseSchema.colTitle}, ${DatabaseSchema.colFileSize} '
-        'FROM ${DatabaseSchema.tableTracks} '
+        'SELECT * FROM ${DatabaseSchema.tableTracks} '
         'ORDER BY ${DatabaseSchema.colTrackFilePath} COLLATE NOCASE ASC',
       );
 
@@ -64,8 +63,7 @@ class SqliteFoldersRepository implements IFoldersRepository {
         final normalizedFilePath = rawFilePath.replaceAll(r'\', '/');
         final dirPath = p.posix.dirname(normalizedFilePath);
         final fileName = p.posix.basename(normalizedFilePath);
-        final trackId = row[DatabaseSchema.colId] as String?;
-        final fileSize = (row[DatabaseSchema.colFileSize] as int?) ?? 0;
+        final track = Track.fromMap(row);
 
         final segments = dirPath
             .split('/')
@@ -88,8 +86,9 @@ class SqliteFoldersRepository implements IFoldersRepository {
         cursor.files.add(FileNode(
           path: rawFilePath,
           name: fileName,
-          trackId: trackId,
-          fileSize: fileSize,
+          trackId: track.id,
+          fileSize: track.fileSize ?? 0,
+          track: track,
         ));
       }
 

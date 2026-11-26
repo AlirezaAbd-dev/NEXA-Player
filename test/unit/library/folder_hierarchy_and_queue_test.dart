@@ -292,10 +292,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const ValueKey('folder_contents_list')), findsOneWidget);
-      expect(find.text('track_2.mp3'), findsOneWidget);
+      expect(find.text('track_2'), findsOneWidget);
 
       // Tap track #2 in 5-track folder -> loads all 5 tracks at index 1
-      await tester.tap(find.text('track_2.mp3'));
+      await tester.tap(find.text('track_2'));
       await tester.pumpAndSettle();
 
       expect(queue.state.tracks.length, 5);

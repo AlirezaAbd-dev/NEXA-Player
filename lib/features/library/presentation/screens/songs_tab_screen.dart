@@ -111,6 +111,10 @@ class _SongsTabScreenState extends ConsumerState<SongsTabScreen> {
                 label: context.l10n.sortArtist,
               ),
               NexaSortOption(
+                value: TrackSortBy.album,
+                label: context.l10n.sortAlbum,
+              ),
+              NexaSortOption(
                 key: Phase2Keys.sortMenuDuration,
                 value: TrackSortBy.duration,
                 label: context.l10n.sortDuration,

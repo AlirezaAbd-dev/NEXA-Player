@@ -51,21 +51,28 @@ class FoldersTabScreen extends ConsumerStatefulWidget {
   ConsumerState<FoldersTabScreen> createState() => _FoldersTabScreenState();
 }
 
-enum _FolderSortBy { name, songCount }
+enum _FolderSortBy {
+  name,
+  songCount,
+  title,
+  artist,
+  album,
+  duration,
+  dateAdded,
+}
 
 class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
   final List<String> _navigationStack = [];
-  _FolderSortBy _sortBy = _FolderSortBy.name;
+  _FolderSortBy _sortBy = _FolderSortBy.title;
   bool _ascending = true;
 
   List<FolderNode> _sortFolders(List<FolderNode> input) {
     final copy = List<FolderNode>.from(input);
     copy.sort((a, b) {
       final cmp = switch (_sortBy) {
-        _FolderSortBy.name =>
-          a.name.toLowerCase().compareTo(b.name.toLowerCase()),
         _FolderSortBy.songCount =>
           a.recursiveTrackCount.compareTo(b.recursiveTrackCount),
+        _ => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
       };
       return _ascending ? cmp : -cmp;
     });
@@ -78,8 +85,20 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
       final cmp = switch (_sortBy) {
         _FolderSortBy.name =>
           a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-        _FolderSortBy.songCount =>
-          a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+        _FolderSortBy.title || _FolderSortBy.songCount =>
+          a.displayTitle.toLowerCase().compareTo(b.displayTitle.toLowerCase()),
+        _FolderSortBy.artist =>
+          a.displayArtist.toLowerCase().compareTo(b.displayArtist.toLowerCase()),
+        _FolderSortBy.album => (a.track?.album ?? '')
+            .toLowerCase()
+            .compareTo((b.track?.album ?? '').toLowerCase()),
+        _FolderSortBy.duration => (a.track?.duration ?? Duration.zero)
+            .compareTo(b.track?.duration ?? Duration.zero),
+        _FolderSortBy.dateAdded =>
+          (a.track?.dateAdded ?? DateTime.fromMillisecondsSinceEpoch(0))
+              .compareTo(
+                b.track?.dateAdded ?? DateTime.fromMillisecondsSinceEpoch(0),
+              ),
       };
       return _ascending ? cmp : -cmp;
     });
@@ -159,18 +178,20 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
 
   Future<void> _playFolderFiles(
     FolderNode folder, {
+    List<FileNode>? files,
     int initialIndex = 0,
     bool shuffle = false,
   }) async {
-    if (folder.files.isEmpty) return;
+    final targetFiles = files ?? folder.files;
+    if (targetFiles.isEmpty) return;
     HapticFeedback.lightImpact();
 
     final tracksRepo = ref.read(tracksRepositoryProvider);
     final folderTracks = <Track>[];
 
-    for (final f in folder.files) {
-      Track? resolved;
-      if (f.trackId != null) {
+    for (final f in targetFiles) {
+      Track? resolved = f.track;
+      if (resolved == null && f.trackId != null) {
         final res = await tracksRepo.getTrackById(f.trackId!);
         resolved = res.valueOrNull;
       }
@@ -178,7 +199,7 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
         resolved ??
             Track(
               id: f.trackId ?? f.path,
-              title: p.basenameWithoutExtension(f.name),
+              title: f.displayTitle,
               artist: folder.name,
               album: folder.name,
               duration: Duration.zero,
@@ -282,6 +303,26 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
                 });
               },
               options: [
+                NexaSortOption(
+                  value: _FolderSortBy.title,
+                  label: context.l10n.sortTitle,
+                ),
+                NexaSortOption(
+                  value: _FolderSortBy.artist,
+                  label: context.l10n.sortArtist,
+                ),
+                NexaSortOption(
+                  value: _FolderSortBy.album,
+                  label: context.l10n.sortAlbum,
+                ),
+                NexaSortOption(
+                  value: _FolderSortBy.duration,
+                  label: context.l10n.sortDuration,
+                ),
+                NexaSortOption(
+                  value: _FolderSortBy.dateAdded,
+                  label: context.l10n.sortDateAdded,
+                ),
                 NexaSortOption(
                   value: _FolderSortBy.name,
                   label: context.l10n.sortName,
@@ -549,7 +590,11 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
                 ),
                 icon: const Icon(Icons.play_arrow_rounded, size: 18.0),
                 label: Text(context.l10n.playAll),
-                onPressed: () => _playFolderFiles(folder, initialIndex: 0),
+                onPressed: () => _playFolderFiles(
+                  folder,
+                  files: sortedFiles,
+                  initialIndex: 0,
+                ),
               ),
               const SizedBox(width: AppSpacing.xs),
               NexaSurface(
@@ -561,6 +606,7 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
                   tooltip: 'Shuffle folder',
                   onPressed: () => _playFolderFiles(
                     folder,
+                    files: sortedFiles,
                     initialIndex: 0,
                     shuffle: true,
                   ),
@@ -601,6 +647,16 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
                 final fileIndex = index - subCount;
                 final file = sortedFiles[fileIndex];
                 final ext = _extractExtension(file.name);
+                final resolvedTrack = file.track ??
+                    Track(
+                      id: file.trackId ?? file.path,
+                      title: file.displayTitle,
+                      artist: folder.name,
+                      album: folder.name,
+                      duration: Duration.zero,
+                      filePath: file.path,
+                      fileSize: file.fileSize,
+                    );
                 final isActive = activeTrack != null &&
                     ((file.trackId != null && activeTrack.id == file.trackId) ||
                         activeTrack.filePath == file.path);
@@ -631,14 +687,7 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
                             fit: StackFit.expand,
                             children: [
                               NexaArtworkImage(
-                                track: Track(
-                                  id: file.trackId ?? file.path,
-                                  title: file.name,
-                                  artist: folder.name,
-                                  album: folder.name,
-                                  duration: Duration.zero,
-                                  filePath: file.path,
-                                ),
+                                track: resolvedTrack,
                                 width: 40.0,
                                 height: 40.0,
                                 cacheWidth: 160,
@@ -668,7 +717,7 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
                         ),
                       ),
                       title: BidiText(
-                        file.name,
+                        file.displayTitle,
                         style: AppTypography.bodyMedium.copyWith(
                           color: isActive ? activeTitleColor : null,
                           fontWeight: isActive ? FontWeight.bold : null,
@@ -676,6 +725,17 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      subtitle: file.displayArtist.isNotEmpty
+                          ? BidiText(
+                              file.displayArtist,
+                              style: AppTypography.bodySmall.copyWith(
+                                fontSize: 11.0,
+                                color: colorScheme.onSurface.withOpacity(0.62),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            )
+                          : null,
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -703,22 +763,17 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
                               padding: EdgeInsets.zero,
                               tooltip: 'Track actions',
                               onSelected: (action) async {
-                                final repo = getIt.isRegistered<ITracksRepository>()
-                                    ? getIt<ITracksRepository>()
-                                    : null;
-                                final fetched = repo != null
-                                    ? (await repo.getTrackById(file.trackId!))
-                                        .valueOrNull
-                                    : null;
-                                final track = fetched ??
-                                    Track(
-                                      id: file.trackId!,
-                                      title: p.basenameWithoutExtension(file.name),
-                                      artist: 'Unknown Artist',
-                                      album: folder.name,
-                                      duration: Duration.zero,
-                                      filePath: file.path,
-                                    );
+                                Track? track = file.track;
+                                if (track == null) {
+                                  final repo = getIt.isRegistered<ITracksRepository>()
+                                      ? getIt<ITracksRepository>()
+                                      : null;
+                                  track = repo != null
+                                      ? (await repo.getTrackById(file.trackId!))
+                                          .valueOrNull
+                                      : null;
+                                }
+                                track ??= resolvedTrack;
                                 if (!context.mounted) return;
                                 await TrackActionsHelper.handleAction(
                                   context,
@@ -774,6 +829,7 @@ class _FoldersTabScreenState extends ConsumerState<FoldersTabScreen> {
                       ),
                       onTap: () => _playFolderFiles(
                         folder,
+                        files: sortedFiles,
                         initialIndex: fileIndex,
                       ),
                     ),
