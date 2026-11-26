@@ -40,7 +40,8 @@ enum LibrarySubTab {
 /// - Preserves tab state through GoRouter branch navigation.
 /// - Touch targets conforming to >= 48dp ergonomic accessibility standards.
 /// - Borderless frosted glass pill indicators with active tonal elevation.
-class LibrarySegmentedPillBar extends StatelessWidget implements PreferredSizeWidget {
+class LibrarySegmentedPillBar extends StatefulWidget
+    implements PreferredSizeWidget {
   const LibrarySegmentedPillBar({
     super.key,
     required this.selectedTab,
@@ -53,11 +54,48 @@ class LibrarySegmentedPillBar extends StatelessWidget implements PreferredSizeWi
   @override
   Size get preferredSize => const Size.fromHeight(48.0);
 
+  @override
+  State<LibrarySegmentedPillBar> createState() =>
+      _LibrarySegmentedPillBarState();
+}
+
+class _LibrarySegmentedPillBarState extends State<LibrarySegmentedPillBar> {
+  final Map<LibrarySubTab, GlobalKey> _tabKeys = {
+    for (final tab in LibrarySubTab.values) tab: GlobalKey(),
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
+  }
+
+  @override
+  void didUpdateWidget(LibrarySegmentedPillBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedTab != widget.selectedTab) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
+    }
+  }
+
+  void _scrollToSelected() {
+    if (!mounted) return;
+    final tabCtx = _tabKeys[widget.selectedTab]?.currentContext;
+    if (tabCtx == null) return;
+    final reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    Scrollable.ensureVisible(
+      tabCtx,
+      alignment: 0.5,
+      duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 240),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
   void _onPillTap(BuildContext context, LibrarySubTab tab) {
-    if (tab == selectedTab) return;
+    if (tab == widget.selectedTab) return;
     HapticFeedback.selectionClick();
-    if (onTabSelected != null) {
-      onTabSelected!(tab);
+    if (widget.onTabSelected != null) {
+      widget.onTabSelected!(tab);
     } else {
       context.go(tab.route);
     }
@@ -79,9 +117,10 @@ class LibrarySegmentedPillBar extends StatelessWidget implements PreferredSizeWi
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: LibrarySubTab.values.map((tab) {
-              final isSelected = tab == selectedTab;
+              final isSelected = tab == widget.selectedTab;
 
               return Padding(
+                key: _tabKeys[tab],
                 padding: const EdgeInsets.symmetric(horizontal: 4.0),
                 child: Material(
                   key: tab.key,
