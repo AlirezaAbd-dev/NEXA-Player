@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -151,7 +152,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final category = ref.watch(searchCategoryProvider);
     final searchResultsAsync = ref.watch(searchResultsProvider);
     final playerState = ref.watch(playerNotifierProvider);
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final keyboardHeight = MediaQuery.viewInsetsOf(context).bottom;
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final deckBottomOffset = math.max(keyboardHeight, bottomInset);
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final surfaceTokens = NexaSurfaceTokens.of(context);
@@ -181,7 +184,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 0,
                 nexaBodyTopPadding(context, hasSubTabBar: false),
                 0,
-                168.0 + keyboardHeight,
+                168.0 + deckBottomOffset,
               ),
               child: query.trim().isEmpty
                   ? _buildEmptyQueryContent()
@@ -236,7 +239,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: keyboardHeight,
+            bottom: deckBottomOffset,
             child: _buildBottomSearchDeck(context),
           ),
         ],
