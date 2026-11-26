@@ -110,6 +110,18 @@ void main() {
 
       // Clean Persian UTF-8 passes through untouched
       expect(TagEncodingDecoder.repairMojibake(original), original);
+
+      // UTF-16LE BOM replacement chars + NUL-interleaved bytes from MediaStore/buggy taggers
+      expect(
+        TagEncodingDecoder.repairMojibake(
+          '\uFFFD\uFFFDS\x00a\x00e\x00b\x00 \x00S\x00a\x00d\x00e\x00g\x00h\x00i\x00',
+        ),
+        'Saeb Sadeghi',
+      );
+      expect(
+        TagEncodingDecoder.decodeLegacyBytes(_encodeUtf16LeWithBom('Saeb')),
+        'Saeb',
+      );
     });
 
     test('PureDartAudioMetadataReader extracts Persian CP1256 ID3v2 and ID3v1 tags cleanly', () {

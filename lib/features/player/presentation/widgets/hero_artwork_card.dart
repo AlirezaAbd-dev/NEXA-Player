@@ -284,6 +284,7 @@ class _HeroArtworkCardState extends State<HeroArtworkCard>
           },
           child: PageView.builder(
             controller: _pageController,
+            clipBehavior: Clip.none,
             physics: const StellioPageScrollPhysics(
               parent: BouncingScrollPhysics(),
             ),

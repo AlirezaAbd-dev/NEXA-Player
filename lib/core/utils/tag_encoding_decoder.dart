@@ -107,6 +107,12 @@ abstract final class TagEncodingDecoder {
     Uint8List bytes, {
     TagEncodingOverride override = TagEncodingOverride.auto,
   }) {
+    if (bytes.length >= 2 &&
+        ((bytes[0] == 0xFF && bytes[1] == 0xFE) ||
+            (bytes[0] == 0xFE && bytes[1] == 0xFF))) {
+      return decodeUtf16(bytes, checkBom: true);
+    }
+
     // Trim trailing NUL padding from fixed-size ID3v1 fields or NUL-terminated frames
     var end = bytes.length;
     while (end > 0 && bytes[end - 1] == 0) {
@@ -200,25 +206,48 @@ abstract final class TagEncodingDecoder {
   /// Clean Persian UTF-8 strings (`> 0xFF`) and pure ASCII return unchanged.
   static String repairMojibake(String input) {
     if (input.isEmpty) return input;
+
+    // 0. Recover UTF-16LE/BE or replacement-character / NUL-byte artifacts
+    // (e.g. `\uFFFD\uFFFDS\x00a\x00e\x00b\x00` or `ÿþS\x00a\x00e\x00b\x00`).
+    var normalized = input;
+    if (normalized.codeUnits.length >= 2 &&
+        ((normalized.codeUnitAt(0) == 0x00FF &&
+                normalized.codeUnitAt(1) == 0x00FE) ||
+            (normalized.codeUnitAt(0) == 0x00FE &&
+                normalized.codeUnitAt(1) == 0x00FF))) {
+      final raw = Uint8List.fromList(
+        normalized.codeUnits.map((u) => u & 0xFF).toList(),
+      );
+      final decoded = decodeUtf16(raw, checkBom: true);
+      if (decoded.isNotEmpty) return decoded;
+    }
+    if (normalized.contains('\u0000') || normalized.contains('\uFFFD')) {
+      normalized = normalized
+          .replaceAll('\uFFFD', '')
+          .replaceAll('\u0000', '')
+          .trim();
+      if (normalized.isEmpty) return '';
+    }
+
     var hasHighByte = false;
-    for (final unit in input.codeUnits) {
+    for (final unit in normalized.codeUnits) {
       if (unit > 0xFF) {
         // Already contains real Unicode (> Latin-1), such as Persian/CJK -> preserve verbatim
-        return input;
+        return normalized;
       }
       if (unit >= 0x80) {
         hasHighByte = true;
       }
     }
-    if (!hasHighByte) return input;
+    if (!hasHighByte) return normalized;
 
-    final rawBytes = Uint8List.fromList(input.codeUnits);
+    final rawBytes = Uint8List.fromList(normalized.codeUnits);
 
     // 1. Try reconstructing double-encoded UTF-8 (e.g. `Ø´Ø§Ø¯Ù…Ù‡Ø±`)
     try {
       final utf8Decoded = utf8.decode(rawBytes, allowMalformed: false);
       if (_containsPersianOrArabic(utf8Decoded) ||
-          utf8Decoded != input) {
+          utf8Decoded != normalized) {
         return utf8Decoded;
       }
     } catch (_) {}
@@ -228,7 +257,7 @@ abstract final class TagEncodingDecoder {
       return decodeWindows1256(rawBytes);
     }
 
-    return input;
+    return normalized;
   }
 
   static bool _containsPersianOrArabic(String text) {

@@ -27,15 +27,16 @@ class BidiText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final displayData = TagEncodingDecoder.repairMojibake(data);
     final effectiveDirection =
-        textDirection ?? TagEncodingDecoder.detectBidiDirection(data);
+        textDirection ?? TagEncodingDecoder.detectBidiDirection(displayData);
     final effectiveStyle = (style ?? const TextStyle()).copyWith(
       fontFamilyFallback:
           style?.fontFamilyFallback ?? AppTypography.persianFontFallback,
     );
 
     return Text(
-      data,
+      displayData,
       style: effectiveStyle,
       textDirection: effectiveDirection,
       textAlign: textAlign ??

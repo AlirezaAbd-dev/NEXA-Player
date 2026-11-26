@@ -166,7 +166,8 @@ void main() {
         nexaAudioServiceConfig.androidNotificationIcon,
         equals('drawable/ic_stat_nexa'),
       );
-      expect(nexaAudioServiceConfig.androidStopForegroundOnPause, isFalse);
+      expect(nexaAudioServiceConfig.androidNotificationOngoing, isFalse);
+      expect(nexaAudioServiceConfig.androidStopForegroundOnPause, isTrue);
       expect(nexaAudioServiceConfig.preloadArtwork, isTrue);
       expect(nexaAudioServiceConfig.artDownscaleWidth, equals(512));
       expect(nexaAudioServiceConfig.artDownscaleHeight, equals(512));
@@ -318,6 +319,15 @@ void main() {
       expect(nextCalls, equals(1));
       expect(prevCalls, equals(1));
       expect(favCalls, equals(1));
+
+      // Dismissing notification when paused preserves queue/track and re-shows on play()
+      const t = Track(id: 'dismiss-1', title: 'Track', artist: 'Artist', duration: Duration(minutes: 2));
+      queue.setQueue([t], initialIndex: 0);
+      await handler.pause();
+      await handler.onNotificationDeleted();
+      expect(queue.state.currentTrack, isNotNull);
+      await handler.play();
+      expect(handler.playbackState.value.playing, isTrue);
     });
   });
 }

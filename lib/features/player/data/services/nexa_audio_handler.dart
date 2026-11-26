@@ -25,7 +25,7 @@ const AudioServiceConfig nexaAudioServiceConfig = AudioServiceConfig(
   androidShowNotificationBadge: false,
   androidNotificationClickStartsActivity: true,
   androidNotificationOngoing: false,
-  androidStopForegroundOnPause: false,
+  androidStopForegroundOnPause: true,
   artDownscaleWidth: 512,
   artDownscaleHeight: 512,
   preloadArtwork: true,
@@ -383,6 +383,13 @@ class NexaAudioHandler extends BaseAudioHandler with SeekHandler {
       await _engine.stop();
     }
     _syncPlaybackState(force: true, explicitPosition: Duration.zero);
+    await super.stop();
+  }
+
+  @override
+  Future<void> onNotificationDeleted() async {
+    // Allow dismissing notification when paused without discarding active track/position;
+    // pressing Play later re-promotes foreground service and shows notification again.
     await super.stop();
   }
 

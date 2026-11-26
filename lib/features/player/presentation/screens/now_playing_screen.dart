@@ -682,18 +682,22 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
                                 // Zone 2: Center Hero Artwork with Radial Ambient Wash & Diagonal Arbitration
                                 Stack(
                                   alignment: Alignment.center,
+                                  clipBehavior: Clip.none,
                                   children: [
                                     IgnorePointer(
                                       child: Container(
-                                        width: artworkSize * 1.15,
-                                        height: artworkSize * 1.15,
+                                        width: artworkSize * 1.45,
+                                        height: artworkSize * 1.45,
                                         decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
                                           gradient: RadialGradient(
+                                            radius: 0.5,
                                             colors: [
-                                              primary.withOpacity(isDark ? 0.22 : 0.14),
-                                              Colors.transparent,
+                                              primary.withOpacity(isDark ? 0.20 : 0.12),
+                                              primary.withOpacity(isDark ? 0.06 : 0.03),
+                                              primary.withOpacity(0.0),
                                             ],
-                                            stops: const [0.0, 0.72],
+                                            stops: const [0.0, 0.55, 1.0],
                                           ),
                                         ),
                                       ),
