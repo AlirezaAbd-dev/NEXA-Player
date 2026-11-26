@@ -17,6 +17,7 @@ import '../../../../shared/models/track.dart';
 import '../../../../shared/widgets/glass/app_ambient_background.dart';
 import '../../../../shared/widgets/surfaces/nexa_surface.dart';
 import '../../../../shared/widgets/typography/bidi_text.dart';
+import '../../../../shared/widgets/typography/marquee_text.dart';
 import '../../../playlists/presentation/widgets/add_to_playlist_bottom_sheet.dart';
 import '../../../playlists/presentation/widgets/track_tag_editor_modal.dart';
 import '../../../cloud/cloud.dart';
@@ -1120,23 +1121,22 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
       color: onSurface.withOpacity(0.72),
     );
 
-    Widget buildPair(String t, String sub) {
+    Widget buildPair(String t, String sub, {bool marqueeEnabled = true}) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          BidiText(
+          MarqueeText(
             t,
             style: titleStyle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            enabled: marqueeEnabled,
           ),
           const SizedBox(height: 2),
-          BidiText(
+          MarqueeText(
             sub,
             style: subtitleStyle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            pauseDuration: const Duration(milliseconds: 1800),
+            enabled: marqueeEnabled,
           ),
         ],
       );
@@ -1168,14 +1168,22 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen>
           offset: Offset(parallaxShiftA, 0.0),
           child: Opacity(
             opacity: (1.0 - frac).clamp(0.0, 1.0),
-            child: buildPair(trackA.title, trackA.artistAndAlbum),
+            child: buildPair(
+              trackA.title,
+              trackA.artistAndAlbum,
+              marqueeEnabled: false,
+            ),
           ),
         ),
         Transform.translate(
           offset: Offset(parallaxShiftB, 0.0),
           child: Opacity(
             opacity: frac.clamp(0.0, 1.0),
-            child: buildPair(trackB.title, trackB.artistAndAlbum),
+            child: buildPair(
+              trackB.title,
+              trackB.artistAndAlbum,
+              marqueeEnabled: false,
+            ),
           ),
         ),
       ],
